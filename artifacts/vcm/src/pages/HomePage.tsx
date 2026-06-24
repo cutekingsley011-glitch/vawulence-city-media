@@ -8,14 +8,10 @@ import vcmLogo from "/vcm-logo.png";
 
 function Masthead() {
   const [compact, setCompact] = useState(false);
-  const lastScroll = useRef(0);
 
   useEffect(() => {
     function onScroll() {
-      const current = window.scrollY;
-      if (current > 80) setCompact(true);
-      else setCompact(false);
-      lastScroll.current = current;
+      setCompact(window.scrollY > 80);
     }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -24,7 +20,7 @@ function Masthead() {
   return (
     <div
       className={`w-full transition-all duration-300 overflow-hidden ${
-        compact ? "max-h-14 py-2" : "max-h-40 py-6"
+        compact ? "max-h-14 py-2" : "max-h-52 py-7"
       }`}
       style={{
         background: "linear-gradient(135deg, #0f1b4d 0%, #1D4ED8 60%, #2563EB 100%)",
@@ -34,23 +30,36 @@ function Masthead() {
       <div className="max-w-2xl mx-auto px-4 flex items-center justify-center">
         {compact ? (
           /* Compact strip */
-          <div className="flex items-center gap-3">
-            <img src={vcmLogo} alt="Vawulence City Media" className="h-7 object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+          <div className="flex items-center gap-2.5">
+            <img
+              src={vcmLogo}
+              alt=""
+              className="h-7 w-7 object-contain rounded-sm shrink-0"
+            />
+            <span className="text-white font-extrabold text-sm tracking-[0.15em] uppercase">
+              Vawulence City Media
+            </span>
           </div>
         ) : (
           /* Full masthead */
           <div className="text-center">
             <img
               src={vcmLogo}
-              alt="Vawulence City Media"
-              className="h-16 mx-auto object-contain mb-2"
-              style={{ filter: "brightness(0) invert(1)" }}
+              alt="VCM Logo"
+              className="h-16 mx-auto object-contain mb-3"
               data-testid="masthead-logo"
             />
-            <p className="text-blue-200 text-xs tracking-[0.25em] uppercase font-medium">
-              Entertainment Without Border
+            <p
+              className="text-white font-extrabold tracking-[0.18em] uppercase"
+              style={{ fontSize: "1.1rem", textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}
+              data-testid="masthead-brand"
+            >
+              Vawulence City Media
             </p>
-            <div className="mt-3 h-px w-20 mx-auto bg-blue-400/40 rounded-full" />
+            <p className="text-blue-100 text-xs tracking-[0.22em] uppercase font-medium mt-1.5 opacity-90">
+              Entertainment Without Border.
+            </p>
+            <div className="mt-3 h-px w-16 mx-auto bg-blue-300/40 rounded-full" />
           </div>
         )}
       </div>
