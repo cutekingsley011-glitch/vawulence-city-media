@@ -17,20 +17,12 @@ import {
   useListVoteCards,
   useCreateVoteCard,
   useDeleteVoteCard,
-  useListGoatCategories,
-  useCreateGoatCategory,
-  useDeleteGoatCategory,
-  useListPendingGoatNominees,
-  useApproveGoatNominee,
-  useRejectGoatNominee,
   getGetAdminStatsQueryKey,
   getListPostsQueryKey,
   getListPendingGistsQueryKey,
   getListCategoriesQueryKey,
   getGetBreakingNewsQueryKey,
   getListVoteCardsQueryKey,
-  getListGoatCategoriesQueryKey,
-  getListPendingGoatNomineesQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +38,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, Pencil, Trash2, Check, X, Vote, Award } from "lucide-react";
+import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, Pencil, Trash2, Check, X, Vote } from "lucide-react";
 
 const ADMIN_SESSION_KEY = "vcm_admin";
 const ADMIN_PASSWORD = "vcmadmin2024";
@@ -277,8 +269,6 @@ function AdminPanel() {
   const { data: categories } = useListCategories();
   const { data: breaking } = useGetBreakingNews();
   const { data: voteCards, isLoading: voteCardsLoading } = useListVoteCards();
-  const { data: goatCategories } = useListGoatCategories();
-  const { data: pendingGoatNominees, isLoading: goatLoading } = useListPendingGoatNominees();
 
   const deletePost = useDeletePost();
   const approveGist = useApproveGist();
@@ -288,10 +278,6 @@ function AdminPanel() {
   const setBreaking = useSetBreakingNewsBanner();
   const createVoteCard = useCreateVoteCard();
   const deleteVoteCard = useDeleteVoteCard();
-  const createGoatCategory = useCreateGoatCategory();
-  const deleteGoatCategory = useDeleteGoatCategory();
-  const approveGoatNominee = useApproveGoatNominee();
-  const rejectGoatNominee = useRejectGoatNominee();
 
   const [postFormOpen, setPostFormOpen] = useState(false);
   const [editPost, setEditPost] = useState<{ id: number; data: PostFormData } | undefined>();
@@ -301,14 +287,15 @@ function AdminPanel() {
 
   // VoteCard create form state
   const [vcTitle, setVcTitle] = useState("");
-  const [vcOptA, setVcOptA] = useState("");
-  const [vcOptB, setVcOptB] = useState("");
+  const [vcNumOptions, setVcNumOptions] = useState(2);
+  const [vcOpts, setVcOpts] = useState(["", "", "", ""]);
   const [vcImgA, setVcImgA] = useState("");
   const [vcImgB, setVcImgB] = useState("");
   const [vcError, setVcError] = useState("");
 
-  // GOAT category form
-  const [newGoatCatName, setNewGoatCatName] = useState("");
+  function setVcOpt(idx: number, val: string) {
+    setVcOpts((prev) => { const next = [...prev]; next[idx] = val; return next; });
+  }
 
   // Sync breaking state when data loads
   useState(() => {
@@ -388,20 +375,24 @@ function AdminPanel() {
     e.preventDefault();
     setVcError("");
     if (!vcTitle.trim()) { setVcError("Title is required."); return; }
-    if (!vcOptA.trim() || !vcOptB.trim()) { setVcError("Both options are required."); return; }
+    if (!vcOpts[0].trim() || !vcOpts[1].trim()) { setVcError("Options 1 and 2 are required."); return; }
+    if (vcNumOptions >= 3 && !vcOpts[2].trim()) { setVcError("Option 3 label is required."); return; }
+    if (vcNumOptions >= 4 && !vcOpts[3].trim()) { setVcError("Option 4 label is required."); return; }
     createVoteCard.mutate(
       {
         data: {
           title: vcTitle.trim(),
-          optionALabel: vcOptA.trim(),
-          optionBLabel: vcOptB.trim(),
+          option1Label: vcOpts[0].trim(),
+          option2Label: vcOpts[1].trim(),
+          option3Label: vcNumOptions >= 3 ? vcOpts[2].trim() : undefined,
+          option4Label: vcNumOptions >= 4 ? vcOpts[3].trim() : undefined,
           imageUrl: vcImgA.trim() || undefined,
           imageUrl2: vcImgB.trim() || undefined,
         },
       },
       {
         onSuccess: () => {
-          setVcTitle(""); setVcOptA(""); setVcOptB(""); setVcImgA(""); setVcImgB("");
+          setVcTitle(""); setVcNumOptions(2); setVcOpts(["", "", "", ""]); setVcImgA(""); setVcImgB("");
           queryClient.invalidateQueries({ queryKey: getListVoteCardsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
         },
@@ -417,52 +408,6 @@ function AdminPanel() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListVoteCardsQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
-        },
-      }
-    );
-  }
-
-  function handleCreateGoatCategory(e: React.FormEvent) {
-    e.preventDefault();
-    if (!newGoatCatName.trim()) return;
-    createGoatCategory.mutate(
-      { data: { name: newGoatCatName.trim() } },
-      {
-        onSuccess: () => {
-          setNewGoatCatName("");
-          queryClient.invalidateQueries({ queryKey: getListGoatCategoriesQueryKey() });
-        },
-      }
-    );
-  }
-
-  function handleDeleteGoatCategory(id: number) {
-    if (!confirm("Delete this GOAT category?")) return;
-    deleteGoatCategory.mutate(
-      { id },
-      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListGoatCategoriesQueryKey() }) }
-    );
-  }
-
-  function handleApproveGoatNominee(id: number) {
-    approveGoatNominee.mutate(
-      { id },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListPendingGoatNomineesQueryKey() });
-          queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
-        },
-      }
-    );
-  }
-
-  function handleRejectGoatNominee(id: number) {
-    rejectGoatNominee.mutate(
-      { id },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getListPendingGoatNomineesQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
         },
       }
@@ -498,7 +443,6 @@ function AdminPanel() {
         <StatCard label="Total Comments" value={stats?.totalComments} icon={BarChart3} color="bg-pink-500" />
         <StatCard label="Pending Gists" value={stats?.pendingGists} icon={Loader2} color="bg-yellow-500" />
         <StatCard label="Vote Cards" value={stats?.totalVoteCards} icon={Vote} color="bg-indigo-500" />
-        <StatCard label="Pending GOAT" value={stats?.pendingGoatNominees} icon={Award} color="bg-amber-500" />
       </div>
 
       <Tabs defaultValue="posts">
@@ -508,9 +452,6 @@ function AdminPanel() {
             Gists {stats?.pendingGists ? `(${stats.pendingGists})` : ""}
           </TabsTrigger>
           <TabsTrigger value="vote-cards" className="flex-1" data-testid="tab-vote-cards">Vote Cards</TabsTrigger>
-          <TabsTrigger value="goat" className="flex-1" data-testid="tab-goat">
-            GOAT {stats?.pendingGoatNominees ? `(${stats.pendingGoatNominees})` : ""}
-          </TabsTrigger>
           <TabsTrigger value="settings" className="flex-1" data-testid="tab-settings">Settings</TabsTrigger>
         </TabsList>
 
@@ -650,28 +591,45 @@ function AdminPanel() {
         <TabsContent value="vote-cards">
           <div className="space-y-4">
             <div className="border border-border rounded-xl p-4 bg-white">
-              <h2 className="font-bold text-sm mb-3">Create Vote Card (A vs B)</h2>
+              <h2 className="font-bold text-sm mb-3">Create Vote Card</h2>
               <form onSubmit={handleCreateVoteCard} className="space-y-3">
                 <div className="space-y-1">
                   <Label>Title / Question</Label>
                   <Input
                     value={vcTitle}
                     onChange={(e) => setVcTitle(e.target.value)}
-                    placeholder="Who would you pick?"
+                    placeholder="e.g. Who's the Best DJ in Abakaliki?"
                     data-testid="input-admin-vc-title"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label>Option A</Label>
-                    <Input value={vcOptA} onChange={(e) => setVcOptA(e.target.value)} placeholder="e.g. Wizkid" data-testid="input-admin-vc-opt-a" />
-                    <Input value={vcImgA} onChange={(e) => setVcImgA(e.target.value)} placeholder="Image URL (optional)" className="text-xs" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label>Option B</Label>
-                    <Input value={vcOptB} onChange={(e) => setVcOptB(e.target.value)} placeholder="e.g. Burna Boy" data-testid="input-admin-vc-opt-b" />
-                    <Input value={vcImgB} onChange={(e) => setVcImgB(e.target.value)} placeholder="Image URL (optional)" className="text-xs" />
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-muted-foreground">Options:</span>
+                  {[2, 3, 4].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setVcNumOptions(n)}
+                      className={`w-8 h-8 rounded-full text-sm font-bold border transition-colors ${vcNumOptions === n ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary"}`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  {[0, 1, 2, 3].slice(0, vcNumOptions).map((idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-muted-foreground w-6 shrink-0">#{idx + 1}</span>
+                      <Input
+                        value={vcOpts[idx]}
+                        onChange={(e) => setVcOpt(idx, e.target.value)}
+                        placeholder={`Option ${idx + 1} label`}
+                        data-testid={`input-admin-vc-opt-${idx + 1}`}
+                        className="flex-1"
+                      />
+                      {idx === 0 && <Input value={vcImgA} onChange={(e) => setVcImgA(e.target.value)} placeholder="Image URL" className="flex-1 text-xs" />}
+                      {idx === 1 && <Input value={vcImgB} onChange={(e) => setVcImgB(e.target.value)} placeholder="Image URL" className="flex-1 text-xs" />}
+                    </div>
+                  ))}
                 </div>
                 {vcError && <p className="text-sm text-destructive">{vcError}</p>}
                 <Button type="submit" size="sm" disabled={createVoteCard.isPending} data-testid="button-admin-create-vc">
@@ -710,78 +668,6 @@ function AdminPanel() {
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* ── GOAT tab ── */}
-        <TabsContent value="goat">
-          <div className="space-y-4">
-            <div className="border border-border rounded-xl p-4 bg-white">
-              <h2 className="font-bold text-sm mb-3">GOAT Categories</h2>
-              <form onSubmit={handleCreateGoatCategory} className="space-y-2 mb-3">
-                <Input
-                  value={newGoatCatName}
-                  onChange={(e) => setNewGoatCatName(e.target.value)}
-                  placeholder="Category name (e.g. Music, Comedy)"
-                  data-testid="input-admin-goat-cat-name"
-                />
-                <Button type="submit" size="sm" disabled={createGoatCategory.isPending} data-testid="button-admin-create-goat-cat">
-                  Add Category
-                </Button>
-              </form>
-              <div className="space-y-1.5">
-                {goatCategories?.map((cat) => (
-                  <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/40">
-                    <div>
-                      <p className="text-sm font-medium">{cat.name}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="w-7 h-7 text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteGoatCategory(cat.id)}
-                      data-testid={`button-delete-goat-cat-${cat.id}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h2 className="font-bold text-sm mb-3">Pending Nominees</h2>
-              {goatLoading ? (
-                <div className="space-y-2">
-                  {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}
-                </div>
-              ) : !pendingGoatNominees?.length ? (
-                <p className="text-sm text-muted-foreground text-center py-6" data-testid="no-pending-goat">
-                  No nominees pending review.
-                </p>
-              ) : (
-                <div className="space-y-3" data-testid="admin-goat-nominees">
-                  {pendingGoatNominees.map((n) => (
-                    <div key={n.id} className="p-4 border border-border rounded-xl bg-white flex items-start justify-between gap-3" data-testid={`admin-goat-nominee-${n.id}`}>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold">{n.name}</p>
-                        {n.description && <p className="text-xs text-muted-foreground mt-0.5">{n.description}</p>}
-                      </div>
-                      <div className="flex flex-col gap-1.5 shrink-0">
-                        <Button size="sm" className="gap-1 h-8" onClick={() => handleApproveGoatNominee(n.id)} data-testid={`button-approve-goat-${n.id}`}>
-                          <Check className="w-3.5 h-3.5" />
-                          Approve
-                        </Button>
-                        <Button variant="outline" size="sm" className="gap-1 h-8 text-destructive border-destructive/30 hover:bg-destructive/5" onClick={() => handleRejectGoatNominee(n.id)} data-testid={`button-reject-goat-${n.id}`}>
-                          <X className="w-3.5 h-3.5" />
-                          Reject
-                        </Button>
-                      </div>
                     </div>
                   ))}
                 </div>

@@ -1,13 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Home, FileText, Vote, Trophy, Award, MoreHorizontal, ShoppingBag, CalendarDays } from "lucide-react";
+import { Home, FileText, Vote, Trophy, MoreHorizontal, ShoppingBag, CalendarDays } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
   { label: "Gists", href: "/gists", icon: FileText },
   { label: "Vote Cards", href: "/vote-cards", icon: Vote },
-  { label: "GOAT", href: "/goat", icon: Award },
   { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
 ];
 
@@ -83,9 +82,6 @@ export function BottomNav() {
   const [location] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
 
-  // Bottom nav shows 4 main items + More
-  const bottomItems = NAV_ITEMS.slice(0, 4);
-
   return (
     <>
       <nav
@@ -93,7 +89,7 @@ export function BottomNav() {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         data-testid="bottom-nav"
       >
-        {bottomItems.map(({ label, href, icon: Icon }) => (
+        {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
           <Link key={href} href={href} className="flex-1">
             <span
               className={`flex flex-col items-center gap-0.5 py-2 text-center cursor-pointer transition-colors ${

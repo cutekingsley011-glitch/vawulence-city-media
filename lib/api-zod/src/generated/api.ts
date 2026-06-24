@@ -404,8 +404,7 @@ export const GetAdminStatsResponse = zod.object({
   "totalGistsPublished": zod.number(),
   "totalComments": zod.number(),
   "pendingGists": zod.number(),
-  "totalVoteCards": zod.number(),
-  "pendingGoatNominees": zod.number()
+  "totalVoteCards": zod.number()
 })
 
 
@@ -435,10 +434,14 @@ export const ListVoteCardsResponseItem = zod.object({
   "title": zod.string(),
   "imageUrl": zod.string().nullish(),
   "imageUrl2": zod.string().nullish(),
-  "optionALabel": zod.string(),
-  "optionBLabel": zod.string(),
-  "optionACount": zod.number(),
-  "optionBCount": zod.number(),
+  "option1Label": zod.string(),
+  "option2Label": zod.string(),
+  "option3Label": zod.string().nullish(),
+  "option4Label": zod.string().nullish(),
+  "option1Count": zod.number(),
+  "option2Count": zod.number(),
+  "option3Count": zod.number().nullish(),
+  "option4Count": zod.number().nullish(),
   "isActive": zod.boolean(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
@@ -454,8 +457,10 @@ export const CreateVoteCardBody = zod.object({
   "title": zod.string(),
   "imageUrl": zod.string().optional(),
   "imageUrl2": zod.string().optional(),
-  "optionALabel": zod.string(),
-  "optionBLabel": zod.string()
+  "option1Label": zod.string(),
+  "option2Label": zod.string(),
+  "option3Label": zod.string().optional(),
+  "option4Label": zod.string().optional()
 })
 
 
@@ -475,15 +480,19 @@ export const GetVoteCardResponse = zod.object({
   "title": zod.string(),
   "imageUrl": zod.string().nullish(),
   "imageUrl2": zod.string().nullish(),
-  "optionALabel": zod.string(),
-  "optionBLabel": zod.string(),
-  "optionACount": zod.number(),
-  "optionBCount": zod.number(),
+  "option1Label": zod.string(),
+  "option2Label": zod.string(),
+  "option3Label": zod.string().nullish(),
+  "option4Label": zod.string().nullish(),
+  "option1Count": zod.number(),
+  "option2Count": zod.number(),
+  "option3Count": zod.number().nullish(),
+  "option4Count": zod.number().nullish(),
   "isActive": zod.boolean(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
   "commentCount": zod.number().optional(),
-  "userVote": zod.string().nullable()
+  "userVote": zod.number().nullable()
 })
 
 
@@ -498,8 +507,10 @@ export const UpdateVoteCardBody = zod.object({
   "title": zod.string().optional(),
   "imageUrl": zod.string().optional(),
   "imageUrl2": zod.string().optional(),
-  "optionALabel": zod.string().optional(),
-  "optionBLabel": zod.string().optional(),
+  "option1Label": zod.string().optional(),
+  "option2Label": zod.string().optional(),
+  "option3Label": zod.string().optional(),
+  "option4Label": zod.string().optional(),
   "isActive": zod.boolean().optional()
 })
 
@@ -508,10 +519,14 @@ export const UpdateVoteCardResponse = zod.object({
   "title": zod.string(),
   "imageUrl": zod.string().nullish(),
   "imageUrl2": zod.string().nullish(),
-  "optionALabel": zod.string(),
-  "optionBLabel": zod.string(),
-  "optionACount": zod.number(),
-  "optionBCount": zod.number(),
+  "option1Label": zod.string(),
+  "option2Label": zod.string(),
+  "option3Label": zod.string().nullish(),
+  "option4Label": zod.string().nullish(),
+  "option1Count": zod.number(),
+  "option2Count": zod.number(),
+  "option3Count": zod.number().nullish(),
+  "option4Count": zod.number().nullish(),
   "isActive": zod.boolean(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
@@ -534,9 +549,13 @@ export const CastVoteParams = zod.object({
   "id": zod.coerce.number()
 })
 
+export const castVoteBodyChosenOptionMax = 4;
+
+
+
 export const CastVoteBody = zod.object({
   "userId": zod.string(),
-  "chosenOption": zod.enum(['a', 'b'])
+  "chosenOption": zod.number().min(1).max(castVoteBodyChosenOptionMax)
 })
 
 export const CastVoteResponse = zod.object({
@@ -544,15 +563,19 @@ export const CastVoteResponse = zod.object({
   "title": zod.string(),
   "imageUrl": zod.string().nullish(),
   "imageUrl2": zod.string().nullish(),
-  "optionALabel": zod.string(),
-  "optionBLabel": zod.string(),
-  "optionACount": zod.number(),
-  "optionBCount": zod.number(),
+  "option1Label": zod.string(),
+  "option2Label": zod.string(),
+  "option3Label": zod.string().nullish(),
+  "option4Label": zod.string().nullish(),
+  "option1Count": zod.number(),
+  "option2Count": zod.number(),
+  "option3Count": zod.number().nullish(),
+  "option4Count": zod.number().nullish(),
   "isActive": zod.boolean(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
   "commentCount": zod.number().optional(),
-  "userVote": zod.string().nullable()
+  "userVote": zod.number().nullable()
 })
 
 
@@ -589,155 +612,5 @@ export const GetLeaderboardResponseItem = zod.object({
   "voteCount": zod.number()
 })
 export const GetLeaderboardResponse = zod.array(GetLeaderboardResponseItem)
-
-
-/**
- * @summary List GOAT categories
- */
-export const ListGoatCategoriesResponseItem = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "createdAt": zod.string()
-})
-export const ListGoatCategoriesResponse = zod.array(ListGoatCategoriesResponseItem)
-
-
-/**
- * @summary Create a GOAT category (admin)
- */
-export const CreateGoatCategoryBody = zod.object({
-  "name": zod.string()
-})
-
-
-/**
- * @summary Delete a GOAT category (admin)
- */
-export const DeleteGoatCategoryParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-
-/**
- * @summary List approved nominees for a GOAT category
- */
-export const ListGoatNomineesParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-export const ListGoatNomineesQueryParams = zod.object({
-  "userId": zod.coerce.string().optional()
-})
-
-export const ListGoatNomineesResponse = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "nominees": zod.array(zod.object({
-  "id": zod.number(),
-  "goatCategoryId": zod.number(),
-  "name": zod.string(),
-  "photoUrl": zod.string().nullish(),
-  "description": zod.string().nullish(),
-  "voteCount": zod.number(),
-  "status": zod.string(),
-  "createdAt": zod.string()
-})),
-  "userVotedNomineeId": zod.number().nullable()
-})
-
-
-/**
- * @summary Vote for a nominee in a GOAT category
- */
-export const VoteGoatParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-export const VoteGoatBody = zod.object({
-  "userId": zod.string(),
-  "nomineeId": zod.number()
-})
-
-export const VoteGoatResponse = zod.object({
-  "id": zod.number(),
-  "name": zod.string(),
-  "nominees": zod.array(zod.object({
-  "id": zod.number(),
-  "goatCategoryId": zod.number(),
-  "name": zod.string(),
-  "photoUrl": zod.string().nullish(),
-  "description": zod.string().nullish(),
-  "voteCount": zod.number(),
-  "status": zod.string(),
-  "createdAt": zod.string()
-})),
-  "userVotedNomineeId": zod.number().nullable()
-})
-
-
-/**
- * @summary Submit a nominee for approval
- */
-export const SubmitGoatNomineeBody = zod.object({
-  "goatCategoryId": zod.number(),
-  "name": zod.string(),
-  "photoUrl": zod.string().optional(),
-  "description": zod.string().optional(),
-  "submittedBy": zod.string().optional()
-})
-
-
-/**
- * @summary List pending nominee submissions (admin)
- */
-export const ListPendingGoatNomineesResponseItem = zod.object({
-  "id": zod.number(),
-  "goatCategoryId": zod.number(),
-  "name": zod.string(),
-  "photoUrl": zod.string().nullish(),
-  "description": zod.string().nullish(),
-  "voteCount": zod.number(),
-  "status": zod.string(),
-  "createdAt": zod.string()
-})
-export const ListPendingGoatNomineesResponse = zod.array(ListPendingGoatNomineesResponseItem)
-
-
-/**
- * @summary Approve a GOAT nominee (admin)
- */
-export const ApproveGoatNomineeParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-export const ApproveGoatNomineeResponse = zod.object({
-  "id": zod.number(),
-  "goatCategoryId": zod.number(),
-  "name": zod.string(),
-  "photoUrl": zod.string().nullish(),
-  "description": zod.string().nullish(),
-  "voteCount": zod.number(),
-  "status": zod.string(),
-  "createdAt": zod.string()
-})
-
-
-/**
- * @summary Reject a GOAT nominee (admin)
- */
-export const RejectGoatNomineeParams = zod.object({
-  "id": zod.coerce.number()
-})
-
-export const RejectGoatNomineeResponse = zod.object({
-  "id": zod.number(),
-  "goatCategoryId": zod.number(),
-  "name": zod.string(),
-  "photoUrl": zod.string().nullish(),
-  "description": zod.string().nullish(),
-  "voteCount": zod.number(),
-  "status": zod.string(),
-  "createdAt": zod.string()
-})
 
 

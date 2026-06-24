@@ -60,8 +60,10 @@ router.get("/trending", async (req, res) => {
       id: voteCardsTable.id,
       title: voteCardsTable.title,
       imageUrl: voteCardsTable.imageUrl,
-      optionACount: voteCardsTable.optionACount,
-      optionBCount: voteCardsTable.optionBCount,
+      option1Count: voteCardsTable.option1Count,
+      option2Count: voteCardsTable.option2Count,
+      option3Count: voteCardsTable.option3Count,
+      option4Count: voteCardsTable.option4Count,
       createdAt: voteCardsTable.createdAt,
     })
     .from(voteCardsTable)
@@ -74,7 +76,7 @@ router.get("/trending", async (req, res) => {
         .from(commentsTable)
         .where(eq(commentsTable.voteCardId, vc.id));
 
-      const votes = vc.optionACount + vc.optionBCount;
+      const votes = (vc.option1Count ?? 0) + (vc.option2Count ?? 0) + (vc.option3Count ?? 0) + (vc.option4Count ?? 0);
       const score = votes + (comments ?? 0);
 
       return {

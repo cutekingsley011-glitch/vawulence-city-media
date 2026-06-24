@@ -32,8 +32,6 @@ tags:
     description: Trending content
   - name: leaderboard
     description: Leaderboard and badges
-  - name: goat
-    description: Who's Your GOAT
 paths:
   /healthz:
     get:
@@ -702,175 +700,6 @@ paths:
                 items:
                   $ref: "#/components/schemas/LeaderboardEntry"
 
-  # ── GOAT ──────────────────────────────────────────────────────────────────────
-  /goat/categories:
-    get:
-      operationId: listGoatCategories
-      tags: [goat]
-      summary: List GOAT categories
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/GoatCategory"
-    post:
-      operationId: createGoatCategory
-      tags: [goat]
-      summary: Create a GOAT category (admin)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/GoatCategoryInput"
-      responses:
-        "201":
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GoatCategory"
-
-  /goat/categories/{id}:
-    delete:
-      operationId: deleteGoatCategory
-      tags: [goat]
-      summary: Delete a GOAT category (admin)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "204":
-          description: Deleted
-
-  /goat/categories/{id}/nominees:
-    get:
-      operationId: listGoatNominees
-      tags: [goat]
-      summary: List approved nominees for a GOAT category
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-        - name: userId
-          in: query
-          schema:
-            type: string
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GoatCategoryWithNominees"
-
-  /goat/categories/{id}/vote:
-    post:
-      operationId: voteGoat
-      tags: [goat]
-      summary: Vote for a nominee in a GOAT category
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/GoatVoteInput"
-      responses:
-        "200":
-          description: Updated nominees list
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GoatCategoryWithNominees"
-        "409":
-          description: Already voted in this category
-
-  /goat/nominees:
-    post:
-      operationId: submitGoatNominee
-      tags: [goat]
-      summary: Submit a nominee for approval
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/GoatNomineeInput"
-      responses:
-        "201":
-          description: Submitted (pending review)
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GoatNominee"
-
-  /goat/pending:
-    get:
-      operationId: listPendingGoatNominees
-      tags: [goat]
-      summary: List pending nominee submissions (admin)
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/GoatNominee"
-
-  /goat/nominees/{id}/approve:
-    post:
-      operationId: approveGoatNominee
-      tags: [goat]
-      summary: Approve a GOAT nominee (admin)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GoatNominee"
-
-  /goat/nominees/{id}/reject:
-    post:
-      operationId: rejectGoatNominee
-      tags: [goat]
-      summary: Reject a GOAT nominee (admin)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GoatNominee"
 
 components:
   schemas:
@@ -1051,7 +880,7 @@ components:
     # ── Admin ─────────────────────────────────────────────────────────────────
     AdminStats:
       type: object
-      required: [totalVisitors, registeredUsers, totalPosts, totalGistsPublished, totalComments, pendingGists, totalVoteCards, pendingGoatNominees]
+      required: [totalVisitors, registeredUsers, totalPosts, totalGistsPublished, totalComments, pendingGists, totalVoteCards]
       properties:
         totalVisitors:        { type: integer }
         registeredUsers:      { type: integer }
@@ -1060,21 +889,24 @@ components:
         totalComments:        { type: integer }
         pendingGists:         { type: integer }
         totalVoteCards:       { type: integer }
-        pendingGoatNominees:  { type: integer }
 
     # ── Vote Card ─────────────────────────────────────────────────────────────
     VoteCard:
       type: object
-      required: [id, title, optionALabel, optionBLabel, optionACount, optionBCount, isActive, createdAt, totalVotes]
+      required: [id, title, option1Label, option2Label, option1Count, option2Count, isActive, createdAt, totalVotes]
       properties:
         id:           { type: integer }
         title:        { type: string }
         imageUrl:     { type: ["string", "null"] }
         imageUrl2:    { type: ["string", "null"] }
-        optionALabel: { type: string }
-        optionBLabel: { type: string }
-        optionACount: { type: integer }
-        optionBCount: { type: integer }
+        option1Label: { type: string }
+        option2Label: { type: string }
+        option3Label: { type: ["string", "null"] }
+        option4Label: { type: ["string", "null"] }
+        option1Count: { type: integer }
+        option2Count: { type: integer }
+        option3Count: { type: ["integer", "null"] }
+        option4Count: { type: ["integer", "null"] }
         isActive:     { type: boolean }
         createdAt:    { type: string }
         totalVotes:   { type: integer }
@@ -1082,31 +914,37 @@ components:
 
     VoteCardDetail:
       type: object
-      required: [id, title, optionALabel, optionBLabel, optionACount, optionBCount, isActive, createdAt, totalVotes, userVote]
+      required: [id, title, option1Label, option2Label, option1Count, option2Count, isActive, createdAt, totalVotes, userVote]
       properties:
         id:           { type: integer }
         title:        { type: string }
         imageUrl:     { type: ["string", "null"] }
         imageUrl2:    { type: ["string", "null"] }
-        optionALabel: { type: string }
-        optionBLabel: { type: string }
-        optionACount: { type: integer }
-        optionBCount: { type: integer }
+        option1Label: { type: string }
+        option2Label: { type: string }
+        option3Label: { type: ["string", "null"] }
+        option4Label: { type: ["string", "null"] }
+        option1Count: { type: integer }
+        option2Count: { type: integer }
+        option3Count: { type: ["integer", "null"] }
+        option4Count: { type: ["integer", "null"] }
         isActive:     { type: boolean }
         createdAt:    { type: string }
         totalVotes:   { type: integer }
         commentCount: { type: integer }
-        userVote:     { type: ["string", "null"] }
+        userVote:     { type: ["integer", "null"] }
 
     VoteCardInput:
       type: object
-      required: [title, optionALabel, optionBLabel]
+      required: [title, option1Label, option2Label]
       properties:
         title:        { type: string }
         imageUrl:     { type: string }
         imageUrl2:    { type: string }
-        optionALabel: { type: string }
-        optionBLabel: { type: string }
+        option1Label: { type: string }
+        option2Label: { type: string }
+        option3Label: { type: string }
+        option4Label: { type: string }
 
     VoteCardUpdate:
       type: object
@@ -1114,8 +952,10 @@ components:
         title:        { type: string }
         imageUrl:     { type: string }
         imageUrl2:    { type: string }
-        optionALabel: { type: string }
-        optionBLabel: { type: string }
+        option1Label: { type: string }
+        option2Label: { type: string }
+        option3Label: { type: string }
+        option4Label: { type: string }
         isActive:     { type: boolean }
 
     VoteCardVoteInput:
@@ -1123,7 +963,7 @@ components:
       required: [userId, chosenOption]
       properties:
         userId:       { type: string }
-        chosenOption: { type: string, enum: [a, b] }
+        chosenOption: { type: integer, minimum: 1, maximum: 4 }
 
     # ── Trending ──────────────────────────────────────────────────────────────
     TrendingItem:
@@ -1152,59 +992,3 @@ components:
         commentCount: { type: integer }
         voteCount:    { type: integer }
 
-    # ── GOAT ──────────────────────────────────────────────────────────────────
-    GoatCategory:
-      type: object
-      required: [id, name, createdAt]
-      properties:
-        id:        { type: integer }
-        name:      { type: string }
-        createdAt: { type: string }
-
-    GoatCategoryInput:
-      type: object
-      required: [name]
-      properties:
-        name: { type: string }
-
-    GoatNominee:
-      type: object
-      required: [id, goatCategoryId, name, voteCount, status, createdAt]
-      properties:
-        id:             { type: integer }
-        goatCategoryId: { type: integer }
-        name:           { type: string }
-        photoUrl:       { type: ["string", "null"] }
-        description:    { type: ["string", "null"] }
-        voteCount:      { type: integer }
-        status:         { type: string }
-        createdAt:      { type: string }
-
-    GoatNomineeInput:
-      type: object
-      required: [goatCategoryId, name]
-      properties:
-        goatCategoryId: { type: integer }
-        name:           { type: string }
-        photoUrl:       { type: string }
-        description:    { type: string }
-        submittedBy:    { type: string }
-
-    GoatVoteInput:
-      type: object
-      required: [userId, nomineeId]
-      properties:
-        userId:    { type: string }
-        nomineeId: { type: integer }
-
-    GoatCategoryWithNominees:
-      type: object
-      required: [id, name, nominees, userVotedNomineeId]
-      properties:
-        id:                 { type: integer }
-        name:               { type: string }
-        nominees:
-          type: array
-          items:
-            $ref: "#/components/schemas/GoatNominee"
-        userVotedNomineeId: { type: ["integer", "null"] }

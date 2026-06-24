@@ -18,7 +18,6 @@ import {
   ListVoteCardCommentsParams,
   CreateVoteCardCommentParams,
   CreateVoteCardCommentBody,
-  LikeCommentParams,
 } from "@workspace/api-zod";
 import { awardPoints } from "../lib/points";
 
@@ -28,16 +27,24 @@ type VoteCardRow = typeof voteCardsTable.$inferSelect;
 type CommentRow = typeof commentsTable.$inferSelect;
 
 function cardToDto(card: VoteCardRow, commentCount = 0) {
-  const total = card.optionACount + card.optionBCount;
+  const total =
+    card.option1Count +
+    card.option2Count +
+    (card.option3Count ?? 0) +
+    (card.option4Count ?? 0);
   return {
     id: card.id,
     title: card.title,
     imageUrl: card.imageUrl ?? null,
     imageUrl2: card.imageUrl2 ?? null,
-    optionALabel: card.optionALabel,
-    optionBLabel: card.optionBLabel,
-    optionACount: card.optionACount,
-    optionBCount: card.optionBCount,
+    option1Label: card.option1Label,
+    option2Label: card.option2Label,
+    option3Label: card.option3Label ?? null,
+    option4Label: card.option4Label ?? null,
+    option1Count: card.option1Count,
+    option2Count: card.option2Count,
+    option3Count: card.option3Count ?? null,
+    option4Count: card.option4Count ?? null,
     isActive: card.isActive,
     createdAt: card.createdAt.toISOString(),
     totalVotes: total,
@@ -45,7 +52,7 @@ function cardToDto(card: VoteCardRow, commentCount = 0) {
   };
 }
 
-function cardDetailDto(card: VoteCardRow, userVote: string | null, commentCount = 0) {
+function cardDetailDto(card: VoteCardRow, userVote: number | null, commentCount = 0) {
   return { ...cardToDto(card, commentCount), userVote };
 }
 
@@ -119,8 +126,12 @@ router.post("/vote-cards", async (req, res) => {
       title: body.data.title,
       imageUrl: body.data.imageUrl ?? null,
       imageUrl2: body.data.imageUrl2 ?? null,
-      optionALabel: body.data.optionALabel,
-      optionBLabel: body.data.optionBLabel,
+      option1Label: body.data.option1Label,
+      option2Label: body.data.option2Label,
+      option3Label: body.data.option3Label ?? null,
+      option4Label: body.data.option4Label ?? null,
+      option3Count: body.data.option3Label ? 0 : null,
+      option4Count: body.data.option4Label ? 0 : null,
     })
     .returning();
   res.status(201).json(cardToDto(card));
@@ -143,7 +154,7 @@ router.get("/vote-cards/:id", async (req, res) => {
     return;
   }
 
-  let userVote: string | null = null;
+  let userVote: number | null = null;
   const userId = query.success ? query.data.userId : undefined;
   if (userId) {
     const [vote] = await db
@@ -179,8 +190,10 @@ router.patch("/vote-cards/:id", async (req, res) => {
   if (body.data.title !== undefined) updates.title = body.data.title;
   if (body.data.imageUrl !== undefined) updates.imageUrl = body.data.imageUrl;
   if (body.data.imageUrl2 !== undefined) updates.imageUrl2 = body.data.imageUrl2;
-  if (body.data.optionALabel !== undefined) updates.optionALabel = body.data.optionALabel;
-  if (body.data.optionBLabel !== undefined) updates.optionBLabel = body.data.optionBLabel;
+  if (body.data.option1Label !== undefined) updates.option1Label = body.data.option1Label;
+  if (body.data.option2Label !== undefined) updates.option2Label = body.data.option2Label;
+  if (body.data.option3Label !== undefined) updates.option3Label = body.data.option3Label;
+  if (body.data.option4Label !== undefined) updates.option4Label = body.data.option4Label;
   if (body.data.isActive !== undefined) updates.isActive = body.data.isActive;
 
   const [card] = await db
@@ -215,13 +228,34 @@ router.post("/vote-cards/:id/vote", async (req, res) => {
     return;
   }
 
-  const body = req.body as { userId?: string; chosenOption?: string };
-  if (!body.userId || !body.chosenOption || !["a", "b"].includes(body.chosenOption)) {
+  const body = req.body as { userId?: string; chosenOption?: unknown };
+  const chosenOption = Number(body.chosenOption);
+  if (!body.userId || !chosenOption || ![1, 2, 3, 4].includes(chosenOption)) {
     res.status(400).json({ error: "Invalid body" });
     return;
   }
 
   const voteCardId = params.data.id;
+
+  // Fetch card to verify option exists
+  const [card] = await db
+    .select()
+    .from(voteCardsTable)
+    .where(eq(voteCardsTable.id, voteCardId));
+  if (!card) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  // Validate chosen option against card's actual options
+  if (chosenOption === 3 && !card.option3Label) {
+    res.status(400).json({ error: "Option 3 not available on this card" });
+    return;
+  }
+  if (chosenOption === 4 && !card.option4Label) {
+    res.status(400).json({ error: "Option 4 not available on this card" });
+    return;
+  }
 
   // Check existing vote
   const [existing] = await db
@@ -244,16 +278,19 @@ router.post("/vote-cards/:id/vote", async (req, res) => {
   await db.insert(voteCardVotesTable).values({
     voteCardId,
     userId: body.userId,
-    chosenOption: body.chosenOption,
+    chosenOption,
   });
 
-  // Increment count on vote card
-  const countCol =
-    body.chosenOption === "a" ? voteCardsTable.optionACount : voteCardsTable.optionBCount;
+  // Increment the right count column
+  const increment =
+    chosenOption === 1 ? { option1Count: sql`COALESCE(${voteCardsTable.option1Count}, 0) + 1` }
+    : chosenOption === 2 ? { option2Count: sql`COALESCE(${voteCardsTable.option2Count}, 0) + 1` }
+    : chosenOption === 3 ? { option3Count: sql`COALESCE(${voteCardsTable.option3Count}, 0) + 1` }
+    : { option4Count: sql`COALESCE(${voteCardsTable.option4Count}, 0) + 1` };
 
-  const [card] = await db
+  const [updated] = await db
     .update(voteCardsTable)
-    .set({ [body.chosenOption === "a" ? "optionACount" : "optionBCount"]: sql`${countCol} + 1` })
+    .set(increment)
     .where(eq(voteCardsTable.id, voteCardId))
     .returning();
 
@@ -272,7 +309,7 @@ router.post("/vote-cards/:id/vote", async (req, res) => {
     .from(commentsTable)
     .where(eq(commentsTable.voteCardId, voteCardId));
 
-  res.json(cardDetailDto(card, body.chosenOption, cnt ?? 0));
+  res.json(cardDetailDto(updated, chosenOption, cnt ?? 0));
 });
 
 // GET /vote-cards/:voteCardId/comments
@@ -320,7 +357,6 @@ router.post("/vote-cards/:voteCardId/comments", async (req, res) => {
     return;
   }
 
-  // Fetch user name
   let userName: string | null = null;
   if (body.data.userId) {
     const [user] = await db
@@ -343,7 +379,6 @@ router.post("/vote-cards/:voteCardId/comments", async (req, res) => {
     })
     .returning();
 
-  // Award +1 point and increment comment count
   if (body.data.userId) {
     await awardPoints(body.data.userId, 1).catch(() => {});
     await db
@@ -355,8 +390,5 @@ router.post("/vote-cards/:voteCardId/comments", async (req, res) => {
 
   res.status(201).json(commentToDto(comment));
 });
-
-// POST /comments/:id/like (shared - already registered in comments.ts but also needed here for type-checking)
-// Handled in comments.ts already, no duplication needed
 
 export default router;

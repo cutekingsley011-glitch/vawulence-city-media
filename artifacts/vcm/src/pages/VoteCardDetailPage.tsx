@@ -27,43 +27,83 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
+type VoteCardDetail = {
+  id: number;
+  title: string;
+  option1Label: string;
+  option2Label: string;
+  option3Label?: string | null;
+  option4Label?: string | null;
+  option1Count: number;
+  option2Count: number;
+  option3Count?: number | null;
+  option4Count?: number | null;
+  isActive: boolean;
+  totalVotes: number;
+  createdAt: string;
+  commentCount?: number;
+  imageUrl?: string | null;
+  imageUrl2?: string | null;
+  userVote?: number | null;
+};
+
+function getOptions(card: VoteCardDetail, counts: Record<number, number>) {
+  const opts: { num: number; label: string }[] = [
+    { num: 1, label: card.option1Label },
+    { num: 2, label: card.option2Label },
+  ];
+  if (card.option3Label) opts.push({ num: 3, label: card.option3Label });
+  if (card.option4Label) opts.push({ num: 4, label: card.option4Label });
+  return opts;
+}
+
 export default function VoteCardDetailPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const queryClient = useQueryClient();
   const user = getStoredUser();
 
-  const { data: card, isLoading: cardLoading } = useGetVoteCard(id);
+  const { data: cardRaw, isLoading: cardLoading } = useGetVoteCard(id);
+  const card = cardRaw as VoteCardDetail | undefined;
   const { data: comments, isLoading: commentsLoading } = useListVoteCardComments(id);
 
   const castVote = useCastVote();
   const createComment = useCreateVoteCardComment();
   const likeComment = useLikeComment();
 
-  const [voted, setVoted] = useState<"a" | "b" | null>(null);
-  const [optACount, setOptACount] = useState<number | null>(null);
-  const [optBCount, setOptBCount] = useState<number | null>(null);
+  const [voted, setVoted] = useState<number | null>(null);
+  const [counts, setCounts] = useState<{ [key: number]: number } | null>(null);
   const [totalOverride, setTotalOverride] = useState<number | null>(null);
   const [commentText, setCommentText] = useState("");
 
-  const displayA = optACount ?? card?.optionACount ?? 0;
-  const displayB = optBCount ?? card?.optionBCount ?? 0;
+  const displayCounts: { [key: number]: number } = counts ?? {
+    1: card?.option1Count ?? 0,
+    2: card?.option2Count ?? 0,
+    3: card?.option3Count ?? 0,
+    4: card?.option4Count ?? 0,
+  };
   const displayTotal = totalOverride ?? card?.totalVotes ?? 0;
-  const pctA = displayTotal > 0 ? Math.round((displayA / displayTotal) * 100) : 50;
-  const pctB = displayTotal > 0 ? Math.round((displayB / displayTotal) * 100) : 50;
+
+  const options = card ? getOptions(card, displayCounts) : [];
   const showResults = voted !== null || !card?.isActive;
 
-  function handleVote(choice: "a" | "b") {
+  function handleVote(choice: number) {
     if (voted !== null || !card?.isActive) return;
-    if (choice === "a") { setOptACount((card?.optionACount ?? 0) + 1); setOptBCount(card?.optionBCount ?? 0); }
-    else { setOptACount(card?.optionACount ?? 0); setOptBCount((card?.optionBCount ?? 0) + 1); }
-    setTotalOverride((card?.totalVotes ?? 0) + 1);
+    const newCounts: { [key: number]: number } = {
+      1: card.option1Count,
+      2: card.option2Count,
+      3: card.option3Count ?? 0,
+      4: card.option4Count ?? 0,
+    };
+    newCounts[choice] = (newCounts[choice] ?? 0) + 1;
+    setCounts(newCounts);
+    setTotalOverride((card.totalVotes ?? 0) + 1);
     setVoted(choice);
 
     castVote.mutate(
       { id, data: { userId: user?.id ?? "", chosenOption: choice } },
       {
-        onError: () => { setOptACount(null); setOptBCount(null); setTotalOverride(null); setVoted(null); },
+        onError: () => { setCounts(null); setTotalOverride(null); setVoted(null); },
         onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetVoteCardQueryKey(id) }); },
       }
     );
@@ -125,24 +165,24 @@ export default function VoteCardDetailPage() {
         {/* Images */}
         {(card.imageUrl || card.imageUrl2) && (
           <div className="flex gap-2 mb-3">
-            {card.imageUrl && <img src={card.imageUrl} alt={card.optionALabel} className="flex-1 h-28 object-cover rounded-lg" />}
-            {card.imageUrl2 && <img src={card.imageUrl2} alt={card.optionBLabel} className="flex-1 h-28 object-cover rounded-lg" />}
+            {card.imageUrl && <img src={card.imageUrl} alt={card.option1Label} className="flex-1 h-28 object-cover rounded-lg" />}
+            {card.imageUrl2 && <img src={card.imageUrl2} alt={card.option2Label} className="flex-1 h-28 object-cover rounded-lg" />}
           </div>
         )}
 
-        {/* A vs B vote buttons */}
-        <div className="flex gap-2 mb-4">
-          {(["a", "b"] as const).map((choice) => {
-            const label = choice === "a" ? card.optionALabel : card.optionBLabel;
-            const pct = choice === "a" ? pctA : pctB;
-            const isSelected = voted === choice;
+        {/* Dynamic vote buttons */}
+        <div className={`grid gap-2 mb-4 ${options.length === 2 ? "grid-cols-2" : options.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+          {options.map(({ num, label }) => {
+            const cnt = displayCounts[num] ?? 0;
+            const pct = displayTotal > 0 ? Math.round((cnt / displayTotal) * 100) : Math.round(100 / options.length);
+            const isSelected = voted === num;
 
             return (
               <button
-                key={choice}
+                key={num}
                 disabled={voted !== null || !card.isActive}
-                onClick={() => handleVote(choice)}
-                className={`flex-1 relative overflow-hidden rounded-lg border py-4 text-sm font-semibold transition-all text-center ${
+                onClick={() => handleVote(num)}
+                className={`relative overflow-hidden rounded-lg border py-4 text-sm font-semibold transition-all text-center ${
                   isSelected
                     ? "border-primary bg-primary/10 text-primary"
                     : voted !== null || !card.isActive
@@ -150,20 +190,36 @@ export default function VoteCardDetailPage() {
                     : "border-border hover:border-primary hover:bg-primary/5"
                 }`}
               >
-                {label}
                 {showResults && (
-                  <div className="text-xs font-bold mt-1 opacity-80">{pct}%</div>
+                  <div
+                    className="absolute inset-0 bg-primary/8 transition-all"
+                    style={{ width: `${pct}%` }}
+                  />
+                )}
+                <span className="relative">{label}</span>
+                {showResults && (
+                  <div className="relative text-xs font-bold mt-1 opacity-80">{pct}%</div>
                 )}
               </button>
             );
           })}
         </div>
 
-        {showResults && (
+        {/* Progress bar for 2-option cards */}
+        {showResults && options.length === 2 && (
           <div className="mb-3">
             <div className="flex rounded-full overflow-hidden h-2">
-              <div className="bg-primary transition-all" style={{ width: `${pctA}%` }} />
-              <div className="bg-muted-foreground/30 transition-all" style={{ width: `${pctB}%` }} />
+              {options.map(({ num }, idx) => {
+                const cnt = displayCounts[num] ?? 0;
+                const pct = displayTotal > 0 ? Math.round((cnt / displayTotal) * 100) : 50;
+                return (
+                  <div
+                    key={num}
+                    className={idx === 0 ? "bg-primary transition-all" : "bg-muted-foreground/30 transition-all"}
+                    style={{ width: `${pct}%` }}
+                  />
+                );
+              })}
             </div>
           </div>
         )}

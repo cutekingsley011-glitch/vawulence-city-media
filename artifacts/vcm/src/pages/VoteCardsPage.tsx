@@ -13,15 +13,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { getStoredUser } from "@/lib/user";
-import { Vote, Plus, MessageSquare } from "lucide-react";
+import { Vote, Plus, MessageSquare, Minus } from "lucide-react";
 
 type VoteCard = {
   id: number;
   title: string;
-  optionALabel: string;
-  optionBLabel: string;
-  optionACount: number;
-  optionBCount: number;
+  option1Label: string;
+  option2Label: string;
+  option3Label?: string | null;
+  option4Label?: string | null;
+  option1Count: number;
+  option2Count: number;
+  option3Count?: number | null;
+  option4Count?: number | null;
   isActive: boolean;
   totalVotes: number;
   createdAt: string;
@@ -30,28 +34,46 @@ type VoteCard = {
   imageUrl2?: string | null;
 };
 
+function getOptions(card: VoteCard) {
+  const opts: { num: number; label: string; count: number }[] = [
+    { num: 1, label: card.option1Label, count: card.option1Count },
+    { num: 2, label: card.option2Label, count: card.option2Count },
+  ];
+  if (card.option3Label) opts.push({ num: 3, label: card.option3Label, count: card.option3Count ?? 0 });
+  if (card.option4Label) opts.push({ num: 4, label: card.option4Label, count: card.option4Count ?? 0 });
+  return opts;
+}
+
 function VoteCardItem({ card }: { card: VoteCard }) {
   const castVote = useCastVote();
   const queryClient = useQueryClient();
   const user = getStoredUser();
-  const [voted, setVoted] = useState<"a" | "b" | null>(null);
-  const [optACount, setOptACount] = useState(card.optionACount);
-  const [optBCount, setOptBCount] = useState(card.optionBCount);
-  const [totalVotes, setTotalVotes] = useState(card.totalVotes);
+  const [voted, setVoted] = useState<number | null>(null);
+  const [counts, setCounts] = useState<Record<number, number>>({
+    1: card.option1Count,
+    2: card.option2Count,
+    3: card.option3Count ?? 0,
+    4: card.option4Count ?? 0,
+  });
+  const [total, setTotal] = useState(card.totalVotes);
 
-  function handleVote(choice: "a" | "b") {
+  const options = getOptions(card);
+
+  function handleVote(choice: number) {
     if (voted !== null || !card.isActive) return;
-    const prevA = optACount, prevB = optBCount, prevTotal = totalVotes;
-    if (choice === "a") setOptACount((v) => v + 1);
-    else setOptBCount((v) => v + 1);
-    setTotalVotes((v) => v + 1);
+    const prevCounts = { ...counts };
+    const prevTotal = total;
+    setCounts((c) => ({ ...c, [choice]: (c[choice] ?? 0) + 1 }));
+    setTotal((v) => v + 1);
     setVoted(choice);
 
     castVote.mutate(
       { id: card.id, data: { userId: user?.id ?? "", chosenOption: choice } },
       {
         onError: () => {
-          setOptACount(prevA); setOptBCount(prevB); setTotalVotes(prevTotal); setVoted(null);
+          setCounts(prevCounts);
+          setTotal(prevTotal);
+          setVoted(null);
         },
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListVoteCardsQueryKey() });
@@ -60,9 +82,6 @@ function VoteCardItem({ card }: { card: VoteCard }) {
     );
   }
 
-  const total = totalVotes;
-  const pctA = total > 0 ? Math.round((optACount / total) * 100) : 50;
-  const pctB = total > 0 ? Math.round((optBCount / total) * 100) : 50;
   const showResults = voted !== null || !card.isActive;
 
   return (
@@ -76,38 +95,43 @@ function VoteCardItem({ card }: { card: VoteCard }) {
         )}
       </div>
 
-      {/* Images */}
+      {/* Images for option 1 & 2 */}
       {(card.imageUrl || card.imageUrl2) && (
         <div className="flex gap-2 mb-3">
-          {card.imageUrl && <img src={card.imageUrl} alt={card.optionALabel} className="flex-1 h-24 object-cover rounded-lg" />}
-          {card.imageUrl2 && <img src={card.imageUrl2} alt={card.optionBLabel} className="flex-1 h-24 object-cover rounded-lg" />}
+          {card.imageUrl && <img src={card.imageUrl} alt={card.option1Label} className="flex-1 h-24 object-cover rounded-lg" />}
+          {card.imageUrl2 && <img src={card.imageUrl2} alt={card.option2Label} className="flex-1 h-24 object-cover rounded-lg" />}
         </div>
       )}
 
-      {/* A vs B buttons */}
-      <div className="flex gap-2 mb-3">
-        {(["a", "b"] as const).map((choice) => {
-          const label = choice === "a" ? card.optionALabel : card.optionBLabel;
-          const pct = choice === "a" ? pctA : pctB;
-          const isSelected = voted === choice;
+      {/* Dynamic option buttons */}
+      <div className={`grid gap-2 mb-3 ${options.length === 2 ? "grid-cols-2" : options.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+        {options.map(({ num, label, count }) => {
+          const pct = total > 0 ? Math.round((counts[num] / total) * 100) : Math.round(100 / options.length);
+          const isSelected = voted === num;
 
           return (
             <button
-              key={choice}
+              key={num}
               disabled={voted !== null || !card.isActive}
-              onClick={() => handleVote(choice)}
-              className={`flex-1 relative overflow-hidden rounded-lg border py-3 text-sm font-semibold transition-all text-center ${
+              onClick={() => handleVote(num)}
+              className={`relative overflow-hidden rounded-lg border py-3 text-sm font-semibold transition-all text-center ${
                 isSelected
                   ? "border-primary bg-primary/10 text-primary"
                   : voted !== null || !card.isActive
                   ? "border-border bg-muted/30 text-muted-foreground"
                   : "border-border hover:border-primary hover:bg-primary/5"
               }`}
-              data-testid={`vote-option-${card.id}-${choice}`}
+              data-testid={`vote-option-${card.id}-${num}`}
             >
-              {label}
               {showResults && (
-                <div className="text-xs font-bold mt-0.5 opacity-70">{pct}%</div>
+                <div
+                  className="absolute inset-0 bg-primary/8 transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              )}
+              <span className="relative">{label}</span>
+              {showResults && (
+                <div className="relative text-xs font-bold mt-0.5 opacity-70">{pct}%</div>
               )}
             </button>
           );
@@ -134,28 +158,36 @@ function VoteCardItem({ card }: { card: VoteCard }) {
 
 function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
   const [title, setTitle] = useState("");
-  const [optA, setOptA] = useState("");
-  const [optB, setOptB] = useState("");
-  const [imgA, setImgA] = useState("");
-  const [imgB, setImgB] = useState("");
+  const [numOptions, setNumOptions] = useState(2);
+  const [opts, setOpts] = useState(["", "", "", ""]);
+  const [img1, setImg1] = useState("");
+  const [img2, setImg2] = useState("");
   const [error, setError] = useState("");
   const createVoteCard = useCreateVoteCard();
   const queryClient = useQueryClient();
+
+  function setOpt(idx: number, val: string) {
+    setOpts((prev) => { const next = [...prev]; next[idx] = val; return next; });
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!title.trim()) { setError("Title is required."); return; }
-    if (!optA.trim() || !optB.trim()) { setError("Both options are required."); return; }
+    if (!opts[0].trim() || !opts[1].trim()) { setError("Options 1 and 2 are required."); return; }
+    if (numOptions >= 3 && !opts[2].trim()) { setError("Option 3 label is required."); return; }
+    if (numOptions >= 4 && !opts[3].trim()) { setError("Option 4 label is required."); return; }
 
     createVoteCard.mutate(
       {
         data: {
           title: title.trim(),
-          optionALabel: optA.trim(),
-          optionBLabel: optB.trim(),
-          imageUrl: imgA.trim() || undefined,
-          imageUrl2: imgB.trim() || undefined,
+          option1Label: opts[0].trim(),
+          option2Label: opts[1].trim(),
+          option3Label: numOptions >= 3 ? opts[2].trim() : undefined,
+          option4Label: numOptions >= 4 ? opts[3].trim() : undefined,
+          imageUrl: img1.trim() || undefined,
+          imageUrl2: img2.trim() || undefined,
         },
       },
       {
@@ -171,22 +203,43 @@ function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
   return (
     <form onSubmit={handleSubmit} className="bg-white border border-border rounded-xl p-4 space-y-3">
       <h3 className="font-bold text-sm">Create Vote Card</h3>
+
       <div className="space-y-1">
         <Label>Title / Question</Label>
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Who would you pick?" data-testid="input-vote-title" />
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
-          <Label>Option A</Label>
-          <Input value={optA} onChange={(e) => setOptA(e.target.value)} placeholder="Option A" data-testid="input-vote-option-a" />
-          <Input value={imgA} onChange={(e) => setImgA(e.target.value)} placeholder="Image URL (optional)" className="text-xs" />
-        </div>
-        <div className="space-y-1">
-          <Label>Option B</Label>
-          <Input value={optB} onChange={(e) => setOptB(e.target.value)} placeholder="Option B" data-testid="input-vote-option-b" />
-          <Input value={imgB} onChange={(e) => setImgB(e.target.value)} placeholder="Image URL (optional)" className="text-xs" />
-        </div>
+
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-muted-foreground">Options:</span>
+        {[2, 3, 4].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => setNumOptions(n)}
+            className={`w-8 h-8 rounded-full text-sm font-bold border transition-colors ${numOptions === n ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary"}`}
+          >
+            {n}
+          </button>
+        ))}
       </div>
+
+      <div className="space-y-2">
+        {[0, 1, 2, 3].slice(0, numOptions).map((idx) => (
+          <div key={idx} className="flex items-center gap-2">
+            <span className="text-xs font-bold text-muted-foreground w-6 shrink-0">#{idx + 1}</span>
+            <Input
+              value={opts[idx]}
+              onChange={(e) => setOpt(idx, e.target.value)}
+              placeholder={`Option ${idx + 1} label`}
+              data-testid={`input-vote-option-${idx + 1}`}
+              className="flex-1"
+            />
+            {idx === 0 && <Input value={img1} onChange={(e) => setImg1(e.target.value)} placeholder="Image URL" className="flex-1 text-xs" />}
+            {idx === 1 && <Input value={img2} onChange={(e) => setImg2(e.target.value)} placeholder="Image URL" className="flex-1 text-xs" />}
+          </div>
+        ))}
+      </div>
+
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={createVoteCard.isPending} data-testid="button-create-vote-card">
@@ -202,6 +255,7 @@ export default function VoteCardsPage() {
   const [showAll, setShowAll] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const { data: cards, isLoading } = useListVoteCards(showAll ? { all: true } : undefined);
+  const user = getStoredUser();
 
   return (
     <div className="max-w-2xl mx-auto px-3 py-4">
@@ -213,10 +267,12 @@ export default function VoteCardsPage() {
           </h1>
           <p className="text-xs text-muted-foreground">Have your say on hot topics</p>
         </div>
-        <Button size="sm" onClick={() => setShowCreate(!showCreate)} data-testid="button-new-vote-card">
-          <Plus className="w-4 h-4 mr-1" />
-          New
-        </Button>
+        {user && (
+          <Button size="sm" onClick={() => setShowCreate(!showCreate)} data-testid="button-new-vote-card">
+            {showCreate ? <Minus className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+            {showCreate ? "Cancel" : "New"}
+          </Button>
+        )}
       </div>
 
       {showCreate && (
@@ -253,7 +309,7 @@ export default function VoteCardsPage() {
         </div>
       ) : (
         <div className="space-y-3" data-testid="vote-cards-list">
-          {cards.map((card) => <VoteCardItem key={card.id} card={card} />)}
+          {(cards as VoteCard[]).map((card) => <VoteCardItem key={card.id} card={card} />)}
         </div>
       )}
     </div>

@@ -8,7 +8,6 @@ import {
   siteVisitsTable,
   breakingNewsTable,
   voteCardsTable,
-  goatNomineesTable,
 } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import { SetBreakingNewsBannerBody } from "@workspace/api-zod";
@@ -30,10 +29,6 @@ router.get("/admin/stats", async (_req, res) => {
     .from(gistsTable)
     .where(eq(gistsTable.status, "pending"));
   const [voteCards] = await db.select({ cnt: count() }).from(voteCardsTable);
-  const [pendingGoat] = await db
-    .select({ cnt: count() })
-    .from(goatNomineesTable)
-    .where(eq(goatNomineesTable.status, "pending"));
 
   res.json({
     totalVisitors: Number(visitors?.cnt ?? 0),
@@ -43,7 +38,6 @@ router.get("/admin/stats", async (_req, res) => {
     totalComments: Number(comments?.cnt ?? 0),
     pendingGists: Number(pendingGists?.cnt ?? 0),
     totalVoteCards: Number(voteCards?.cnt ?? 0),
-    pendingGoatNominees: Number(pendingGoat?.cnt ?? 0),
   });
 });
 

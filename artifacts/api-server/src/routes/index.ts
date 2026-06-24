@@ -9,7 +9,6 @@ import usersRouter from "./users";
 import visitsRouter from "./visits";
 import adminRouter from "./admin";
 import voteCardsRouter from "./vote_cards";
-import goatRouter from "./goat";
 import trendingRouter from "./trending";
 import leaderboardRouter from "./leaderboard";
 
@@ -25,7 +24,6 @@ router.use(usersRouter);
 router.use(visitsRouter);
 router.use(adminRouter);
 router.use(voteCardsRouter);
-router.use(goatRouter);
 router.use(trendingRouter);
 router.use(leaderboardRouter);
 

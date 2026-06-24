@@ -4,7 +4,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
 import { TopNav, BottomNav } from "@/components/Navigation";
-import BreakingTicker from "@/components/BreakingTicker";
 import JoinModal from "@/components/JoinModal";
 import HomePage from "@/pages/HomePage";
 import PostPage from "@/pages/PostPage";
@@ -14,7 +13,6 @@ import AdminPage from "@/pages/AdminPage";
 import VoteCardsPage from "@/pages/VoteCardsPage";
 import VoteCardDetailPage from "@/pages/VoteCardDetailPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
-import GoatPage from "@/pages/GoatPage";
 import NotFound from "@/pages/not-found";
 import { useTrackVisit } from "@workspace/api-client-react";
 import { getStoredUser } from "@/lib/user";
@@ -26,17 +24,14 @@ function AppShell() {
   const trackVisit = useTrackVisit();
 
   useEffect(() => {
-    // Track visit once per session
     if (!sessionStorage.getItem("vcm_visited")) {
       trackVisit.mutate(undefined, {
         onSuccess: () => sessionStorage.setItem("vcm_visited", "1"),
       });
     }
 
-    // Show join modal if user not registered
     const user = getStoredUser();
     if (!user) {
-      // Small delay so page renders first
       setTimeout(() => setShowJoin(true), 500);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -46,9 +41,7 @@ function AppShell() {
     <>
       <JoinModal open={showJoin} onJoined={() => setShowJoin(false)} />
       <TopNav />
-      <BreakingTicker />
 
-      {/* Main content — padded for top nav on desktop, bottom nav on mobile */}
       <main className="min-h-screen bg-background pt-0 md:pt-14 pb-20 md:pb-4">
         <Switch>
           <Route path="/" component={HomePage} />
@@ -56,9 +49,9 @@ function AppShell() {
           <Route path="/gists" component={GistsPage} />
           <Route path="/vote-cards/:id" component={VoteCardDetailPage} />
           <Route path="/vote-cards" component={VoteCardsPage} />
-          <Route path="/leaderboard" component={LeaderboardPage} />
-          <Route path="/goat" component={GoatPage} />
           <Route path="/polls" component={VoteCardsPage} />
+          <Route path="/leaderboard" component={LeaderboardPage} />
+          <Route path="/goat" component={VoteCardsPage} />
           <Route path="/marketplace">
             <ComingSoonPage title="Marketplace" description="Buy, sell, and connect with vendors across Nigeria. Coming soon." />
           </Route>

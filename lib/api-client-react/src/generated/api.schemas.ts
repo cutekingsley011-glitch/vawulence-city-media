@@ -172,7 +172,6 @@ export interface AdminStats {
   totalComments: number;
   pendingGists: number;
   totalVoteCards: number;
-  pendingGoatNominees: number;
 }
 
 export interface VoteCard {
@@ -182,10 +181,18 @@ export interface VoteCard {
   imageUrl?: string | null;
   /** @nullable */
   imageUrl2?: string | null;
-  optionALabel: string;
-  optionBLabel: string;
-  optionACount: number;
-  optionBCount: number;
+  option1Label: string;
+  option2Label: string;
+  /** @nullable */
+  option3Label?: string | null;
+  /** @nullable */
+  option4Label?: string | null;
+  option1Count: number;
+  option2Count: number;
+  /** @nullable */
+  option3Count?: number | null;
+  /** @nullable */
+  option4Count?: number | null;
   isActive: boolean;
   createdAt: string;
   totalVotes: number;
@@ -199,46 +206,54 @@ export interface VoteCardDetail {
   imageUrl?: string | null;
   /** @nullable */
   imageUrl2?: string | null;
-  optionALabel: string;
-  optionBLabel: string;
-  optionACount: number;
-  optionBCount: number;
+  option1Label: string;
+  option2Label: string;
+  /** @nullable */
+  option3Label?: string | null;
+  /** @nullable */
+  option4Label?: string | null;
+  option1Count: number;
+  option2Count: number;
+  /** @nullable */
+  option3Count?: number | null;
+  /** @nullable */
+  option4Count?: number | null;
   isActive: boolean;
   createdAt: string;
   totalVotes: number;
   commentCount?: number;
   /** @nullable */
-  userVote: string | null;
+  userVote: number | null;
 }
 
 export interface VoteCardInput {
   title: string;
   imageUrl?: string;
   imageUrl2?: string;
-  optionALabel: string;
-  optionBLabel: string;
+  option1Label: string;
+  option2Label: string;
+  option3Label?: string;
+  option4Label?: string;
 }
 
 export interface VoteCardUpdate {
   title?: string;
   imageUrl?: string;
   imageUrl2?: string;
-  optionALabel?: string;
-  optionBLabel?: string;
+  option1Label?: string;
+  option2Label?: string;
+  option3Label?: string;
+  option4Label?: string;
   isActive?: boolean;
 }
 
-export type VoteCardVoteInputChosenOption = typeof VoteCardVoteInputChosenOption[keyof typeof VoteCardVoteInputChosenOption];
-
-
-export const VoteCardVoteInputChosenOption = {
-  a: 'a',
-  b: 'b',
-} as const;
-
 export interface VoteCardVoteInput {
   userId: string;
-  chosenOption: VoteCardVoteInputChosenOption;
+  /**
+     * @minimum 1
+     * @maximum 4
+     */
+  chosenOption: number;
 }
 
 export type TrendingItemType = typeof TrendingItemType[keyof typeof TrendingItemType];
@@ -273,50 +288,6 @@ export interface LeaderboardEntry {
   voteCount: number;
 }
 
-export interface GoatCategory {
-  id: number;
-  name: string;
-  createdAt: string;
-}
-
-export interface GoatCategoryInput {
-  name: string;
-}
-
-export interface GoatNominee {
-  id: number;
-  goatCategoryId: number;
-  name: string;
-  /** @nullable */
-  photoUrl?: string | null;
-  /** @nullable */
-  description?: string | null;
-  voteCount: number;
-  status: string;
-  createdAt: string;
-}
-
-export interface GoatNomineeInput {
-  goatCategoryId: number;
-  name: string;
-  photoUrl?: string;
-  description?: string;
-  submittedBy?: string;
-}
-
-export interface GoatVoteInput {
-  userId: string;
-  nomineeId: number;
-}
-
-export interface GoatCategoryWithNominees {
-  id: number;
-  name: string;
-  nominees: GoatNominee[];
-  /** @nullable */
-  userVotedNomineeId: number | null;
-}
-
 export type ListPostsParams = {
 category?: string;
 limit?: number;
@@ -342,9 +313,5 @@ userId?: string;
 
 export type GetTrendingParams = {
 limit?: number;
-};
-
-export type ListGoatNomineesParams = {
-userId?: string;
 };
 

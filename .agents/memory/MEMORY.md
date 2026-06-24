@@ -1,3 +1,3 @@
-- [VCM Vote Card schema](vcm-vote-card-schema.md) — Vote cards are binary A/B (not multi-option); key field names differ from intuition.
-- [VCM GoatNominee API](vcm-goat-api.md) — useListGoatNominees returns GoatCategoryWithNominees object, not array; GoatVoteInput requires both userId AND nomineeId.
+- [VCM Vote Card schema](vcm-vote-card-schema.md) — Vote cards use option1–4 naming (not A/B); options 3 & 4 are nullable; chosenOption is integer 1–4.
 - [VCM OpenAPI type pitfall](vcm-openapi-types.md) — Always read actual openapi.yaml schema shapes before writing frontend; generated types may not match intuition.
+- [VCM goat.ts stub](vcm-goat-stub.md) — goat.ts is kept as an empty Router stub so routes/index.ts import doesn't break; GOAT feature fully removed from DB/API/frontend.

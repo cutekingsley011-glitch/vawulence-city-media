@@ -9,7 +9,7 @@ export const voteCardVotesTable = pgTable(
       .notNull()
       .references(() => voteCardsTable.id, { onDelete: "cascade" }),
     userId: text("user_id").notNull(),
-    chosenOption: text("chosen_option").notNull(), // 'a' | 'b'
+    chosenOption: integer("chosen_option").notNull(), // 1 | 2 | 3 | 4
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [unique("vote_card_votes_unique").on(t.voteCardId, t.userId)]
