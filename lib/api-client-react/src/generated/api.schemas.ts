@@ -95,7 +95,10 @@ export interface ReactionInput {
 
 export interface Comment {
   id: number;
-  postId: number;
+  /** @nullable */
+  postId?: number | null;
+  /** @nullable */
+  voteCardId?: number | null;
   /** @nullable */
   userId?: string | null;
   /** @nullable */
@@ -150,12 +153,15 @@ export interface User {
   email: string;
   commentCount?: number;
   voteCount?: number;
+  totalPoints?: number;
+  badge?: string;
   createdAt: string;
 }
 
 export interface UserInput {
   name: string;
   email: string;
+  referredBy?: string;
 }
 
 export interface AdminStats {
@@ -165,6 +171,150 @@ export interface AdminStats {
   totalGistsPublished: number;
   totalComments: number;
   pendingGists: number;
+  totalVoteCards: number;
+  pendingGoatNominees: number;
+}
+
+export interface VoteCard {
+  id: number;
+  title: string;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  imageUrl2?: string | null;
+  optionALabel: string;
+  optionBLabel: string;
+  optionACount: number;
+  optionBCount: number;
+  isActive: boolean;
+  createdAt: string;
+  totalVotes: number;
+  commentCount?: number;
+}
+
+export interface VoteCardDetail {
+  id: number;
+  title: string;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  imageUrl2?: string | null;
+  optionALabel: string;
+  optionBLabel: string;
+  optionACount: number;
+  optionBCount: number;
+  isActive: boolean;
+  createdAt: string;
+  totalVotes: number;
+  commentCount?: number;
+  /** @nullable */
+  userVote: string | null;
+}
+
+export interface VoteCardInput {
+  title: string;
+  imageUrl?: string;
+  imageUrl2?: string;
+  optionALabel: string;
+  optionBLabel: string;
+}
+
+export interface VoteCardUpdate {
+  title?: string;
+  imageUrl?: string;
+  imageUrl2?: string;
+  optionALabel?: string;
+  optionBLabel?: string;
+  isActive?: boolean;
+}
+
+export type VoteCardVoteInputChosenOption = typeof VoteCardVoteInputChosenOption[keyof typeof VoteCardVoteInputChosenOption];
+
+
+export const VoteCardVoteInputChosenOption = {
+  a: 'a',
+  b: 'b',
+} as const;
+
+export interface VoteCardVoteInput {
+  userId: string;
+  chosenOption: VoteCardVoteInputChosenOption;
+}
+
+export type TrendingItemType = typeof TrendingItemType[keyof typeof TrendingItemType];
+
+
+export const TrendingItemType = {
+  post: 'post',
+  vote_card: 'vote_card',
+} as const;
+
+export interface TrendingItem {
+  type: TrendingItemType;
+  id: number;
+  title: string;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  category?: string | null;
+  engagementScore: number;
+  createdAt: string;
+  /** @nullable */
+  excerpt?: string | null;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  id: string;
+  name: string;
+  totalPoints: number;
+  badge: string;
+  commentCount: number;
+  voteCount: number;
+}
+
+export interface GoatCategory {
+  id: number;
+  name: string;
+  createdAt: string;
+}
+
+export interface GoatCategoryInput {
+  name: string;
+}
+
+export interface GoatNominee {
+  id: number;
+  goatCategoryId: number;
+  name: string;
+  /** @nullable */
+  photoUrl?: string | null;
+  /** @nullable */
+  description?: string | null;
+  voteCount: number;
+  status: string;
+  createdAt: string;
+}
+
+export interface GoatNomineeInput {
+  goatCategoryId: number;
+  name: string;
+  photoUrl?: string;
+  description?: string;
+  submittedBy?: string;
+}
+
+export interface GoatVoteInput {
+  userId: string;
+  nomineeId: number;
+}
+
+export interface GoatCategoryWithNominees {
+  id: number;
+  name: string;
+  nominees: GoatNominee[];
+  /** @nullable */
+  userVotedNomineeId: number | null;
 }
 
 export type ListPostsParams = {
@@ -177,5 +327,24 @@ export type ListPublicGistsParams = {
 category?: string;
 limit?: number;
 offset?: number;
+};
+
+export type ListVoteCardsParams = {
+/**
+ * If true, include inactive cards (admin)
+ */
+all?: boolean;
+};
+
+export type GetVoteCardParams = {
+userId?: string;
+};
+
+export type GetTrendingParams = {
+limit?: number;
+};
+
+export type ListGoatNomineesParams = {
+userId?: string;
 };
 

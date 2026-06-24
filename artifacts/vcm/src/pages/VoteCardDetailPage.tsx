@@ -1,0 +1,228 @@
+import { useState } from "react";
+import { useParams, Link } from "wouter";
+import {
+  useGetVoteCard,
+  useCastVote,
+  useListVoteCardComments,
+  useCreateVoteCardComment,
+  useLikeComment,
+  getGetVoteCardQueryKey,
+  getListVoteCardCommentsQueryKey,
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { getStoredUser } from "@/lib/user";
+import { Vote, ArrowLeft, Heart } from "lucide-react";
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+export default function VoteCardDetailPage() {
+  const params = useParams<{ id: string }>();
+  const id = Number(params.id);
+  const queryClient = useQueryClient();
+  const user = getStoredUser();
+
+  const { data: card, isLoading: cardLoading } = useGetVoteCard(id);
+  const { data: comments, isLoading: commentsLoading } = useListVoteCardComments(id);
+
+  const castVote = useCastVote();
+  const createComment = useCreateVoteCardComment();
+  const likeComment = useLikeComment();
+
+  const [voted, setVoted] = useState<"a" | "b" | null>(null);
+  const [optACount, setOptACount] = useState<number | null>(null);
+  const [optBCount, setOptBCount] = useState<number | null>(null);
+  const [totalOverride, setTotalOverride] = useState<number | null>(null);
+  const [commentText, setCommentText] = useState("");
+
+  const displayA = optACount ?? card?.optionACount ?? 0;
+  const displayB = optBCount ?? card?.optionBCount ?? 0;
+  const displayTotal = totalOverride ?? card?.totalVotes ?? 0;
+  const pctA = displayTotal > 0 ? Math.round((displayA / displayTotal) * 100) : 50;
+  const pctB = displayTotal > 0 ? Math.round((displayB / displayTotal) * 100) : 50;
+  const showResults = voted !== null || !card?.isActive;
+
+  function handleVote(choice: "a" | "b") {
+    if (voted !== null || !card?.isActive) return;
+    if (choice === "a") { setOptACount((card?.optionACount ?? 0) + 1); setOptBCount(card?.optionBCount ?? 0); }
+    else { setOptACount(card?.optionACount ?? 0); setOptBCount((card?.optionBCount ?? 0) + 1); }
+    setTotalOverride((card?.totalVotes ?? 0) + 1);
+    setVoted(choice);
+
+    castVote.mutate(
+      { id, data: { userId: user?.id ?? "", chosenOption: choice } },
+      {
+        onError: () => { setOptACount(null); setOptBCount(null); setTotalOverride(null); setVoted(null); },
+        onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetVoteCardQueryKey(id) }); },
+      }
+    );
+  }
+
+  function handleComment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!commentText.trim() || !user) return;
+    createComment.mutate(
+      { voteCardId: id, data: { content: commentText.trim(), userId: user.id } },
+      {
+        onSuccess: () => {
+          setCommentText("");
+          queryClient.invalidateQueries({ queryKey: getListVoteCardCommentsQueryKey(id) });
+        },
+      }
+    );
+  }
+
+  if (cardLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-3 py-4 space-y-4">
+        <Skeleton className="h-8 w-32 rounded" />
+        <Skeleton className="h-48 rounded-xl" />
+      </div>
+    );
+  }
+
+  if (!card) {
+    return (
+      <div className="max-w-2xl mx-auto px-3 py-4 text-center py-16">
+        <p className="text-muted-foreground">Vote card not found.</p>
+        <Link href="/vote-cards">
+          <Button variant="outline" size="sm" className="mt-4">← Back</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto px-3 py-4">
+      <Link href="/vote-cards">
+        <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary mb-4">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Vote Cards
+        </button>
+      </Link>
+
+      <div className="bg-white border border-border rounded-xl p-4 mb-4">
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <h2 className="font-bold text-base leading-snug flex-1">{card.title}</h2>
+          {card.isActive ? (
+            <Badge className="bg-green-100 text-green-700 border-0">Live</Badge>
+          ) : (
+            <Badge variant="secondary">Closed</Badge>
+          )}
+        </div>
+
+        {/* Images */}
+        {(card.imageUrl || card.imageUrl2) && (
+          <div className="flex gap-2 mb-3">
+            {card.imageUrl && <img src={card.imageUrl} alt={card.optionALabel} className="flex-1 h-28 object-cover rounded-lg" />}
+            {card.imageUrl2 && <img src={card.imageUrl2} alt={card.optionBLabel} className="flex-1 h-28 object-cover rounded-lg" />}
+          </div>
+        )}
+
+        {/* A vs B vote buttons */}
+        <div className="flex gap-2 mb-4">
+          {(["a", "b"] as const).map((choice) => {
+            const label = choice === "a" ? card.optionALabel : card.optionBLabel;
+            const pct = choice === "a" ? pctA : pctB;
+            const isSelected = voted === choice;
+
+            return (
+              <button
+                key={choice}
+                disabled={voted !== null || !card.isActive}
+                onClick={() => handleVote(choice)}
+                className={`flex-1 relative overflow-hidden rounded-lg border py-4 text-sm font-semibold transition-all text-center ${
+                  isSelected
+                    ? "border-primary bg-primary/10 text-primary"
+                    : voted !== null || !card.isActive
+                    ? "border-border bg-muted/30 text-muted-foreground"
+                    : "border-border hover:border-primary hover:bg-primary/5"
+                }`}
+              >
+                {label}
+                {showResults && (
+                  <div className="text-xs font-bold mt-1 opacity-80">{pct}%</div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {showResults && (
+          <div className="mb-3">
+            <div className="flex rounded-full overflow-hidden h-2">
+              <div className="bg-primary transition-all" style={{ width: `${pctA}%` }} />
+              <div className="bg-muted-foreground/30 transition-all" style={{ width: `${pctB}%` }} />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <Vote className="w-3.5 h-3.5" />
+          <span>{displayTotal.toLocaleString()} total votes</span>
+        </div>
+      </div>
+
+      {/* Comments */}
+      <div>
+        <h3 className="font-bold text-sm mb-3">Discussion</h3>
+
+        {user ? (
+          <form onSubmit={handleComment} className="mb-4">
+            <Textarea
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Share your thoughts..."
+              rows={2}
+              className="mb-2"
+              data-testid="input-vote-comment"
+            />
+            <Button type="submit" size="sm" disabled={!commentText.trim() || createComment.isPending} data-testid="button-submit-vote-comment">
+              {createComment.isPending ? "Posting..." : "Comment"}
+            </Button>
+          </form>
+        ) : (
+          <p className="text-sm text-muted-foreground mb-4">Join the community to comment.</p>
+        )}
+
+        {commentsLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
+          </div>
+        ) : !comments?.length ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Start the discussion!</p>
+        ) : (
+          <div className="space-y-3" data-testid="vote-card-comments">
+            {comments.map((c) => (
+              <div key={c.id} className="border border-border rounded-xl p-3 bg-white">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-semibold text-foreground">{c.userName ?? "Anonymous"}</span>
+                  <span className="text-xs text-muted-foreground">{timeAgo(c.createdAt)}</span>
+                </div>
+                <p className="text-sm text-foreground leading-relaxed">{c.content}</p>
+                <button
+                  className="flex items-center gap-1 mt-2 text-xs text-muted-foreground hover:text-primary"
+                  onClick={() => likeComment.mutate({ id: c.id })}
+                >
+                  <Heart className="w-3 h-3" />
+                  {c.likeCount}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

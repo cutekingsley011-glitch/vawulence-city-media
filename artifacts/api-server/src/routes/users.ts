@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { RegisterUserBody } from "@workspace/api-zod";
 import { randomUUID } from "crypto";
+import { getBadge, awardPoints } from "../lib/points";
 
 const router = Router();
 
@@ -14,6 +15,8 @@ function toDto(u: typeof usersTable.$inferSelect) {
     email: u.email,
     commentCount: u.commentCount,
     voteCount: u.voteCount,
+    totalPoints: u.totalPoints,
+    badge: getBadge(u.totalPoints),
     createdAt: u.createdAt.toISOString(),
   };
 }
@@ -38,14 +41,22 @@ router.post("/users/register", async (req, res) => {
     return;
   }
 
+  const referredBy = (body.data as Record<string, unknown>)["referredBy"] as string | undefined;
+
   const [user] = await db
     .insert(usersTable)
     .values({
       id: randomUUID(),
       name: body.data.name,
       email: body.data.email,
+      referredBy: referredBy ?? null,
     })
     .returning();
+
+  // Award +5 points to referrer if referral link was used
+  if (referredBy) {
+    await awardPoints(referredBy, 5).catch(() => {});
+  }
 
   res.json(toDto(user));
 });

@@ -6,3 +6,8 @@ export * from "./comments";
 export * from "./gists";
 export * from "./site_visits";
 export * from "./breaking_news";
+export * from "./vote_cards";
+export * from "./vote_card_votes";
+export * from "./goat_categories";
+export * from "./goat_nominees";
+export * from "./goat_votes";

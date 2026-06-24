@@ -1,0 +1,43 @@
+Continue building on the existing Vawulence City Media app. This is Stage 2 — add the following on top of what already exists. Do not remove or rewrite existing Home, Gists, or Admin functionality; extend it.
+
+REPLACE THE "POLLS" PLACEHOLDER WITH A FULL "VOTE CARD" SYSTEM:
+This single system powers Daily Polls, Courtroom debates, Red Flag Detector, Love or Money, Hot or Not, and Who Wore It Better — all using the same underlying structure, just different content per post.
+
+Vote Card data model in Supabase:
+- vote_cards (id, title/scenario_text, image_url [optional], image_url_2 [optional, for two-photo comparisons like "Who Wore It Better"], option_a_label, option_b_label, option_a_count, option_b_count, created_at, is_active)
+- vote_card_votes (id, vote_card_id, user_id, chosen_option [a or b], created_at) — one vote per user per card, enforce uniqueness
+
+Vote Card public page:
+- Shows the scenario/title and image(s)
+- Two large vote buttons with admin-set custom labels (e.g. "Guilty ✅" / "Not Guilty ❌", or "Red Flag 🚩" / "Green Flag ✅", or "Hot 🔥" / "Not my spec 😭")
+- After voting, show live percentage split between the two options (e.g. "68% Guilty / 32% Not Guilty") and switch the buttons to a results display so the user can't vote twice
+- Comment section below, identical to the post comment system already built (likes sort to top, one level of replies allowed) — this is where "comments explode" and arguments happen
+- "Share to WhatsApp" button like the post page already has
+
+Vote Card list page (this is what "Polls" in the bottom nav now opens):
+- Feed of all active vote cards, newest first, each showing scenario text/image preview and current vote count
+- Tapping one opens the full Vote Card page above
+
+Admin side — add a "Create Vote Card" tool:
+- Form: scenario text, optional image(s), option A label, option B label
+- List of all vote cards with vote tallies, ability to deactivate/delete
+
+TRENDING TAB ON HOME:
+- Add a "Trending" tab next to the existing category filter tabs on the Home page
+- Trending shows posts AND vote cards ranked by total engagement (reactions + comments + votes combined) over the last 7 days, highest first
+- This is a filter/view on existing content, not a separate page
+
+BADGES + LEADERBOARD ("Vawulence Score"):
+- Add a points system: +1 point per comment posted, +1 per vote cast on a vote card, +2 per gist submitted (regardless of approval), +5 per referral (referral system can be a simple "?ref=user_id" link parameter for now that credits the referring user when a new signup uses it)
+- Add total_points column to the users table, increment automatically on each qualifying action
+- 5 badge tiers based on point thresholds (you decide reasonable thresholds, e.g. 0-20, 21-75, 76-200, 201-500, 501+): "Lurker", "Gist Monger", "Chief Instigator", "Street Governor", "Vawulence Legend"
+- Display the user's current badge next to their name wherever their name appears (comments, vote card activity)
+- New Leaderboard page (accessible from "More" menu): ranked list of all users by total_points, showing name, badge, and point count, top 50
+
+WHO'S YOUR GOAT (new page, accessible from "More" menu):
+- Admin-defined categories (e.g. "Best DJ", "Best Barber", "Best MC", "Best Makeup Artist" — admin can add/edit categories)
+- Within each category, users can submit a nominee (name + optional photo + optional short description) — nominees go into an admin approval queue before appearing publicly, same pattern as Gists
+- Once approved, other users can vote for their favorite nominee within that category (one vote per user per category)
+- Show a ranked list per category, highest votes first
+
+Keep all new components modular and consistent with the existing design system (white/blue branding, same button and card styles already established in Stage 1) so the app feels like one product, not bolted-together pieces.

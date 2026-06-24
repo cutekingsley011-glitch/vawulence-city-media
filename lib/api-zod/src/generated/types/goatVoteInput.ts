@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface UserInput {
-  name: string;
-  email: string;
-  referredBy?: string;
+export interface GoatVoteInput {
+  userId: string;
+  nomineeId: number;
 }

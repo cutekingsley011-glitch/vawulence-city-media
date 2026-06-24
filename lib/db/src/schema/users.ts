@@ -8,6 +8,8 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull().unique(),
   commentCount: integer("comment_count").notNull().default(0),
   voteCount: integer("vote_count").notNull().default(0),
+  totalPoints: integer("total_points").notNull().default(0),
+  referredBy: text("referred_by"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

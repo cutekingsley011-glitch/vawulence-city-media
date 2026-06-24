@@ -11,6 +11,10 @@ import PostPage from "@/pages/PostPage";
 import GistsPage from "@/pages/GistsPage";
 import ComingSoonPage from "@/pages/ComingSoonPage";
 import AdminPage from "@/pages/AdminPage";
+import VoteCardsPage from "@/pages/VoteCardsPage";
+import VoteCardDetailPage from "@/pages/VoteCardDetailPage";
+import LeaderboardPage from "@/pages/LeaderboardPage";
+import GoatPage from "@/pages/GoatPage";
 import NotFound from "@/pages/not-found";
 import { useTrackVisit } from "@workspace/api-client-react";
 import { getStoredUser } from "@/lib/user";
@@ -50,9 +54,11 @@ function AppShell() {
           <Route path="/" component={HomePage} />
           <Route path="/post/:id" component={PostPage} />
           <Route path="/gists" component={GistsPage} />
-          <Route path="/polls">
-            <ComingSoonPage title="Polls" description="Vote on hot topics and see what Nigeria thinks. Coming soon." />
-          </Route>
+          <Route path="/vote-cards/:id" component={VoteCardDetailPage} />
+          <Route path="/vote-cards" component={VoteCardsPage} />
+          <Route path="/leaderboard" component={LeaderboardPage} />
+          <Route path="/goat" component={GoatPage} />
+          <Route path="/polls" component={VoteCardsPage} />
           <Route path="/marketplace">
             <ComingSoonPage title="Marketplace" description="Buy, sell, and connect with vendors across Nigeria. Coming soon." />
           </Route>

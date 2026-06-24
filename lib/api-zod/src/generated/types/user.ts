@@ -12,5 +12,7 @@ export interface User {
   email: string;
   commentCount?: number;
   voteCount?: number;
+  totalPoints?: number;
+  badge?: string;
   createdAt: string;
 }

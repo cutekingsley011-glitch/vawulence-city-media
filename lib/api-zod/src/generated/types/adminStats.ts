@@ -13,4 +13,6 @@ export interface AdminStats {
   totalGistsPublished: number;
   totalComments: number;
   pendingGists: number;
+  totalVoteCards: number;
+  pendingGoatNominees: number;
 }

@@ -1,24 +1,25 @@
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Home, FileText, Vote, ShoppingBag, CalendarDays, MoreHorizontal } from "lucide-react";
+import { Home, FileText, Vote, Trophy, Award, MoreHorizontal, ShoppingBag, CalendarDays } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
   { label: "Gists", href: "/gists", icon: FileText },
-  { label: "Polls", href: "/polls", icon: Vote },
-  { label: "Marketplace", href: "/marketplace", icon: ShoppingBag },
-  { label: "Events", href: "/events", icon: CalendarDays },
+  { label: "Vote Cards", href: "/vote-cards", icon: Vote },
+  { label: "GOAT", href: "/goat", icon: Award },
+  { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
 ];
 
 const MORE_ITEMS = [
-  "Connections",
-  "Services",
-  "Ads",
-  "Recruitment",
-  "Leaderboard",
-  "Podcast",
-  "Contests",
+  { label: "Marketplace", href: "/marketplace", icon: ShoppingBag, comingSoon: true },
+  { label: "Events", href: "/events", icon: CalendarDays, comingSoon: true },
+  { label: "Connections", href: null, comingSoon: true },
+  { label: "Services", href: null, comingSoon: true },
+  { label: "Ads", href: null, comingSoon: true },
+  { label: "Recruitment", href: null, comingSoon: true },
+  { label: "Podcast", href: null, comingSoon: true },
+  { label: "Contests", href: null, comingSoon: true },
 ];
 
 function isActive(href: string, location: string) {
@@ -50,7 +51,7 @@ export function TopNav() {
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
-                data-testid={`nav-${label.toLowerCase()}`}
+                data-testid={`nav-${label.toLowerCase().replace(/\s+/g, "-")}`}
               >
                 <Icon className="w-4 h-4" />
                 {label}
@@ -82,6 +83,9 @@ export function BottomNav() {
   const [location] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
 
+  // Bottom nav shows 4 main items + More
+  const bottomItems = NAV_ITEMS.slice(0, 4);
+
   return (
     <>
       <nav
@@ -89,7 +93,7 @@ export function BottomNav() {
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         data-testid="bottom-nav"
       >
-        {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
+        {bottomItems.map(({ label, href, icon: Icon }) => (
           <Link key={href} href={href} className="flex-1">
             <span
               className={`flex flex-col items-center gap-0.5 py-2 text-center cursor-pointer transition-colors ${
@@ -97,7 +101,7 @@ export function BottomNav() {
                   ? "text-primary"
                   : "text-muted-foreground"
               }`}
-              data-testid={`bottom-nav-${label.toLowerCase()}`}
+              data-testid={`bottom-nav-${label.toLowerCase().replace(/\s+/g, "-")}`}
             >
               <Icon className="w-5 h-5" />
               <span className="text-[10px] font-medium leading-none">{label}</span>
@@ -127,16 +131,29 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
           <SheetTitle className="text-left text-base font-bold">More</SheetTitle>
         </SheetHeader>
         <div className="grid grid-cols-3 gap-3">
-          {MORE_ITEMS.map((item) => (
-            <div
-              key={item}
-              className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/60 text-center cursor-pointer hover:bg-muted transition-colors"
-              data-testid={`more-item-${item.toLowerCase()}`}
-            >
-              <span className="text-sm font-medium text-foreground">{item}</span>
-              <span className="text-xs text-muted-foreground mt-0.5">Coming Soon</span>
-            </div>
-          ))}
+          {MORE_ITEMS.map((item) =>
+            item.href && !item.comingSoon ? (
+              <Link key={item.label} href={item.href} onClick={onClose}>
+                <div
+                  className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/60 text-center cursor-pointer hover:bg-muted transition-colors"
+                  data-testid={`more-item-${item.label.toLowerCase()}`}
+                >
+                  <span className="text-sm font-medium text-foreground">{item.label}</span>
+                </div>
+              </Link>
+            ) : (
+              <div
+                key={item.label}
+                className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/60 text-center cursor-pointer hover:bg-muted transition-colors"
+                data-testid={`more-item-${item.label.toLowerCase()}`}
+              >
+                <span className="text-sm font-medium text-foreground">{item.label}</span>
+                {item.comingSoon && (
+                  <span className="text-xs text-muted-foreground mt-0.5">Coming Soon</span>
+                )}
+              </div>
+            )
+          )}
         </div>
       </SheetContent>
     </Sheet>

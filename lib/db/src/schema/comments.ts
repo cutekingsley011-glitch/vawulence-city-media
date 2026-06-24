@@ -1,9 +1,11 @@
 import { pgTable, serial, integer, text, timestamp } from "drizzle-orm/pg-core";
 import { postsTable } from "./posts";
+import { voteCardsTable } from "./vote_cards";
 
 export const commentsTable = pgTable("comments", {
   id: serial("id").primaryKey(),
-  postId: integer("post_id").notNull().references(() => postsTable.id, { onDelete: "cascade" }),
+  postId: integer("post_id").references(() => postsTable.id, { onDelete: "cascade" }),
+  voteCardId: integer("vote_card_id").references(() => voteCardsTable.id, { onDelete: "cascade" }),
   userId: text("user_id"),
   userName: text("user_name"),
   parentCommentId: integer("parent_comment_id"),

@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { commentsTable } from "@workspace/db";
-import { eq, desc, isNull, sql } from "drizzle-orm";
+import { commentsTable, usersTable } from "@workspace/db";
+import { eq, desc, sql, and, isNull, isNotNull } from "drizzle-orm";
 import { ListCommentsParams, CreateCommentParams, CreateCommentBody, LikeCommentParams } from "@workspace/api-zod";
+import { awardPoints } from "../lib/points";
 
 const router = Router();
 
@@ -10,7 +11,8 @@ type CommentRow = typeof commentsTable.$inferSelect;
 
 interface CommentDto {
   id: number;
-  postId: number;
+  postId: number | null;
+  voteCardId: number | null;
   userId: string | null;
   userName: string | null;
   parentCommentId: number | null;
@@ -23,7 +25,8 @@ interface CommentDto {
 function toDto(c: CommentRow, replies: CommentRow[] = []): CommentDto {
   return {
     id: c.id,
-    postId: c.postId,
+    postId: c.postId ?? null,
+    voteCardId: c.voteCardId ?? null,
     userId: c.userId ?? null,
     userName: c.userName ?? null,
     parentCommentId: c.parentCommentId ?? null,
@@ -45,7 +48,12 @@ router.get("/posts/:postId/comments", async (req, res) => {
   const all = await db
     .select()
     .from(commentsTable)
-    .where(eq(commentsTable.postId, params.data.postId))
+    .where(
+      and(
+        eq(commentsTable.postId, params.data.postId),
+        isNull(commentsTable.voteCardId)
+      )
+    )
     .orderBy(desc(commentsTable.likeCount), desc(commentsTable.createdAt));
 
   const topLevel = all.filter((c) => c.parentCommentId === null);
@@ -70,15 +78,38 @@ router.post("/posts/:postId/comments", async (req, res) => {
     return;
   }
 
+  // Fetch user name
+  let userName: string | null = null;
+  if (body.data.userId) {
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, body.data.userId))
+      .limit(1);
+    userName = user?.name ?? null;
+  }
+
   const [comment] = await db
     .insert(commentsTable)
     .values({
       postId: params.data.postId,
+      voteCardId: null,
       userId: body.data.userId,
+      userName,
       parentCommentId: body.data.parentCommentId ?? null,
       content: body.data.content,
     })
     .returning();
+
+  // Award +1 point and increment comment count
+  if (body.data.userId) {
+    await awardPoints(body.data.userId, 1).catch(() => {});
+    await db
+      .update(usersTable)
+      .set({ commentCount: sql`${usersTable.commentCount} + 1` })
+      .where(eq(usersTable.id, body.data.userId))
+      .catch(() => {});
+  }
 
   res.status(201).json(toDto(comment));
 });

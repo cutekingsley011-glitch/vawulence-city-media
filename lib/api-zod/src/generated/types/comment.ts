@@ -8,7 +8,10 @@
 
 export interface Comment {
   id: number;
-  postId: number;
+  /** @nullable */
+  postId?: number | null;
+  /** @nullable */
+  voteCardId?: number | null;
   /** @nullable */
   userId?: string | null;
   /** @nullable */

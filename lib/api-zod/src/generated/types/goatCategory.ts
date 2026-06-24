@@ -6,8 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface UserInput {
+export interface GoatCategory {
+  id: number;
   name: string;
-  email: string;
-  referredBy?: string;
+  createdAt: string;
 }

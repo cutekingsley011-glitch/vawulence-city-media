@@ -27,19 +27,36 @@ import type {
   CategoryInput,
   Comment,
   CommentInput,
+  GetTrendingParams,
+  GetVoteCardParams,
   Gist,
   GistInput,
+  GoatCategory,
+  GoatCategoryInput,
+  GoatCategoryWithNominees,
+  GoatNominee,
+  GoatNomineeInput,
+  GoatVoteInput,
   HealthStatus,
+  LeaderboardEntry,
+  ListGoatNomineesParams,
   ListPostsParams,
   ListPublicGistsParams,
+  ListVoteCardsParams,
   Post,
   PostInput,
   PostStats,
   PostUpdate,
   ReactionCounts,
   ReactionInput,
+  TrendingItem,
   User,
-  UserInput
+  UserInput,
+  VoteCard,
+  VoteCardDetail,
+  VoteCardInput,
+  VoteCardUpdate,
+  VoteCardVoteInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1245,6 +1262,155 @@ export const useLikeComment = <TError = ErrorType<unknown>,
       return useMutation(getLikeCommentMutationOptions(options));
     }
 
+export const getListVoteCardCommentsUrl = (voteCardId: number,) => {
+
+
+
+
+  return `/api/vote-cards/${voteCardId}/comments`
+}
+
+/**
+ * @summary List comments for a vote card
+ */
+export const listVoteCardComments = async (voteCardId: number, options?: RequestInit): Promise<Comment[]> => {
+
+  return customFetch<Comment[]>(getListVoteCardCommentsUrl(voteCardId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVoteCardCommentsQueryKey = (voteCardId: number,) => {
+    return [
+    `/api/vote-cards/${voteCardId}/comments`
+    ] as const;
+    }
+
+
+export const getListVoteCardCommentsQueryOptions = <TData = Awaited<ReturnType<typeof listVoteCardComments>>, TError = ErrorType<unknown>>(voteCardId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVoteCardComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVoteCardCommentsQueryKey(voteCardId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVoteCardComments>>> = ({ signal }) => listVoteCardComments(voteCardId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(voteCardId), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVoteCardComments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVoteCardCommentsQueryResult = NonNullable<Awaited<ReturnType<typeof listVoteCardComments>>>
+export type ListVoteCardCommentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List comments for a vote card
+ */
+
+export function useListVoteCardComments<TData = Awaited<ReturnType<typeof listVoteCardComments>>, TError = ErrorType<unknown>>(
+ voteCardId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVoteCardComments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVoteCardCommentsQueryOptions(voteCardId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateVoteCardCommentUrl = (voteCardId: number,) => {
+
+
+
+
+  return `/api/vote-cards/${voteCardId}/comments`
+}
+
+/**
+ * @summary Post a comment on a vote card
+ */
+export const createVoteCardComment = async (voteCardId: number,
+    commentInput: CommentInput, options?: RequestInit): Promise<Comment> => {
+
+  return customFetch<Comment>(getCreateVoteCardCommentUrl(voteCardId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      commentInput,)
+  }
+);}
+
+
+
+
+export const getCreateVoteCardCommentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVoteCardComment>>, TError,{voteCardId: number;data: BodyType<CommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createVoteCardComment>>, TError,{voteCardId: number;data: BodyType<CommentInput>}, TContext> => {
+
+const mutationKey = ['createVoteCardComment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createVoteCardComment>>, {voteCardId: number;data: BodyType<CommentInput>}> = (props) => {
+          const {voteCardId,data} = props ?? {};
+
+          return  createVoteCardComment(voteCardId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateVoteCardCommentMutationResult = NonNullable<Awaited<ReturnType<typeof createVoteCardComment>>>
+    export type CreateVoteCardCommentMutationBody = BodyType<CommentInput>
+    export type CreateVoteCardCommentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Post a comment on a vote card
+ */
+export const useCreateVoteCardComment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVoteCardComment>>, TError,{voteCardId: number;data: BodyType<CommentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createVoteCardComment>>,
+        TError,
+        {voteCardId: number;data: BodyType<CommentInput>},
+        TContext
+      > => {
+      return useMutation(getCreateVoteCardCommentMutationOptions(options));
+    }
+
 export const getListPublicGistsUrl = (params?: ListPublicGistsParams,) => {
   const normalizedParams = new URLSearchParams();
 
@@ -1904,5 +2070,1291 @@ export const useSetBreakingNewsBanner = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getSetBreakingNewsBannerMutationOptions(options));
+    }
+
+export const getListVoteCardsUrl = (params?: ListVoteCardsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/vote-cards?${stringifiedParams}` : `/api/vote-cards`
+}
+
+/**
+ * @summary List active vote cards
+ */
+export const listVoteCards = async (params?: ListVoteCardsParams, options?: RequestInit): Promise<VoteCard[]> => {
+
+  return customFetch<VoteCard[]>(getListVoteCardsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVoteCardsQueryKey = (params?: ListVoteCardsParams,) => {
+    return [
+    `/api/vote-cards`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListVoteCardsQueryOptions = <TData = Awaited<ReturnType<typeof listVoteCards>>, TError = ErrorType<unknown>>(params?: ListVoteCardsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVoteCards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVoteCardsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVoteCards>>> = ({ signal }) => listVoteCards(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVoteCards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVoteCardsQueryResult = NonNullable<Awaited<ReturnType<typeof listVoteCards>>>
+export type ListVoteCardsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active vote cards
+ */
+
+export function useListVoteCards<TData = Awaited<ReturnType<typeof listVoteCards>>, TError = ErrorType<unknown>>(
+ params?: ListVoteCardsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVoteCards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVoteCardsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateVoteCardUrl = () => {
+
+
+
+
+  return `/api/vote-cards`
+}
+
+/**
+ * @summary Create a vote card (admin)
+ */
+export const createVoteCard = async (voteCardInput: VoteCardInput, options?: RequestInit): Promise<VoteCard> => {
+
+  return customFetch<VoteCard>(getCreateVoteCardUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      voteCardInput,)
+  }
+);}
+
+
+
+
+export const getCreateVoteCardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVoteCard>>, TError,{data: BodyType<VoteCardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createVoteCard>>, TError,{data: BodyType<VoteCardInput>}, TContext> => {
+
+const mutationKey = ['createVoteCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createVoteCard>>, {data: BodyType<VoteCardInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createVoteCard(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateVoteCardMutationResult = NonNullable<Awaited<ReturnType<typeof createVoteCard>>>
+    export type CreateVoteCardMutationBody = BodyType<VoteCardInput>
+    export type CreateVoteCardMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a vote card (admin)
+ */
+export const useCreateVoteCard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVoteCard>>, TError,{data: BodyType<VoteCardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createVoteCard>>,
+        TError,
+        {data: BodyType<VoteCardInput>},
+        TContext
+      > => {
+      return useMutation(getCreateVoteCardMutationOptions(options));
+    }
+
+export const getGetVoteCardUrl = (id: number,
+    params?: GetVoteCardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/vote-cards/${id}?${stringifiedParams}` : `/api/vote-cards/${id}`
+}
+
+/**
+ * @summary Get a single vote card with user vote status
+ */
+export const getVoteCard = async (id: number,
+    params?: GetVoteCardParams, options?: RequestInit): Promise<VoteCardDetail> => {
+
+  return customFetch<VoteCardDetail>(getGetVoteCardUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetVoteCardQueryKey = (id: number,
+    params?: GetVoteCardParams,) => {
+    return [
+    `/api/vote-cards/${id}`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetVoteCardQueryOptions = <TData = Awaited<ReturnType<typeof getVoteCard>>, TError = ErrorType<void>>(id: number,
+    params?: GetVoteCardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVoteCard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetVoteCardQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getVoteCard>>> = ({ signal }) => getVoteCard(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getVoteCard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetVoteCardQueryResult = NonNullable<Awaited<ReturnType<typeof getVoteCard>>>
+export type GetVoteCardQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get a single vote card with user vote status
+ */
+
+export function useGetVoteCard<TData = Awaited<ReturnType<typeof getVoteCard>>, TError = ErrorType<void>>(
+ id: number,
+    params?: GetVoteCardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getVoteCard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetVoteCardQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateVoteCardUrl = (id: number,) => {
+
+
+
+
+  return `/api/vote-cards/${id}`
+}
+
+/**
+ * @summary Update a vote card (admin)
+ */
+export const updateVoteCard = async (id: number,
+    voteCardUpdate: VoteCardUpdate, options?: RequestInit): Promise<VoteCard> => {
+
+  return customFetch<VoteCard>(getUpdateVoteCardUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      voteCardUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateVoteCardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVoteCard>>, TError,{id: number;data: BodyType<VoteCardUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateVoteCard>>, TError,{id: number;data: BodyType<VoteCardUpdate>}, TContext> => {
+
+const mutationKey = ['updateVoteCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateVoteCard>>, {id: number;data: BodyType<VoteCardUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateVoteCard(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateVoteCardMutationResult = NonNullable<Awaited<ReturnType<typeof updateVoteCard>>>
+    export type UpdateVoteCardMutationBody = BodyType<VoteCardUpdate>
+    export type UpdateVoteCardMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a vote card (admin)
+ */
+export const useUpdateVoteCard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateVoteCard>>, TError,{id: number;data: BodyType<VoteCardUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateVoteCard>>,
+        TError,
+        {id: number;data: BodyType<VoteCardUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateVoteCardMutationOptions(options));
+    }
+
+export const getDeleteVoteCardUrl = (id: number,) => {
+
+
+
+
+  return `/api/vote-cards/${id}`
+}
+
+/**
+ * @summary Delete a vote card (admin)
+ */
+export const deleteVoteCard = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteVoteCardUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteVoteCardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVoteCard>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteVoteCard>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteVoteCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteVoteCard>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteVoteCard(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteVoteCardMutationResult = NonNullable<Awaited<ReturnType<typeof deleteVoteCard>>>
+
+    export type DeleteVoteCardMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a vote card (admin)
+ */
+export const useDeleteVoteCard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVoteCard>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteVoteCard>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteVoteCardMutationOptions(options));
+    }
+
+export const getCastVoteUrl = (id: number,) => {
+
+
+
+
+  return `/api/vote-cards/${id}/vote`
+}
+
+/**
+ * @summary Cast a vote on a vote card
+ */
+export const castVote = async (id: number,
+    voteCardVoteInput: VoteCardVoteInput, options?: RequestInit): Promise<VoteCardDetail> => {
+
+  return customFetch<VoteCardDetail>(getCastVoteUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      voteCardVoteInput,)
+  }
+);}
+
+
+
+
+export const getCastVoteMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof castVote>>, TError,{id: number;data: BodyType<VoteCardVoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof castVote>>, TError,{id: number;data: BodyType<VoteCardVoteInput>}, TContext> => {
+
+const mutationKey = ['castVote'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof castVote>>, {id: number;data: BodyType<VoteCardVoteInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  castVote(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CastVoteMutationResult = NonNullable<Awaited<ReturnType<typeof castVote>>>
+    export type CastVoteMutationBody = BodyType<VoteCardVoteInput>
+    export type CastVoteMutationError = ErrorType<void>
+
+    /**
+ * @summary Cast a vote on a vote card
+ */
+export const useCastVote = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof castVote>>, TError,{id: number;data: BodyType<VoteCardVoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof castVote>>,
+        TError,
+        {id: number;data: BodyType<VoteCardVoteInput>},
+        TContext
+      > => {
+      return useMutation(getCastVoteMutationOptions(options));
+    }
+
+export const getGetTrendingUrl = (params?: GetTrendingParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/trending?${stringifiedParams}` : `/api/trending`
+}
+
+/**
+ * @summary Get trending posts and vote cards (last 7 days, by engagement)
+ */
+export const getTrending = async (params?: GetTrendingParams, options?: RequestInit): Promise<TrendingItem[]> => {
+
+  return customFetch<TrendingItem[]>(getGetTrendingUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTrendingQueryKey = (params?: GetTrendingParams,) => {
+    return [
+    `/api/trending`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTrendingQueryOptions = <TData = Awaited<ReturnType<typeof getTrending>>, TError = ErrorType<unknown>>(params?: GetTrendingParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTrending>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTrendingQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTrending>>> = ({ signal }) => getTrending(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTrending>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTrendingQueryResult = NonNullable<Awaited<ReturnType<typeof getTrending>>>
+export type GetTrendingQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get trending posts and vote cards (last 7 days, by engagement)
+ */
+
+export function useGetTrending<TData = Awaited<ReturnType<typeof getTrending>>, TError = ErrorType<unknown>>(
+ params?: GetTrendingParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTrending>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTrendingQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetLeaderboardUrl = () => {
+
+
+
+
+  return `/api/leaderboard`
+}
+
+/**
+ * @summary Top 50 users by Vawulence Score
+ */
+export const getLeaderboard = async ( options?: RequestInit): Promise<LeaderboardEntry[]> => {
+
+  return customFetch<LeaderboardEntry[]>(getGetLeaderboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetLeaderboardQueryKey = () => {
+    return [
+    `/api/leaderboard`
+    ] as const;
+    }
+
+
+export const getGetLeaderboardQueryOptions = <TData = Awaited<ReturnType<typeof getLeaderboard>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetLeaderboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getLeaderboard>>> = ({ signal }) => getLeaderboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getLeaderboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetLeaderboardQueryResult = NonNullable<Awaited<ReturnType<typeof getLeaderboard>>>
+export type GetLeaderboardQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Top 50 users by Vawulence Score
+ */
+
+export function useGetLeaderboard<TData = Awaited<ReturnType<typeof getLeaderboard>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetLeaderboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListGoatCategoriesUrl = () => {
+
+
+
+
+  return `/api/goat/categories`
+}
+
+/**
+ * @summary List GOAT categories
+ */
+export const listGoatCategories = async ( options?: RequestInit): Promise<GoatCategory[]> => {
+
+  return customFetch<GoatCategory[]>(getListGoatCategoriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGoatCategoriesQueryKey = () => {
+    return [
+    `/api/goat/categories`
+    ] as const;
+    }
+
+
+export const getListGoatCategoriesQueryOptions = <TData = Awaited<ReturnType<typeof listGoatCategories>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGoatCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGoatCategoriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGoatCategories>>> = ({ signal }) => listGoatCategories({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGoatCategories>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGoatCategoriesQueryResult = NonNullable<Awaited<ReturnType<typeof listGoatCategories>>>
+export type ListGoatCategoriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List GOAT categories
+ */
+
+export function useListGoatCategories<TData = Awaited<ReturnType<typeof listGoatCategories>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGoatCategories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGoatCategoriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateGoatCategoryUrl = () => {
+
+
+
+
+  return `/api/goat/categories`
+}
+
+/**
+ * @summary Create a GOAT category (admin)
+ */
+export const createGoatCategory = async (goatCategoryInput: GoatCategoryInput, options?: RequestInit): Promise<GoatCategory> => {
+
+  return customFetch<GoatCategory>(getCreateGoatCategoryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      goatCategoryInput,)
+  }
+);}
+
+
+
+
+export const getCreateGoatCategoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGoatCategory>>, TError,{data: BodyType<GoatCategoryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createGoatCategory>>, TError,{data: BodyType<GoatCategoryInput>}, TContext> => {
+
+const mutationKey = ['createGoatCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createGoatCategory>>, {data: BodyType<GoatCategoryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createGoatCategory(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateGoatCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof createGoatCategory>>>
+    export type CreateGoatCategoryMutationBody = BodyType<GoatCategoryInput>
+    export type CreateGoatCategoryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a GOAT category (admin)
+ */
+export const useCreateGoatCategory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createGoatCategory>>, TError,{data: BodyType<GoatCategoryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createGoatCategory>>,
+        TError,
+        {data: BodyType<GoatCategoryInput>},
+        TContext
+      > => {
+      return useMutation(getCreateGoatCategoryMutationOptions(options));
+    }
+
+export const getDeleteGoatCategoryUrl = (id: number,) => {
+
+
+
+
+  return `/api/goat/categories/${id}`
+}
+
+/**
+ * @summary Delete a GOAT category (admin)
+ */
+export const deleteGoatCategory = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteGoatCategoryUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteGoatCategoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGoatCategory>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteGoatCategory>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteGoatCategory'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteGoatCategory>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteGoatCategory(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteGoatCategoryMutationResult = NonNullable<Awaited<ReturnType<typeof deleteGoatCategory>>>
+
+    export type DeleteGoatCategoryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a GOAT category (admin)
+ */
+export const useDeleteGoatCategory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteGoatCategory>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteGoatCategory>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteGoatCategoryMutationOptions(options));
+    }
+
+export const getListGoatNomineesUrl = (id: number,
+    params?: ListGoatNomineesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/goat/categories/${id}/nominees?${stringifiedParams}` : `/api/goat/categories/${id}/nominees`
+}
+
+/**
+ * @summary List approved nominees for a GOAT category
+ */
+export const listGoatNominees = async (id: number,
+    params?: ListGoatNomineesParams, options?: RequestInit): Promise<GoatCategoryWithNominees> => {
+
+  return customFetch<GoatCategoryWithNominees>(getListGoatNomineesUrl(id,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListGoatNomineesQueryKey = (id: number,
+    params?: ListGoatNomineesParams,) => {
+    return [
+    `/api/goat/categories/${id}/nominees`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListGoatNomineesQueryOptions = <TData = Awaited<ReturnType<typeof listGoatNominees>>, TError = ErrorType<unknown>>(id: number,
+    params?: ListGoatNomineesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGoatNominees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListGoatNomineesQueryKey(id,params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listGoatNominees>>> = ({ signal }) => listGoatNominees(id,params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listGoatNominees>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListGoatNomineesQueryResult = NonNullable<Awaited<ReturnType<typeof listGoatNominees>>>
+export type ListGoatNomineesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List approved nominees for a GOAT category
+ */
+
+export function useListGoatNominees<TData = Awaited<ReturnType<typeof listGoatNominees>>, TError = ErrorType<unknown>>(
+ id: number,
+    params?: ListGoatNomineesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listGoatNominees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListGoatNomineesQueryOptions(id,params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getVoteGoatUrl = (id: number,) => {
+
+
+
+
+  return `/api/goat/categories/${id}/vote`
+}
+
+/**
+ * @summary Vote for a nominee in a GOAT category
+ */
+export const voteGoat = async (id: number,
+    goatVoteInput: GoatVoteInput, options?: RequestInit): Promise<GoatCategoryWithNominees> => {
+
+  return customFetch<GoatCategoryWithNominees>(getVoteGoatUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      goatVoteInput,)
+  }
+);}
+
+
+
+
+export const getVoteGoatMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voteGoat>>, TError,{id: number;data: BodyType<GoatVoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof voteGoat>>, TError,{id: number;data: BodyType<GoatVoteInput>}, TContext> => {
+
+const mutationKey = ['voteGoat'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof voteGoat>>, {id: number;data: BodyType<GoatVoteInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  voteGoat(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VoteGoatMutationResult = NonNullable<Awaited<ReturnType<typeof voteGoat>>>
+    export type VoteGoatMutationBody = BodyType<GoatVoteInput>
+    export type VoteGoatMutationError = ErrorType<void>
+
+    /**
+ * @summary Vote for a nominee in a GOAT category
+ */
+export const useVoteGoat = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voteGoat>>, TError,{id: number;data: BodyType<GoatVoteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof voteGoat>>,
+        TError,
+        {id: number;data: BodyType<GoatVoteInput>},
+        TContext
+      > => {
+      return useMutation(getVoteGoatMutationOptions(options));
+    }
+
+export const getSubmitGoatNomineeUrl = () => {
+
+
+
+
+  return `/api/goat/nominees`
+}
+
+/**
+ * @summary Submit a nominee for approval
+ */
+export const submitGoatNominee = async (goatNomineeInput: GoatNomineeInput, options?: RequestInit): Promise<GoatNominee> => {
+
+  return customFetch<GoatNominee>(getSubmitGoatNomineeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      goatNomineeInput,)
+  }
+);}
+
+
+
+
+export const getSubmitGoatNomineeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitGoatNominee>>, TError,{data: BodyType<GoatNomineeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitGoatNominee>>, TError,{data: BodyType<GoatNomineeInput>}, TContext> => {
+
+const mutationKey = ['submitGoatNominee'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitGoatNominee>>, {data: BodyType<GoatNomineeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitGoatNominee(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitGoatNomineeMutationResult = NonNullable<Awaited<ReturnType<typeof submitGoatNominee>>>
+    export type SubmitGoatNomineeMutationBody = BodyType<GoatNomineeInput>
+    export type SubmitGoatNomineeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Submit a nominee for approval
+ */
+export const useSubmitGoatNominee = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitGoatNominee>>, TError,{data: BodyType<GoatNomineeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitGoatNominee>>,
+        TError,
+        {data: BodyType<GoatNomineeInput>},
+        TContext
+      > => {
+      return useMutation(getSubmitGoatNomineeMutationOptions(options));
+    }
+
+export const getListPendingGoatNomineesUrl = () => {
+
+
+
+
+  return `/api/goat/pending`
+}
+
+/**
+ * @summary List pending nominee submissions (admin)
+ */
+export const listPendingGoatNominees = async ( options?: RequestInit): Promise<GoatNominee[]> => {
+
+  return customFetch<GoatNominee[]>(getListPendingGoatNomineesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPendingGoatNomineesQueryKey = () => {
+    return [
+    `/api/goat/pending`
+    ] as const;
+    }
+
+
+export const getListPendingGoatNomineesQueryOptions = <TData = Awaited<ReturnType<typeof listPendingGoatNominees>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPendingGoatNominees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPendingGoatNomineesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPendingGoatNominees>>> = ({ signal }) => listPendingGoatNominees({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPendingGoatNominees>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPendingGoatNomineesQueryResult = NonNullable<Awaited<ReturnType<typeof listPendingGoatNominees>>>
+export type ListPendingGoatNomineesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List pending nominee submissions (admin)
+ */
+
+export function useListPendingGoatNominees<TData = Awaited<ReturnType<typeof listPendingGoatNominees>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPendingGoatNominees>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPendingGoatNomineesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getApproveGoatNomineeUrl = (id: number,) => {
+
+
+
+
+  return `/api/goat/nominees/${id}/approve`
+}
+
+/**
+ * @summary Approve a GOAT nominee (admin)
+ */
+export const approveGoatNominee = async (id: number, options?: RequestInit): Promise<GoatNominee> => {
+
+  return customFetch<GoatNominee>(getApproveGoatNomineeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getApproveGoatNomineeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveGoatNominee>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveGoatNominee>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['approveGoatNominee'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveGoatNominee>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  approveGoatNominee(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveGoatNomineeMutationResult = NonNullable<Awaited<ReturnType<typeof approveGoatNominee>>>
+
+    export type ApproveGoatNomineeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Approve a GOAT nominee (admin)
+ */
+export const useApproveGoatNominee = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveGoatNominee>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveGoatNominee>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getApproveGoatNomineeMutationOptions(options));
+    }
+
+export const getRejectGoatNomineeUrl = (id: number,) => {
+
+
+
+
+  return `/api/goat/nominees/${id}/reject`
+}
+
+/**
+ * @summary Reject a GOAT nominee (admin)
+ */
+export const rejectGoatNominee = async (id: number, options?: RequestInit): Promise<GoatNominee> => {
+
+  return customFetch<GoatNominee>(getRejectGoatNomineeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRejectGoatNomineeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectGoatNominee>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectGoatNominee>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['rejectGoatNominee'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectGoatNominee>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  rejectGoatNominee(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectGoatNomineeMutationResult = NonNullable<Awaited<ReturnType<typeof rejectGoatNominee>>>
+
+    export type RejectGoatNomineeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reject a GOAT nominee (admin)
+ */
+export const useRejectGoatNominee = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectGoatNominee>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectGoatNominee>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRejectGoatNomineeMutationOptions(options));
     }
 

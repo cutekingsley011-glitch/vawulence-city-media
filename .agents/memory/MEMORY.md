@@ -1,0 +1,3 @@
+- [VCM Vote Card schema](vcm-vote-card-schema.md) — Vote cards are binary A/B (not multi-option); key field names differ from intuition.
+- [VCM GoatNominee API](vcm-goat-api.md) — useListGoatNominees returns GoatCategoryWithNominees object, not array; GoatVoteInput requires both userId AND nomineeId.
+- [VCM OpenAPI type pitfall](vcm-openapi-types.md) — Always read actual openapi.yaml schema shapes before writing frontend; generated types may not match intuition.

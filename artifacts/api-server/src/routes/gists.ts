@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { gistsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
+import { awardPoints } from "../lib/points";
 import {
   ListPublicGistsQueryParams,
   SubmitGistBody,
@@ -57,6 +58,7 @@ router.post("/gists", async (req, res) => {
     res.status(400).json({ error: "Invalid body" });
     return;
   }
+  const userId = (req.body as Record<string, unknown>)["userId"] as string | undefined;
   const [gist] = await db
     .insert(gistsTable)
     .values({
@@ -66,6 +68,12 @@ router.post("/gists", async (req, res) => {
       status: "pending",
     })
     .returning();
+
+  // Award +2 points to submitter if userId provided
+  if (userId) {
+    await awardPoints(userId, 2).catch(() => {});
+  }
+
   res.status(201).json(toDto(gist));
 });
 
