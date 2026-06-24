@@ -1,0 +1,55 @@
+Build a web app called "Vawulence City Media" — a Nigerian entertainment/gossip/news platform. Tagline: "Entertainment Without Border."
+
+TECH STACK: React frontend, Supabase for database/backend, deployable to Railway.
+
+BRANDING: White background, blue accent color (primary buttons, links, highlights, active nav state). Clean, modern, mobile-first news/social app feel — NOT a generic template look. Logo placeholder text "VCM" until real logo is added.
+
+BOTTOM NAVIGATION (mobile) / TOP NAV (desktop) — 6 items, in this order:
+1. Home
+2. Gists
+3. Polls
+4. Marketplace
+5. Events
+6. More (opens a menu — for this stage, just show placeholder "Coming Soon" items: Connections, Services, Ads, Recruitment, Leaderboard, Podcast, Contests)
+
+For this build stage, only Home and Gists need full functionality. Polls, Marketplace, and Events should exist as nav destinations with a simple "Coming Soon" placeholder page — just enough that the nav structure is in place for future stages.
+
+AUTHENTICATION:
+- No password-based login. On first visit, show a simple modal: "Enter your name and email to join the conversation."
+- Save this identity to browser local storage.
+- On return visits from the same browser, auto-recognize the user — no re-entry needed.
+- Store user record in Supabase: id, name, email, created_at, comment_count, vote_count (for future leaderboard use).
+
+HOME PAGE:
+- Breaking news banner/ticker at the top (admin-controlled text, can be turned on/off)
+- Feed of posts below, newest first, each showing: thumbnail image, title, category tag, short excerpt, reaction count, comment count
+- Category filter tabs above the feed (Gossip, Entertainment, News, Relationship, Politics — admin-editable list)
+
+SINGLE POST PAGE:
+- Full post content (text + optional image)
+- Reaction buttons: Like, Laugh, Shock, Angry (show count for each)
+- Comment section below: users can post a comment, like a comment (likes sort comments to the top), and reply to a comment (threaded one level deep)
+- "Share to WhatsApp" button that opens WhatsApp with a pre-filled message + link to the post
+
+GISTS PAGE:
+- "Submit a Gist" button opens a form: gist text (required, no character limit), photo upload (optional), category dropdown (required)
+- All submissions are always anonymous — no name field anywhere in this form
+- Submitted gists go into a pending queue, NOT visible publicly yet
+- Public Gists page shows only approved/published gists — these get published in a batch every Saturday at 6:00 PM (for now, just build the publish mechanism as an admin action — actual scheduling automation can come later, but design the data model so a "publish_at" timestamp exists)
+
+ADMIN DASHBOARD (separate route, e.g. /admin, simple password protection for now):
+- Post management: create, edit, delete posts, set category, set as breaking news
+- Gist approval queue: view pending gist submissions, approve (publish) or reject each one
+- Two visitor stats shown clearly: "Total Site Visitors" (anyone who loads the site) and "Registered Users" (anyone who completed the name+email signup) — these must be tracked separately
+- Simple analytics: total posts, total gists published, total comments
+
+DATA MODELS NEEDED IN SUPABASE:
+- users (id, name, email, created_at)
+- posts (id, title, content, image_url, category, is_breaking, created_at)
+- reactions (id, post_id, user_id, type)
+- comments (id, post_id, user_id, parent_comment_id [nullable, for replies], content, like_count, created_at)
+- gists (id, content, image_url, category, status [pending/approved/rejected], created_at, published_at)
+- site_visits (id, visited_at) — for visitor counter
+- For now, do not build Polls, Marketplace, or Events data models — just the placeholder pages mentioned above.
+
+Keep the code clean and modular since more features (Polls, Marketplace, Events, Contests, Connections, etc.) will be added in later stages on top of this same codebase. Use clear component separation so future features don't require rewriting this stage.

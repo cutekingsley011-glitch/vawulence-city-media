@@ -3,20 +3,35 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Vawulence City Media API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: posts
+    description: Post management
+  - name: categories
+    description: Category management
+  - name: reactions
+    description: Post reactions
+  - name: comments
+    description: Post comments
+  - name: gists
+    description: Gist submissions
+  - name: users
+    description: User registration
+  - name: visits
+    description: Visitor tracking
+  - name: admin
+    description: Admin operations
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +39,453 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Posts ────────────────────────────────────────────────────────────────────
+  /posts:
+    get:
+      operationId: listPosts
+      tags: [posts]
+      summary: List published posts
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Post"
+    post:
+      operationId: createPost
+      tags: [posts]
+      summary: Create a post (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+
+  /posts/breaking:
+    get:
+      operationId: getBreakingNews
+      tags: [posts]
+      summary: Get breaking news ticker content
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreakingNews"
+
+  /posts/stats:
+    get:
+      operationId: getPostStats
+      tags: [posts]
+      summary: Aggregated post statistics
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostStats"
+
+  /posts/{id}:
+    get:
+      operationId: getPost
+      tags: [posts]
+      summary: Get a single post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "404":
+          description: Not found
+    patch:
+      operationId: updatePost
+      tags: [posts]
+      summary: Update a post (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+    delete:
+      operationId: deletePost
+      tags: [posts]
+      summary: Delete a post (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Categories ───────────────────────────────────────────────────────────────
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+    post:
+      operationId: createCategory
+      tags: [categories]
+      summary: Create a category (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+
+  /categories/{id}:
+    delete:
+      operationId: deleteCategory
+      tags: [categories]
+      summary: Delete a category (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Reactions ─────────────────────────────────────────────────────────────────
+  /posts/{postId}/reactions:
+    get:
+      operationId: getReactions
+      tags: [reactions]
+      summary: Get reaction counts for a post
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionCounts"
+    post:
+      operationId: addReaction
+      tags: [reactions]
+      summary: Add or toggle a reaction
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReactionInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionCounts"
+
+  # ── Comments ──────────────────────────────────────────────────────────────────
+  /posts/{postId}/comments:
+    get:
+      operationId: listComments
+      tags: [comments]
+      summary: List comments for a post (sorted by likes desc)
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+    post:
+      operationId: createComment
+      tags: [comments]
+      summary: Post a comment
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  /comments/{id}/like:
+    post:
+      operationId: likeComment
+      tags: [comments]
+      summary: Like a comment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+
+  # ── Gists ─────────────────────────────────────────────────────────────────────
+  /gists:
+    get:
+      operationId: listPublicGists
+      tags: [gists]
+      summary: List approved/published gists
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: offset
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Gist"
+    post:
+      operationId: submitGist
+      tags: [gists]
+      summary: Submit a gist (anonymous, goes to pending queue)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GistInput"
+      responses:
+        "201":
+          description: Submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gist"
+
+  /gists/pending:
+    get:
+      operationId: listPendingGists
+      tags: [gists]
+      summary: List pending gist submissions (admin)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Gist"
+
+  /gists/{id}/approve:
+    post:
+      operationId: approveGist
+      tags: [gists]
+      summary: Approve and publish a gist (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gist"
+
+  /gists/{id}/reject:
+    post:
+      operationId: rejectGist
+      tags: [gists]
+      summary: Reject a gist (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Gist"
+
+  # ── Users ─────────────────────────────────────────────────────────────────────
+  /users/register:
+    post:
+      operationId: registerUser
+      tags: [users]
+      summary: Register or fetch a user by email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserInput"
+      responses:
+        "200":
+          description: OK (existing or new user)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # ── Visits ────────────────────────────────────────────────────────────────────
+  /visits:
+    post:
+      operationId: trackVisit
+      tags: [visits]
+      summary: Record a site visit
+      responses:
+        "204":
+          description: Recorded
+
+  # ── Admin ─────────────────────────────────────────────────────────────────────
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Admin dashboard statistics
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/breaking:
+    put:
+      operationId: setBreakingNewsBanner
+      tags: [admin]
+      summary: Update breaking news banner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BreakingNewsInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BreakingNews"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +493,179 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    # ── Post ──────────────────────────────────────────────────────────────────
+    Post:
+      type: object
+      required: [id, title, content, category, isBreaking, createdAt, reactionCount, commentCount]
+      properties:
+        id:          { type: integer }
+        title:       { type: string }
+        content:     { type: string }
+        excerpt:     { type: ["string", "null"] }
+        imageUrl:    { type: ["string", "null"] }
+        category:    { type: string }
+        isBreaking:  { type: boolean }
+        createdAt:   { type: string }
+        reactionCount: { type: integer }
+        commentCount:  { type: integer }
+
+    PostInput:
+      type: object
+      required: [title, content, category]
+      properties:
+        title:      { type: string }
+        content:    { type: string }
+        excerpt:    { type: string }
+        imageUrl:   { type: string }
+        category:   { type: string }
+        isBreaking: { type: boolean }
+
+    PostUpdate:
+      type: object
+      properties:
+        title:      { type: string }
+        content:    { type: string }
+        excerpt:    { type: string }
+        imageUrl:   { type: string }
+        category:   { type: string }
+        isBreaking: { type: boolean }
+
+    PostStats:
+      type: object
+      required: [totalPosts, byCategory]
+      properties:
+        totalPosts: { type: integer }
+        byCategory:
+          type: array
+          items:
+            type: object
+            required: [category, count]
+            properties:
+              category: { type: string }
+              count:    { type: integer }
+
+    BreakingNews:
+      type: object
+      required: [text, enabled]
+      properties:
+        text:    { type: string }
+        enabled: { type: boolean }
+
+    BreakingNewsInput:
+      type: object
+      required: [text, enabled]
+      properties:
+        text:    { type: string }
+        enabled: { type: boolean }
+
+    # ── Category ──────────────────────────────────────────────────────────────
+    Category:
+      type: object
+      required: [id, name]
+      properties:
+        id:   { type: integer }
+        name: { type: string }
+
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+
+    # ── Reaction ──────────────────────────────────────────────────────────────
+    ReactionCounts:
+      type: object
+      required: [like, laugh, shock, angry]
+      properties:
+        like:  { type: integer }
+        laugh: { type: integer }
+        shock: { type: integer }
+        angry: { type: integer }
+
+    ReactionInput:
+      type: object
+      required: [type, userId]
+      properties:
+        type:   { type: string, enum: [like, laugh, shock, angry] }
+        userId: { type: string }
+
+    # ── Comment ───────────────────────────────────────────────────────────────
+    Comment:
+      type: object
+      required: [id, postId, content, likeCount, createdAt]
+      properties:
+        id:              { type: integer }
+        postId:          { type: integer }
+        userId:          { type: ["string", "null"] }
+        userName:        { type: ["string", "null"] }
+        parentCommentId: { type: ["integer", "null"] }
+        content:         { type: string }
+        likeCount:       { type: integer }
+        createdAt:       { type: string }
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Comment"
+
+    CommentInput:
+      type: object
+      required: [content, userId]
+      properties:
+        content:         { type: string }
+        userId:          { type: string }
+        parentCommentId: { type: ["integer", "null"] }
+
+    # ── Gist ──────────────────────────────────────────────────────────────────
+    Gist:
+      type: object
+      required: [id, content, category, status, createdAt]
+      properties:
+        id:          { type: integer }
+        content:     { type: string }
+        imageUrl:    { type: ["string", "null"] }
+        category:    { type: string }
+        status:      { type: string, enum: [pending, approved, rejected] }
+        createdAt:   { type: string }
+        publishedAt: { type: ["string", "null"] }
+        publishAt:   { type: ["string", "null"] }
+
+    GistInput:
+      type: object
+      required: [content, category]
+      properties:
+        content:  { type: string }
+        imageUrl: { type: string }
+        category: { type: string }
+
+    # ── User ──────────────────────────────────────────────────────────────────
+    User:
+      type: object
+      required: [id, name, email, createdAt]
+      properties:
+        id:           { type: string }
+        name:         { type: string }
+        email:        { type: string }
+        commentCount: { type: integer }
+        voteCount:    { type: integer }
+        createdAt:    { type: string }
+
+    UserInput:
+      type: object
+      required: [name, email]
+      properties:
+        name:  { type: string }
+        email: { type: string }
+
+    # ── Admin ─────────────────────────────────────────────────────────────────
+    AdminStats:
+      type: object
+      required: [totalVisitors, registeredUsers, totalPosts, totalGistsPublished, totalComments, pendingGists]
+      properties:
+        totalVisitors:       { type: integer }
+        registeredUsers:     { type: integer }
+        totalPosts:          { type: integer }
+        totalGistsPublished: { type: integer }
+        totalComments:       { type: integer }
+        pendingGists:        { type: integer }
