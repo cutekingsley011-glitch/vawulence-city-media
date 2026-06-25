@@ -83,6 +83,7 @@ function AppShell() {
           <Route path="/services" component={ServicesPage} />
           <Route path="/recruitment" component={RecruitmentPage} />
           <Route path="/spill" component={SpillPage} />
+          <Route path="/podcast" component={() => <ComingSoonPage title="VCM Podcast" description="Hot takes, gist breakdowns, and unfiltered conversations — dropping soon." />} />
           <Route path="/admin" component={AdminPage} />
           <Route component={NotFound} />
         </Switch>
