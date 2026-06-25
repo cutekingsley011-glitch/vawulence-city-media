@@ -24,6 +24,7 @@ import spillRouter from "./spill";
 import pushRouter from "./push";
 import ogRouter from "./og";
 import notificationsRouter from "./notifications";
+import storageRouter from "./storage";
 
 const router: IRouter = Router();
 
@@ -52,5 +53,6 @@ router.use(spillRouter);
 router.use(pushRouter);
 router.use(ogRouter);
 router.use(notificationsRouter);
+router.use(storageRouter);
 
 export default router;

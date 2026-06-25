@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useListPosts, useListCategories, useGetTrending, getListPostsQueryKey } from "@workspace/api-client-react";
 import PostCard from "@/components/PostCard";
-import AdsBanner from "@/components/AdsBanner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { TrendingUp, Flame } from "lucide-react";
@@ -145,7 +144,6 @@ export default function HomePage() {
       <Masthead />
 
       <div className="max-w-2xl mx-auto px-3 py-4">
-        <AdsBanner />
         {/* Feed / Trending toggle */}
         <div className="flex gap-1 mb-4 p-1 bg-muted rounded-xl">
           <button

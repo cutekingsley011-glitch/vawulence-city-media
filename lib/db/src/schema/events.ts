@@ -5,6 +5,7 @@ export const eventsTable = pgTable("events", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   imageUrl: text("image_url"),
+  videoUrl: text("video_url"),
   venue: text("venue").notNull(),
   eventDate: timestamp("event_date").notNull(),
   restrictionTags: text("restriction_tags").array().default([]),

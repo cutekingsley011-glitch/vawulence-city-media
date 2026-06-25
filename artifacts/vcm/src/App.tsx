@@ -15,7 +15,6 @@ import VoteCardDetailPage from "@/pages/VoteCardDetailPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import EventsPage from "@/pages/EventsPage";
 import EventDetailPage from "@/pages/EventDetailPage";
-import AdsPage from "@/pages/AdsPage";
 import ContestsPage from "@/pages/ContestsPage";
 import VipPage from "@/pages/VipPage";
 import MarketplacePage from "@/pages/MarketplacePage";
@@ -101,7 +100,6 @@ function AppShell() {
           <Route path="/leaderboard" component={LeaderboardPage} />
           <Route path="/events/:id" component={EventDetailPage} />
           <Route path="/events" component={EventsPage} />
-          <Route path="/advertise" component={AdsPage} />
           <Route path="/contests" component={ContestsPage} />
           <Route path="/vip" component={VipPage} />
           <Route path="/goat" component={VoteCardsPage} />

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetAdminStats,
@@ -39,16 +40,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, Pencil, Trash2, Check, X, Vote, CalendarDays, Megaphone, Trophy, Receipt, Crown } from "lucide-react";
+import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, Pencil, Trash2, Check, X, Vote, CalendarDays, Trophy, Crown, ImageIcon, Video } from "lucide-react";
 
 // ─── Types for new sections ───────────────────────────────────────────────────
 interface AdminEvent { id: number; title: string; venue: string; eventDate: string; isPaid: boolean; ticketPrice: number | null; status: "upcoming" | "past"; }
-interface AdminAd { id: number; advertiserName: string; contactInfo: string; imageUrl: string; linkUrl: string | null; durationTier: string; price: number; status: string; submittedAt: string; expiresAt: string | null; }
 interface AdminContest { id: number; title: string; entryFee: number; currentEntrants: number; maxEntrants: number; status: string; closesAt: string; }
 interface AdminTransaction { id: number; userId: string; userName: string; type: string; baseAmountNaira: number; serviceFeeNaira: number; totalAmountNaira: number; paystackReference: string; status: string; createdAt: string; description: string; }
 interface AdminSubPlan { id: number; name: string; durationDays: number; price: number; }
 
-const TIER_LABELS: Record<string, string> = { "1week": "1 Week", "2weeks": "2 Weeks", "1month": "1 Month", "2months": "2 Months" };
 interface AdminMarketItem { id: number; name: string; description: string; price: number; imageUrls: string[]; category: string; status: string; createdAt: string; }
 interface AdminConnection { id: number; name: string; ageBracket: string; state: string; photoUrl: string | null; lookingFor: string; bioText: string; status: string; createdAt: string; }
 interface AdminEscrowReq { id: number; userId: string | null; description: string; amount: number; status: string; notes: string | null; createdAt: string; }
@@ -287,6 +286,91 @@ function PostFormModal({
   );
 }
 
+// ─── Media upload helpers ─────────────────────────────────────────────────────
+function MediaUpload({ accept, maxMB, label, value, onChange }: {
+  accept: string; maxMB: number; label: string; value: string; onChange: (url: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File) {
+    if (file.size > maxMB * 1024 * 1024) { toast.error(`File too large — max ${maxMB} MB.`); return; }
+    setUploading(true);
+    try {
+      const res = await fetch("/api/storage/uploads/request-url", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      const { uploadURL, objectPath } = await res.json();
+      await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      onChange(`/api/storage${objectPath}`);
+    } catch { toast.error("Upload failed. Try again."); } finally { setUploading(false); }
+  }
+
+  const isImage = value && /\.(jpg|jpeg|png|gif|webp)/i.test(value);
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <input ref={inputRef} type="file" accept={accept} className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
+      <Button type="button" variant="outline" size="sm" disabled={uploading}
+        onClick={() => inputRef.current?.click()} className="gap-1.5">
+        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
+        {uploading ? "Uploading…" : label}
+      </Button>
+      {value && (
+        <div className="flex items-center gap-1.5">
+          {isImage ? <img src={value} className="h-8 w-12 object-cover rounded border" /> : <span className="text-xs font-medium text-primary flex items-center gap-1"><Video className="w-3.5 h-3.5" />Uploaded ✓</span>}
+          <Button type="button" variant="ghost" size="icon" className="w-5 h-5 text-muted-foreground" onClick={() => onChange("")}><X className="w-3 h-3" /></Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MediaUploadMulti({ maxMB, values, onChange }: {
+  maxMB: number; values: string[]; onChange: (urls: string[]) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(file: File) {
+    if (file.size > maxMB * 1024 * 1024) { toast.error(`File too large — max ${maxMB} MB.`); return; }
+    setUploading(true);
+    try {
+      const res = await fetch("/api/storage/uploads/request-url", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      const { uploadURL, objectPath } = await res.json();
+      await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      onChange([...values, `/api/storage${objectPath}`]);
+    } catch { toast.error("Upload failed. Try again."); } finally { setUploading(false); }
+  }
+
+  return (
+    <div className="space-y-2">
+      {values.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {values.map((url, i) => (
+            <div key={i} className="relative">
+              <img src={url} className="h-16 w-20 object-cover rounded border" />
+              <button type="button" onClick={() => onChange(values.filter((_, j) => j !== i))}
+                className="absolute -top-1.5 -right-1.5 bg-destructive text-white rounded-full w-4 h-4 flex items-center justify-center text-xs leading-none">×</button>
+            </div>
+          ))}
+        </div>
+      )}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
+      <Button type="button" variant="outline" size="sm" disabled={uploading || values.length >= 5}
+        onClick={() => inputRef.current?.click()} className="gap-1.5">
+        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ImageIcon className="w-3.5 h-3.5" />}
+        {uploading ? "Uploading…" : "Add Photo"}
+      </Button>
+    </div>
+  );
+}
+
 // ─── Main admin panel ─────────────────────────────────────────────────────────
 function AdminPanel() {
   const queryClient = useQueryClient();
@@ -323,8 +407,6 @@ function AdminPanel() {
   // New sections state
   const [events, setEvents] = useState<AdminEvent[]>([]);
   const [eventsLoading, setEventsLoading] = useState(false);
-  const [ads, setAds] = useState<AdminAd[]>([]);
-  const [adsLoading, setAdsLoading] = useState(false);
   const [contests, setContests] = useState<AdminContest[]>([]);
   const [contestsLoading, setContestsLoading] = useState(false);
   const [transactions, setTransactions] = useState<AdminTransaction[]>([]);
@@ -332,13 +414,13 @@ function AdminPanel() {
   const [subPlans, setSubPlans] = useState<AdminSubPlan[]>([]);
 
   // Event form
-  const [evtForm, setEvtForm] = useState({ title: "", description: "", venue: "", eventDate: "", imageUrl: "", isPaid: false, ticketPrice: "" });
+  const [evtForm, setEvtForm] = useState({ title: "", description: "", venue: "", eventDate: "", imageUrl: "", videoUrl: "", isPaid: false, ticketPrice: "" });
   // Contest form
   const [ctForm, setCtForm] = useState({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", options: "" });
   // Marketplace state
   const [marketItems, setMarketItems] = useState<AdminMarketItem[]>([]);
   const [marketLoading, setMarketLoading] = useState(false);
-  const [marketForm, setMarketForm] = useState({ name: "", description: "", price: "", imageUrls: "", category: "General" });
+  const [marketForm, setMarketForm] = useState({ name: "", description: "", price: "", imageUrls: [] as string[], category: "General" });
   // Connections state
   const [connections, setConnections] = useState<AdminConnection[]>([]);
   const [connLoading, setConnLoading] = useState(false);
@@ -485,10 +567,6 @@ function AdminPanel() {
     setEventsLoading(true);
     fetch("/api/events").then((r) => r.json()).then((d) => { setEvents(Array.isArray(d) ? d : []); setEventsLoading(false); }).catch(() => setEventsLoading(false));
   }
-  function loadAds() {
-    setAdsLoading(true);
-    fetch("/api/admin/ads").then((r) => r.json()).then((d) => { setAds(Array.isArray(d) ? d : []); setAdsLoading(false); }).catch(() => setAdsLoading(false));
-  }
   function loadContests() {
     setContestsLoading(true);
     fetch("/api/contests").then((r) => r.json()).then((d) => { setContests(Array.isArray(d) ? d : []); setContestsLoading(false); }).catch(() => setContestsLoading(false));
@@ -532,11 +610,13 @@ function AdminPanel() {
         title: evtForm.title, description: evtForm.description, venue: evtForm.venue,
         eventDate: new Date(evtForm.eventDate).toISOString(),
         imageUrl: evtForm.imageUrl || null,
+        videoUrl: evtForm.videoUrl || null,
         isPaid: evtForm.isPaid,
         ticketPrice: evtForm.isPaid && evtForm.ticketPrice ? Number(evtForm.ticketPrice) * 100 : null,
       }),
     });
-    setEvtForm({ title: "", description: "", venue: "", eventDate: "", imageUrl: "", isPaid: false, ticketPrice: "" });
+    toast.success("Event created!");
+    setEvtForm({ title: "", description: "", venue: "", eventDate: "", imageUrl: "", videoUrl: "", isPaid: false, ticketPrice: "" });
     loadEvents();
   }
 
@@ -544,17 +624,6 @@ function AdminPanel() {
     if (!confirm("Delete this event?")) return;
     await fetch(`/api/events/${id}`, { method: "DELETE" });
     loadEvents();
-  }
-
-  // Approve/reject ads
-  async function handleApproveAd(id: number) {
-    await fetch(`/api/admin/ads/${id}/approve`, { method: "POST" });
-    loadAds();
-  }
-  async function handleRejectAd(id: number) {
-    if (!confirm("Reject and refund this ad?")) return;
-    await fetch(`/api/admin/ads/${id}/reject`, { method: "POST" });
-    loadAds();
   }
 
   // Create contest
@@ -572,6 +641,7 @@ function AdminPanel() {
         options: ctForm.options ? ctForm.options.split(",").map((s) => s.trim()).filter(Boolean) : null,
       }),
     });
+    toast.success("Contest created!");
     setCtForm({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", options: "" });
     loadContests();
   }
@@ -635,11 +705,12 @@ function AdminPanel() {
       body: JSON.stringify({
         name: marketForm.name, description: marketForm.description,
         price: Math.round(Number(marketForm.price) * 100),
-        imageUrls: marketForm.imageUrls ? marketForm.imageUrls.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        imageUrls: marketForm.imageUrls,
         category: marketForm.category,
       }),
     });
-    setMarketForm({ name: "", description: "", price: "", imageUrls: "", category: "General" });
+    toast.success("Listing added!");
+    setMarketForm({ name: "", description: "", price: "", imageUrls: [], category: "General" });
     loadMarket();
   }
   async function handleMarkSold(id: number) {
@@ -754,7 +825,6 @@ function AdminPanel() {
           </TabsTrigger>
           <TabsTrigger value="vote-cards" className="flex-1 text-xs" data-testid="tab-vote-cards">Votes</TabsTrigger>
           <TabsTrigger value="events" className="flex-1 text-xs" data-testid="tab-events" onClick={loadEvents}>Events</TabsTrigger>
-          <TabsTrigger value="ads" className="flex-1 text-xs" data-testid="tab-ads" onClick={loadAds}>Ads</TabsTrigger>
           <TabsTrigger value="contests" className="flex-1 text-xs" data-testid="tab-contests" onClick={loadContests}>Contests</TabsTrigger>
           <TabsTrigger value="transactions" className="flex-1 text-xs" data-testid="tab-transactions" onClick={loadTransactions}>Ledger</TabsTrigger>
           <TabsTrigger value="settings" className="flex-1 text-xs" data-testid="tab-settings" onClick={loadSubPlans}>Settings</TabsTrigger>
@@ -999,7 +1069,8 @@ function AdminPanel() {
                 <Textarea placeholder="Description *" value={evtForm.description} onChange={(e) => setEvtForm((f) => ({ ...f, description: e.target.value }))} rows={2} />
                 <Input placeholder="Venue *" value={evtForm.venue} onChange={(e) => setEvtForm((f) => ({ ...f, venue: e.target.value }))} />
                 <Input type="datetime-local" value={evtForm.eventDate} onChange={(e) => setEvtForm((f) => ({ ...f, eventDate: e.target.value }))} />
-                <Input placeholder="Image URL (optional)" value={evtForm.imageUrl} onChange={(e) => setEvtForm((f) => ({ ...f, imageUrl: e.target.value }))} />
+                <MediaUpload accept="image/*" maxMB={10} label="Upload Image" value={evtForm.imageUrl} onChange={(v) => setEvtForm((f) => ({ ...f, imageUrl: v }))} />
+                <MediaUpload accept="video/*" maxMB={100} label="Upload Video" value={evtForm.videoUrl} onChange={(v) => setEvtForm((f) => ({ ...f, videoUrl: v }))} />
                 <div className="flex items-center gap-2">
                   <Switch checked={evtForm.isPaid} onCheckedChange={(v) => setEvtForm((f) => ({ ...f, isPaid: v }))} id="evt-paid" />
                   <Label htmlFor="evt-paid">Paid Event</Label>
@@ -1034,37 +1105,6 @@ function AdminPanel() {
           </div>
         </TabsContent>
 
-        {/* ── Ads tab ── */}
-        <TabsContent value="ads">
-          <h2 className="font-bold text-base mb-3">Ad Submissions</h2>
-          {adsLoading ? <Skeleton className="h-32 rounded-xl" /> : ads.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No ad submissions yet.</p> : (
-            <div className="space-y-3">
-              {ads.map((ad) => (
-                <div key={ad.id} className="border border-border rounded-xl p-4 bg-white">
-                  <div className="flex items-start gap-3">
-                    <img src={ad.imageUrl} alt={ad.advertiserName} className="w-20 h-14 object-cover rounded-lg shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm">{ad.advertiserName}</p>
-                      <p className="text-xs text-muted-foreground">{ad.contactInfo}</p>
-                      <p className="text-xs text-muted-foreground">{TIER_LABELS[ad.durationTier] ?? ad.durationTier} · ₦{(ad.price / 100).toLocaleString()}</p>
-                      <Badge variant={ad.status === "live" ? "default" : ad.status === "rejected" ? "destructive" : "secondary"} className="text-xs mt-1">{ad.status}</Badge>
-                    </div>
-                  </div>
-                  {ad.status === "under_review" && (
-                    <div className="flex gap-2 mt-3">
-                      <Button size="sm" onClick={() => handleApproveAd(ad.id)} className="gap-1"><Check className="w-3.5 h-3.5" />Approve</Button>
-                      <Button size="sm" variant="outline" className="gap-1 text-destructive border-destructive/30" onClick={() => handleRejectAd(ad.id)}><X className="w-3.5 h-3.5" />Reject & Refund</Button>
-                    </div>
-                  )}
-                  {ad.status === "live" && ad.expiresAt && (
-                    <p className="text-xs text-muted-foreground mt-2">Expires: {new Date(ad.expiresAt).toLocaleDateString("en-NG")}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
         {/* ── Contests tab ── */}
         <TabsContent value="contests">
           <div className="space-y-5">
@@ -1073,7 +1113,7 @@ function AdminPanel() {
               <form onSubmit={handleCreateContest} className="space-y-3">
                 <Input placeholder="Title *" value={ctForm.title} onChange={(e) => setCtForm((f) => ({ ...f, title: e.target.value }))} />
                 <Textarea placeholder="Description" value={ctForm.description} onChange={(e) => setCtForm((f) => ({ ...f, description: e.target.value }))} rows={2} />
-                <Input placeholder="Image URL (optional)" value={ctForm.imageUrl} onChange={(e) => setCtForm((f) => ({ ...f, imageUrl: e.target.value }))} />
+                <MediaUpload accept="image/*" maxMB={10} label="Upload Image" value={ctForm.imageUrl} onChange={(v) => setCtForm((f) => ({ ...f, imageUrl: v }))} />
                 <div className="grid grid-cols-2 gap-2">
                   <Input type="number" placeholder="Entry fee (₦) *" value={ctForm.entryFee} onChange={(e) => setCtForm((f) => ({ ...f, entryFee: e.target.value }))} />
                   <Input type="number" placeholder="Max entrants *" value={ctForm.maxEntrants} onChange={(e) => setCtForm((f) => ({ ...f, maxEntrants: e.target.value }))} />
@@ -1212,7 +1252,7 @@ function AdminPanel() {
                 </div>
                 <Textarea placeholder="Description *" rows={2} value={marketForm.description} onChange={(e) => setMarketForm({ ...marketForm, description: e.target.value })} />
                 <Input placeholder="Category (e.g. Electronics, Fashion)" value={marketForm.category} onChange={(e) => setMarketForm({ ...marketForm, category: e.target.value })} />
-                <Input placeholder="Photo URLs (comma-separated)" value={marketForm.imageUrls} onChange={(e) => setMarketForm({ ...marketForm, imageUrls: e.target.value })} />
+                <MediaUploadMulti maxMB={10} values={marketForm.imageUrls} onChange={(urls) => setMarketForm({ ...marketForm, imageUrls: urls })} />
                 <Button type="submit" size="sm" disabled={!marketForm.name || !marketForm.price}>Add Listing</Button>
               </form>
             </div>
@@ -1328,7 +1368,7 @@ function AdminPanel() {
                 </div>
                 <Textarea placeholder="Full job description *" rows={3} value={jobForm.description} onChange={(e) => setJobForm({ ...jobForm, description: e.target.value })} />
                 <Textarea placeholder="Requirements (one per line, e.g. Must reside in Abakaliki)" rows={3} value={jobForm.requirements} onChange={(e) => setJobForm({ ...jobForm, requirements: e.target.value })} />
-                <Input placeholder="Flyer image URL (optional)" value={jobForm.flyerImageUrl} onChange={(e) => setJobForm({ ...jobForm, flyerImageUrl: e.target.value })} />
+                <MediaUpload accept="image/*" maxMB={10} label="Upload Flyer" value={jobForm.flyerImageUrl} onChange={(v) => setJobForm({ ...jobForm, flyerImageUrl: v })} />
                 <div className="grid grid-cols-2 gap-3">
                   <Select value={jobForm.applyMethod} onValueChange={(v) => setJobForm({ ...jobForm, applyMethod: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>

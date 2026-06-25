@@ -15,7 +15,6 @@ const ALL_TABS = [
   { label: "Events",      href: "/events",     icon: CalendarDays },
   { label: "Connections", href: "/connections",icon: Heart },
   { label: "Services",    href: "/services",   icon: Wrench },
-  { label: "Ads",         href: "/advertise",  icon: Megaphone },
   { label: "Recruitment", href: "/recruitment",icon: Briefcase },
   { label: "Leaderboard", href: "/leaderboard",icon: Trophy },
   { label: "Podcast",     href: "/podcast",    icon: Mic },
