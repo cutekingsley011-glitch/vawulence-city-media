@@ -25,7 +25,6 @@ channel = "stable-25_05"
 [userenv]
 
 [userenv.shared]
-PAYSTACK_PUBLIC_KEY = "pk_test_placeholder"
-PAYSTACK_SECRET_KEY = "sk_test_placeholder"
+PAYSTACK_PUBLIC_KEY = "pk_test_1bde52f1bf18c91a1e13370f293e679c97b0fb71"
 PAYSTACK_SUBACCOUNT_CODE = "ACCT_placeholder"
-VITE_PAYSTACK_PUBLIC_KEY = "pk_test_placeholder"
+VITE_PAYSTACK_PUBLIC_KEY = "pk_test_1bde52f1bf18c91a1e13370f293e679c97b0fb71"
