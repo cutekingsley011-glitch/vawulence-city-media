@@ -11,6 +11,11 @@ import adminRouter from "./admin";
 import voteCardsRouter from "./vote_cards";
 import trendingRouter from "./trending";
 import leaderboardRouter from "./leaderboard";
+import eventsRouter from "./events";
+import transactionsRouter from "./transactions";
+import adsRouter from "./ads";
+import contestsRouter from "./contests";
+import subscriptionsRouter from "./subscriptions";
 
 const router: IRouter = Router();
 
@@ -26,5 +31,10 @@ router.use(adminRouter);
 router.use(voteCardsRouter);
 router.use(trendingRouter);
 router.use(leaderboardRouter);
+router.use(eventsRouter);
+router.use(transactionsRouter);
+router.use(adsRouter);
+router.use(contestsRouter);
+router.use(subscriptionsRouter);
 
 export default router;

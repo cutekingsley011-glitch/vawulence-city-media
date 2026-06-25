@@ -21,3 +21,11 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+PAYSTACK_PUBLIC_KEY = "pk_test_placeholder"
+PAYSTACK_SECRET_KEY = "sk_test_placeholder"
+PAYSTACK_SUBACCOUNT_CODE = "ACCT_placeholder"
+VITE_PAYSTACK_PUBLIC_KEY = "pk_test_placeholder"

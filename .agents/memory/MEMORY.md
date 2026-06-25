@@ -1,3 +1,5 @@
 - [VCM Vote Card schema](vcm-vote-card-schema.md) — Vote cards use option1–4 naming (not A/B); options 3 & 4 are nullable; chosenOption is integer 1–4.
 - [VCM OpenAPI type pitfall](vcm-openapi-types.md) — Always read actual openapi.yaml schema shapes before writing frontend; generated types may not match intuition.
 - [VCM goat.ts stub](vcm-goat-stub.md) — goat.ts is kept as an empty Router stub so routes/index.ts import doesn't break; GOAT feature fully removed from DB/API/frontend.
+- [Paystack integration pattern](paystack-integration.md) — Placeholder keys in shared env vars; verify-then-record pattern for payment routes; skip drizzle push (needs TTY), use executeSql instead.
+- [Stage 3 architecture](stage3-architecture.md) — SERVICE_FEE=50000 kobo added to every transaction; new tables: events, tickets, transactions, ads, ad_settings, contests, contest_entries, subscription_plans; users has is_subscriber + subscription_expires_at; posts has is_vip.

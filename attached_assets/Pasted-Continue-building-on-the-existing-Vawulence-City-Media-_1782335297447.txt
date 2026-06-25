@@ -1,0 +1,52 @@
+Continue building on the existing Vawulence City Media app. This is Stage 3 — add the following on top of what already exists. Do not remove or rewrite existing functionality; extend it.
+
+PAYSTACK INTEGRATION SETUP:
+- Integrate Paystack for all payments in this stage
+- Set up Paystack Subaccount splitting: every transaction splits ₦500 to a separate subaccount (this is the platform service fee) and the remaining amount to the main Vawulence account
+- Every transaction must add a flat ₦500 service charge on top of the base price shown to the user (e.g. a ₦10,000 ticket charges the buyer ₦10,500 total)
+- Store Paystack public/secret keys and the subaccount code as environment variables/secrets — do not hardcode them
+
+UNIFIED TRANSACTION LEDGER (new Supabase table, used by everything below):
+- transactions (id, user_id, type [ticket/subscription/ad/contest_entry], reference_id [links to the specific event/ad/contest], base_amount, service_fee, total_amount, status [success/refunded/pending], created_at)
+- Admin dashboard gets a new "Transactions" page showing every transaction in plain language, e.g. "Chidinma paid ₦10,500 → ₦10,000 for [Event Name] ticket + ₦500 service fee" — filterable by type
+
+REPLACE THE "EVENTS" PLACEHOLDER WITH A FULL EVENTS HUB:
+- events table: (id, title, description, image_url, venue, event_date, restriction_tags [e.g. "18+", "Female Only", "Male Only" — multi-select], is_paid [boolean], ticket_price [nullable if free], status [upcoming/past, can be auto-calculated from event_date], created_at)
+- Public Events page: filter tabs for "Upcoming" and "Past", each event shown as a card with image, title, date, venue, restriction tags
+- Event detail page: full description, all details, and either a "Buy Ticket" button (if is_paid) or "Free Entry" label (if not paid)
+- Admin: full CRUD on events — create, edit, delete, mark paid/free, set price, upload image, set restriction tags
+
+TICKETING (only for paid events):
+- "Buy Ticket" opens Paystack checkout for ticket_price + ₦500 service fee
+- On successful payment: generate a unique ticket code (format: VCM-EVT[event_id]-[sequential number], e.g. VCM-EVT204-0007)
+- Generate a designed ticket card (visual card component, not plain text) showing: event name, buyer name, ticket code, event date/venue, and a QR code encoding the ticket code
+- Ticket card displays on-screen immediately after payment, with a "Save to Gallery / Screenshot" friendly layout
+- Log the purchase in the transactions table
+- Admin sees, per event: total tickets sold, total revenue, list of buyers
+
+SUBSCRIPTIONS / VIP CONTENT:
+- Add an is_vip boolean field to the existing posts table
+- VIP posts show a locked/blurred preview to non-subscribers with a "Subscribe to Unlock" button
+- Subscription plans (admin-configurable: e.g. Monthly ₦1,000, set in a simple admin settings page) — checkout via Paystack + ₦500 service fee
+- Add is_subscriber and subscription_expires_at fields to the users table
+- Subscribed users see VIP posts unlocked until their subscription_expires_at passes
+
+ADS / PROMOTION:
+- ads table: (id, advertiser_name, contact_info, image_url, link_url, duration_tier [1week/2weeks/1month/2months], price, status [under_review/live/rejected/expired], submitted_at, expires_at)
+- Public "Submit an Ad" page: select duration tier (price auto-shown per tier, admin sets these prices in admin settings), upload flyer/image, enter link and contact info, pay via Paystack + ₦500 service fee
+- On successful payment: ad status becomes "under_review", log transaction
+- Admin sees pending ads queue: approve (status becomes "live", expires_at calculated from duration tier) or reject
+- On reject: trigger Paystack refund for the base ad price only (NOT the ₦500 service fee), show confirmation prompt before refunding ("Are you sure you want to reject and refund this ad?")
+- Live ads display in a rotating ad slot component (header banner placement) on the Home page — auto-hide once expires_at passes
+- Admin settings page: editable price per duration tier
+
+CONTESTS (covers World Cup predictions, Ballon d'Or, election contests, AND Face of Vawulence Media):
+- contests table: (id, title, description, image_url, entry_fee, max_entrants, current_entrants, options [array of choices to predict/vote, or null if it's a Face-of style contest with its own nominee list], status [open/closed], host_cut_percentage, closes_at, created_at)
+- contest_entries table: (id, contest_id, user_id, prediction_or_nominee_choice, paid_at, is_winner [nullable, set after results])
+- Public Contest page: shows entry fee, spots filled/remaining (e.g. "7/10 entered"), prediction options or nominee list to choose from
+- "Enter Contest" button: pay entry_fee + ₦500 service fee via Paystack
+- Contest automatically shows "Closed" once current_entrants reaches max_entrants — no further entries accepted
+- Admin: create new contest (title, entry fee, max entrants, options/nominees, host cut %), view all entrants, and a "Mark Winner(s)" tool to manually flag winning entries once the real-world result is known — payout itself happens manually outside the platform (admin just records who won, does not auto-transfer prize money)
+- Log every entry in the transactions table
+
+Keep all new pages consistent with the existing white/blue branding and component style. Make sure Paystack checkout flows show the user a clear confirmation screen with the exact total amount before they finalize payment.

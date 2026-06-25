@@ -10,6 +10,7 @@ export const postsTable = pgTable("posts", {
   imageUrl: text("image_url"),
   category: text("category").notNull(),
   isBreaking: boolean("is_breaking").notNull().default(false),
+  isVip: boolean("is_vip").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

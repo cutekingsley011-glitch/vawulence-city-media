@@ -13,6 +13,11 @@ import AdminPage from "@/pages/AdminPage";
 import VoteCardsPage from "@/pages/VoteCardsPage";
 import VoteCardDetailPage from "@/pages/VoteCardDetailPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
+import EventsPage from "@/pages/EventsPage";
+import EventDetailPage from "@/pages/EventDetailPage";
+import AdsPage from "@/pages/AdsPage";
+import ContestsPage from "@/pages/ContestsPage";
+import VipPage from "@/pages/VipPage";
 import NotFound from "@/pages/not-found";
 import { useTrackVisit } from "@workspace/api-client-react";
 import { getStoredUser } from "@/lib/user";
@@ -51,12 +56,14 @@ function AppShell() {
           <Route path="/vote-cards" component={VoteCardsPage} />
           <Route path="/polls" component={VoteCardsPage} />
           <Route path="/leaderboard" component={LeaderboardPage} />
+          <Route path="/events/:id" component={EventDetailPage} />
+          <Route path="/events" component={EventsPage} />
+          <Route path="/advertise" component={AdsPage} />
+          <Route path="/contests" component={ContestsPage} />
+          <Route path="/vip" component={VipPage} />
           <Route path="/goat" component={VoteCardsPage} />
           <Route path="/marketplace">
             <ComingSoonPage title="Marketplace" description="Buy, sell, and connect with vendors across Nigeria. Coming soon." />
-          </Route>
-          <Route path="/events">
-            <ComingSoonPage title="Events" description="Discover the hottest events happening near you. Coming soon." />
           </Route>
           <Route path="/admin" component={AdminPage} />
           <Route component={NotFound} />

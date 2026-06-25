@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Home, FileText, Vote, Trophy, MoreHorizontal, ShoppingBag, CalendarDays } from "lucide-react";
+import { Home, FileText, Vote, Trophy, MoreHorizontal, ShoppingBag, CalendarDays, Megaphone, Trophy as TrophyIcon, Crown } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
@@ -11,14 +11,15 @@ const NAV_ITEMS = [
 ];
 
 const MORE_ITEMS = [
+  { label: "Events", href: "/events", icon: CalendarDays, comingSoon: false },
+  { label: "Contests", href: "/contests", icon: TrophyIcon, comingSoon: false },
+  { label: "VIP", href: "/vip", icon: Crown, comingSoon: false },
+  { label: "Advertise", href: "/advertise", icon: Megaphone, comingSoon: false },
   { label: "Marketplace", href: "/marketplace", icon: ShoppingBag, comingSoon: true },
-  { label: "Events", href: "/events", icon: CalendarDays, comingSoon: true },
   { label: "Connections", href: null, comingSoon: true },
   { label: "Services", href: null, comingSoon: true },
-  { label: "Ads", href: null, comingSoon: true },
   { label: "Recruitment", href: null, comingSoon: true },
   { label: "Podcast", href: null, comingSoon: true },
-  { label: "Contests", href: null, comingSoon: true },
 ];
 
 function isActive(href: string, location: string) {
@@ -131,21 +132,23 @@ function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
             item.href && !item.comingSoon ? (
               <Link key={item.label} href={item.href} onClick={onClose}>
                 <div
-                  className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/60 text-center cursor-pointer hover:bg-muted transition-colors"
+                  className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl bg-muted/60 text-center cursor-pointer hover:bg-blue-50 hover:text-primary transition-colors"
                   data-testid={`more-item-${item.label.toLowerCase()}`}
                 >
+                  {item.icon && <item.icon className="w-5 h-5" />}
                   <span className="text-sm font-medium text-foreground">{item.label}</span>
                 </div>
               </Link>
             ) : (
               <div
                 key={item.label}
-                className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/60 text-center cursor-pointer hover:bg-muted transition-colors"
+                className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-muted/60 text-center opacity-60"
                 data-testid={`more-item-${item.label.toLowerCase()}`}
               >
+                {item.icon && <item.icon className="w-5 h-5 text-muted-foreground" />}
                 <span className="text-sm font-medium text-foreground">{item.label}</span>
                 {item.comingSoon && (
-                  <span className="text-xs text-muted-foreground mt-0.5">Coming Soon</span>
+                  <span className="text-xs text-muted-foreground">Coming Soon</span>
                 )}
               </div>
             )

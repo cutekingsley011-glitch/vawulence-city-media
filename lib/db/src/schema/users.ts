@@ -1,4 +1,4 @@
-import { pgTable, text, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -10,6 +10,8 @@ export const usersTable = pgTable("users", {
   voteCount: integer("vote_count").notNull().default(0),
   totalPoints: integer("total_points").notNull().default(0),
   referredBy: text("referred_by"),
+  isSubscriber: boolean("is_subscriber").notNull().default(false),
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

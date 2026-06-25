@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useGetAdminStats,
@@ -38,7 +38,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, Pencil, Trash2, Check, X, Vote } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, Pencil, Trash2, Check, X, Vote, CalendarDays, Megaphone, Trophy, Receipt, Crown } from "lucide-react";
+
+// ─── Types for new sections ───────────────────────────────────────────────────
+interface AdminEvent { id: number; title: string; venue: string; eventDate: string; isPaid: boolean; ticketPrice: number | null; status: "upcoming" | "past"; }
+interface AdminAd { id: number; advertiserName: string; contactInfo: string; imageUrl: string; linkUrl: string | null; durationTier: string; price: number; status: string; submittedAt: string; expiresAt: string | null; }
+interface AdminContest { id: number; title: string; entryFee: number; currentEntrants: number; maxEntrants: number; status: string; closesAt: string; }
+interface AdminTransaction { id: number; userId: string; userName: string; type: string; baseAmountNaira: number; serviceFeeNaira: number; totalAmountNaira: number; paystackReference: string; status: string; createdAt: string; description: string; }
+interface AdminSubPlan { id: number; name: string; durationDays: number; price: number; }
+
+const TIER_LABELS: Record<string, string> = { "1week": "1 Week", "2weeks": "2 Weeks", "1month": "1 Month", "2months": "2 Months" };
 
 const ADMIN_SESSION_KEY = "vcm_admin";
 const ADMIN_PASSWORD = "vcmadmin2024";
@@ -293,6 +303,22 @@ function AdminPanel() {
   const [vcImgB, setVcImgB] = useState("");
   const [vcError, setVcError] = useState("");
 
+  // New sections state
+  const [events, setEvents] = useState<AdminEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [ads, setAds] = useState<AdminAd[]>([]);
+  const [adsLoading, setAdsLoading] = useState(false);
+  const [contests, setContests] = useState<AdminContest[]>([]);
+  const [contestsLoading, setContestsLoading] = useState(false);
+  const [transactions, setTransactions] = useState<AdminTransaction[]>([]);
+  const [txLoading, setTxLoading] = useState(false);
+  const [subPlans, setSubPlans] = useState<AdminSubPlan[]>([]);
+
+  // Event form
+  const [evtForm, setEvtForm] = useState({ title: "", description: "", venue: "", eventDate: "", imageUrl: "", isPaid: false, ticketPrice: "" });
+  // Contest form
+  const [ctForm, setCtForm] = useState({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", options: "" });
+
   function setVcOpt(idx: number, val: string) {
     setVcOpts((prev) => { const next = [...prev]; next[idx] = val; return next; });
   }
@@ -414,6 +440,93 @@ function AdminPanel() {
     );
   }
 
+  // Loaders for new sections
+  function loadEvents() {
+    setEventsLoading(true);
+    fetch("/api/events").then((r) => r.json()).then((d) => { setEvents(Array.isArray(d) ? d : []); setEventsLoading(false); }).catch(() => setEventsLoading(false));
+  }
+  function loadAds() {
+    setAdsLoading(true);
+    fetch("/api/admin/ads").then((r) => r.json()).then((d) => { setAds(Array.isArray(d) ? d : []); setAdsLoading(false); }).catch(() => setAdsLoading(false));
+  }
+  function loadContests() {
+    setContestsLoading(true);
+    fetch("/api/contests").then((r) => r.json()).then((d) => { setContests(Array.isArray(d) ? d : []); setContestsLoading(false); }).catch(() => setContestsLoading(false));
+  }
+  function loadTransactions() {
+    setTxLoading(true);
+    fetch("/api/admin/transactions").then((r) => r.json()).then((d) => { setTransactions(Array.isArray(d) ? d : []); setTxLoading(false); }).catch(() => setTxLoading(false));
+  }
+  function loadSubPlans() {
+    fetch("/api/subscription-plans").then((r) => r.json()).then((d) => { setSubPlans(Array.isArray(d) ? d : []); }).catch(() => {});
+  }
+
+  // Create event
+  async function handleCreateEvent(e: React.FormEvent) {
+    e.preventDefault();
+    if (!evtForm.title || !evtForm.venue || !evtForm.eventDate || !evtForm.description) return;
+    await fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: evtForm.title, description: evtForm.description, venue: evtForm.venue,
+        eventDate: new Date(evtForm.eventDate).toISOString(),
+        imageUrl: evtForm.imageUrl || null,
+        isPaid: evtForm.isPaid,
+        ticketPrice: evtForm.isPaid && evtForm.ticketPrice ? Number(evtForm.ticketPrice) * 100 : null,
+      }),
+    });
+    setEvtForm({ title: "", description: "", venue: "", eventDate: "", imageUrl: "", isPaid: false, ticketPrice: "" });
+    loadEvents();
+  }
+
+  async function handleDeleteEvent(id: number) {
+    if (!confirm("Delete this event?")) return;
+    await fetch(`/api/events/${id}`, { method: "DELETE" });
+    loadEvents();
+  }
+
+  // Approve/reject ads
+  async function handleApproveAd(id: number) {
+    await fetch(`/api/admin/ads/${id}/approve`, { method: "POST" });
+    loadAds();
+  }
+  async function handleRejectAd(id: number) {
+    if (!confirm("Reject and refund this ad?")) return;
+    await fetch(`/api/admin/ads/${id}/reject`, { method: "POST" });
+    loadAds();
+  }
+
+  // Create contest
+  async function handleCreateContest(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ctForm.title || !ctForm.entryFee || !ctForm.maxEntrants || !ctForm.closesAt) return;
+    await fetch("/api/contests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: ctForm.title, description: ctForm.description, imageUrl: ctForm.imageUrl || null,
+        entryFee: Number(ctForm.entryFee) * 100,
+        maxEntrants: Number(ctForm.maxEntrants),
+        closesAt: new Date(ctForm.closesAt).toISOString(),
+        options: ctForm.options ? ctForm.options.split(",").map((s) => s.trim()).filter(Boolean) : null,
+      }),
+    });
+    setCtForm({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", options: "" });
+    loadContests();
+  }
+
+  async function handleCloseContest(id: number) {
+    await fetch(`/api/contests/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "closed" }) });
+    loadContests();
+  }
+
+  async function handleDeleteContest(id: number) {
+    if (!confirm("Delete this contest?")) return;
+    await fetch(`/api/contests/${id}`, { method: "DELETE" });
+    loadContests();
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-3 py-4">
       <div className="flex items-center justify-between mb-6">
@@ -447,12 +560,16 @@ function AdminPanel() {
 
       <Tabs defaultValue="posts">
         <TabsList className="w-full mb-4 flex-wrap h-auto gap-1">
-          <TabsTrigger value="posts" className="flex-1" data-testid="tab-posts">Posts</TabsTrigger>
-          <TabsTrigger value="gists" className="flex-1" data-testid="tab-gists">
+          <TabsTrigger value="posts" className="flex-1 text-xs" data-testid="tab-posts">Posts</TabsTrigger>
+          <TabsTrigger value="gists" className="flex-1 text-xs" data-testid="tab-gists">
             Gists {stats?.pendingGists ? `(${stats.pendingGists})` : ""}
           </TabsTrigger>
-          <TabsTrigger value="vote-cards" className="flex-1" data-testid="tab-vote-cards">Vote Cards</TabsTrigger>
-          <TabsTrigger value="settings" className="flex-1" data-testid="tab-settings">Settings</TabsTrigger>
+          <TabsTrigger value="vote-cards" className="flex-1 text-xs" data-testid="tab-vote-cards">Votes</TabsTrigger>
+          <TabsTrigger value="events" className="flex-1 text-xs" data-testid="tab-events" onClick={loadEvents}>Events</TabsTrigger>
+          <TabsTrigger value="ads" className="flex-1 text-xs" data-testid="tab-ads" onClick={loadAds}>Ads</TabsTrigger>
+          <TabsTrigger value="contests" className="flex-1 text-xs" data-testid="tab-contests" onClick={loadContests}>Contests</TabsTrigger>
+          <TabsTrigger value="transactions" className="flex-1 text-xs" data-testid="tab-transactions" onClick={loadTransactions}>Ledger</TabsTrigger>
+          <TabsTrigger value="settings" className="flex-1 text-xs" data-testid="tab-settings" onClick={loadSubPlans}>Settings</TabsTrigger>
         </TabsList>
 
         {/* ── Posts tab ── */}
@@ -674,6 +791,151 @@ function AdminPanel() {
               )}
             </div>
           </div>
+        </TabsContent>
+
+        {/* ── Events tab ── */}
+        <TabsContent value="events">
+          <div className="space-y-5">
+            {/* Create event form */}
+            <div className="border border-border rounded-xl p-4 bg-white">
+              <h2 className="font-bold text-sm mb-3">Create Event</h2>
+              <form onSubmit={handleCreateEvent} className="space-y-3">
+                <Input placeholder="Title *" value={evtForm.title} onChange={(e) => setEvtForm((f) => ({ ...f, title: e.target.value }))} />
+                <Textarea placeholder="Description *" value={evtForm.description} onChange={(e) => setEvtForm((f) => ({ ...f, description: e.target.value }))} rows={2} />
+                <Input placeholder="Venue *" value={evtForm.venue} onChange={(e) => setEvtForm((f) => ({ ...f, venue: e.target.value }))} />
+                <Input type="datetime-local" value={evtForm.eventDate} onChange={(e) => setEvtForm((f) => ({ ...f, eventDate: e.target.value }))} />
+                <Input placeholder="Image URL (optional)" value={evtForm.imageUrl} onChange={(e) => setEvtForm((f) => ({ ...f, imageUrl: e.target.value }))} />
+                <div className="flex items-center gap-2">
+                  <Switch checked={evtForm.isPaid} onCheckedChange={(v) => setEvtForm((f) => ({ ...f, isPaid: v }))} id="evt-paid" />
+                  <Label htmlFor="evt-paid">Paid Event</Label>
+                </div>
+                {evtForm.isPaid && <Input type="number" placeholder="Ticket price (₦)" value={evtForm.ticketPrice} onChange={(e) => setEvtForm((f) => ({ ...f, ticketPrice: e.target.value }))} />}
+                <Button type="submit" size="sm"><CalendarDays className="w-3.5 h-3.5 mr-1" />Create Event</Button>
+              </form>
+            </div>
+            {/* Events list */}
+            <div>
+              <h2 className="font-bold text-sm mb-3">All Events</h2>
+              {eventsLoading ? <Skeleton className="h-24 rounded-xl" /> : events.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No events yet.</p> : (
+                <div className="space-y-2">
+                  {events.map((evt) => (
+                    <div key={evt.id} className="flex items-center gap-3 p-3 border border-border rounded-lg bg-white">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{evt.title}</p>
+                        <p className="text-xs text-muted-foreground">{evt.venue} · {new Date(evt.eventDate).toLocaleDateString("en-NG")}</p>
+                        <div className="flex gap-1 mt-0.5">
+                          <Badge variant={evt.status === "upcoming" ? "default" : "secondary"} className="text-xs">{evt.status}</Badge>
+                          {evt.isPaid && <Badge variant="outline" className="text-xs">₦{((evt.ticketPrice ?? 0) / 100).toLocaleString()}</Badge>}
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive" onClick={() => handleDeleteEvent(evt.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Ads tab ── */}
+        <TabsContent value="ads">
+          <h2 className="font-bold text-base mb-3">Ad Submissions</h2>
+          {adsLoading ? <Skeleton className="h-32 rounded-xl" /> : ads.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No ad submissions yet.</p> : (
+            <div className="space-y-3">
+              {ads.map((ad) => (
+                <div key={ad.id} className="border border-border rounded-xl p-4 bg-white">
+                  <div className="flex items-start gap-3">
+                    <img src={ad.imageUrl} alt={ad.advertiserName} className="w-20 h-14 object-cover rounded-lg shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm">{ad.advertiserName}</p>
+                      <p className="text-xs text-muted-foreground">{ad.contactInfo}</p>
+                      <p className="text-xs text-muted-foreground">{TIER_LABELS[ad.durationTier] ?? ad.durationTier} · ₦{(ad.price / 100).toLocaleString()}</p>
+                      <Badge variant={ad.status === "live" ? "default" : ad.status === "rejected" ? "destructive" : "secondary"} className="text-xs mt-1">{ad.status}</Badge>
+                    </div>
+                  </div>
+                  {ad.status === "under_review" && (
+                    <div className="flex gap-2 mt-3">
+                      <Button size="sm" onClick={() => handleApproveAd(ad.id)} className="gap-1"><Check className="w-3.5 h-3.5" />Approve</Button>
+                      <Button size="sm" variant="outline" className="gap-1 text-destructive border-destructive/30" onClick={() => handleRejectAd(ad.id)}><X className="w-3.5 h-3.5" />Reject & Refund</Button>
+                    </div>
+                  )}
+                  {ad.status === "live" && ad.expiresAt && (
+                    <p className="text-xs text-muted-foreground mt-2">Expires: {new Date(ad.expiresAt).toLocaleDateString("en-NG")}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ── Contests tab ── */}
+        <TabsContent value="contests">
+          <div className="space-y-5">
+            <div className="border border-border rounded-xl p-4 bg-white">
+              <h2 className="font-bold text-sm mb-3">Create Contest</h2>
+              <form onSubmit={handleCreateContest} className="space-y-3">
+                <Input placeholder="Title *" value={ctForm.title} onChange={(e) => setCtForm((f) => ({ ...f, title: e.target.value }))} />
+                <Textarea placeholder="Description" value={ctForm.description} onChange={(e) => setCtForm((f) => ({ ...f, description: e.target.value }))} rows={2} />
+                <Input placeholder="Image URL (optional)" value={ctForm.imageUrl} onChange={(e) => setCtForm((f) => ({ ...f, imageUrl: e.target.value }))} />
+                <div className="grid grid-cols-2 gap-2">
+                  <Input type="number" placeholder="Entry fee (₦) *" value={ctForm.entryFee} onChange={(e) => setCtForm((f) => ({ ...f, entryFee: e.target.value }))} />
+                  <Input type="number" placeholder="Max entrants *" value={ctForm.maxEntrants} onChange={(e) => setCtForm((f) => ({ ...f, maxEntrants: e.target.value }))} />
+                </div>
+                <Input type="datetime-local" value={ctForm.closesAt} onChange={(e) => setCtForm((f) => ({ ...f, closesAt: e.target.value }))} />
+                <Input placeholder="Options (comma-separated, optional)" value={ctForm.options} onChange={(e) => setCtForm((f) => ({ ...f, options: e.target.value }))} />
+                <Button type="submit" size="sm"><Trophy className="w-3.5 h-3.5 mr-1" />Create Contest</Button>
+              </form>
+            </div>
+            <div>
+              <h2 className="font-bold text-sm mb-3">All Contests</h2>
+              {contestsLoading ? <Skeleton className="h-24 rounded-xl" /> : contests.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No contests yet.</p> : (
+                <div className="space-y-2">
+                  {contests.map((c) => (
+                    <div key={c.id} className="flex items-center gap-3 p-3 border border-border rounded-lg bg-white">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{c.title}</p>
+                        <p className="text-xs text-muted-foreground">₦{(c.entryFee / 100).toLocaleString()} · {c.currentEntrants}/{c.maxEntrants} entered · {new Date(c.closesAt).toLocaleDateString("en-NG")}</p>
+                        <Badge variant={c.status === "open" ? "default" : "secondary"} className="text-xs">{c.status}</Badge>
+                      </div>
+                      <div className="flex gap-1">
+                        {c.status === "open" && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleCloseContest(c.id)}>Close</Button>}
+                        <Button variant="ghost" size="icon" className="w-8 h-8 text-destructive" onClick={() => handleDeleteContest(c.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Transactions (ledger) tab ── */}
+        <TabsContent value="transactions">
+          <h2 className="font-bold text-base mb-3">Transaction Ledger</h2>
+          {txLoading ? <div className="space-y-2">{[1,2,3].map((i) => <Skeleton key={i} className="h-14 rounded-lg" />)}</div> : transactions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">No transactions yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {transactions.map((tx) => (
+                <div key={tx.id} className="p-3 border border-border rounded-lg bg-white">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground leading-relaxed">{tx.description}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{new Date(tx.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="font-bold text-sm text-blue-700">₦{tx.totalAmountNaira.toLocaleString("en-NG")}</p>
+                      <Badge variant={tx.status === "success" ? "default" : tx.status === "refunded" ? "secondary" : "destructive"} className="text-xs">{tx.status}</Badge>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* ── Settings tab ── */}
