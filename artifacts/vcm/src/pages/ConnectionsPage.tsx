@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { MediaUpload } from "@/components/MediaUpload";
 import { Heart, MessageCircle, User, MapPin, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -195,8 +196,14 @@ export default function ConnectionsPage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Photo URL <span className="text-muted-foreground">(optional)</span></Label>
-                <Input placeholder="https://..." value={form.photoUrl} onChange={(e) => setForm({ ...form, photoUrl: e.target.value })} />
+                <Label>Your Photo <span className="text-muted-foreground">(optional)</span></Label>
+                <MediaUpload
+                  accept="image/*"
+                  maxMB={10}
+                  label="Upload Photo"
+                  value={form.photoUrl}
+                  onChange={(v) => setForm({ ...form, photoUrl: v })}
+                />
               </div>
               <div className="space-y-1">
                 <Label>About You *</Label>
