@@ -6,7 +6,6 @@ import {
   useListComments,
   useAddReaction,
   useCreateComment,
-  useLikeComment,
   getGetPostQueryKey,
   getGetReactionsQueryKey,
   getListCommentsQueryKey,
@@ -107,13 +106,15 @@ function CommentItem({
   onReply: (parentId: number) => void;
 }) {
   const queryClient = useQueryClient();
-  const likeComment = useLikeComment();
 
-  function handleLike() {
-    likeComment.mutate(
-      { id: comment.id },
-      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListCommentsQueryKey(postId) }) }
-    );
+  async function handleLike() {
+    const user = getStoredUser();
+    await fetch(`/api/comments/${comment.id}/like`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ actorName: user?.name ?? null, actorUserId: user?.id ?? null }),
+    });
+    queryClient.invalidateQueries({ queryKey: getListCommentsQueryKey(postId) });
   }
 
   return (

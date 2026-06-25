@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
-import { TopNav, BottomNav } from "@/components/Navigation";
+import { TopNav, BottomNav, MobileHeader } from "@/components/Navigation";
 import JoinModal from "@/components/JoinModal";
 import HomePage from "@/pages/HomePage";
 import PostPage from "@/pages/PostPage";
@@ -59,9 +59,10 @@ function AppShell() {
   return (
     <>
       <JoinModal open={showJoin} onJoined={() => setShowJoin(false)} />
+      <MobileHeader />
       <TopNav />
 
-      <main className="min-h-screen bg-background pt-0 md:pt-14 pb-20 md:pb-4">
+      <main className="min-h-screen bg-background pt-11 md:pt-14 pb-20 md:pb-4">
         <Switch>
           <Route path="/" component={HomePage} />
           <Route path="/post/:id" component={PostPage} />

@@ -23,6 +23,7 @@ import recruitmentRouter from "./recruitment";
 import spillRouter from "./spill";
 import pushRouter from "./push";
 import ogRouter from "./og";
+import notificationsRouter from "./notifications";
 
 const router: IRouter = Router();
 
@@ -50,5 +51,6 @@ router.use(recruitmentRouter);
 router.use(spillRouter);
 router.use(pushRouter);
 router.use(ogRouter);
+router.use(notificationsRouter);
 
 export default router;

@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useState, useRef, useCallback } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Home, FileText, Vote, Trophy, MoreHorizontal, ShoppingBag, CalendarDays, Megaphone, Trophy as TrophyIcon, Crown, Heart, Wrench, Briefcase, Flame } from "lucide-react";
+import { ProfileTrigger } from "./ProfilePanel";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
@@ -39,15 +40,32 @@ function useLongPress(onLongPress: () => void, ms = 5000) {
   }, []);
 
   return {
-    onMouseDown: start,
-    onMouseUp: cancel,
-    onMouseLeave: cancel,
-    onTouchStart: start,
-    onTouchEnd: cancel,
-    onTouchCancel: cancel,
+    onMouseDown: start, onMouseUp: cancel, onMouseLeave: cancel,
+    onTouchStart: start, onTouchEnd: cancel, onTouchCancel: cancel,
   };
 }
 
+// ── Mobile-only top header (logo + profile icon) ─────────────────────────────
+export function MobileHeader() {
+  const [, navigate] = useLocation();
+  const logoLongPress = useLongPress(() => navigate("/admin"), 5000);
+
+  return (
+    <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-border h-11 flex items-center justify-between px-4">
+      <img
+        src="/vcm-logo.png"
+        alt="VCM"
+        className="h-7 w-auto object-contain select-none cursor-pointer"
+        draggable={false}
+        {...logoLongPress}
+        onClick={() => navigate("/")}
+      />
+      <ProfileTrigger />
+    </header>
+  );
+}
+
+// ── Desktop top nav ───────────────────────────────────────────────────────────
 export function TopNav() {
   const [location, navigate] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -91,6 +109,7 @@ export function TopNav() {
             More
           </button>
         </nav>
+        <ProfileTrigger className="ml-4" />
       </header>
 
       <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
@@ -98,11 +117,10 @@ export function TopNav() {
   );
 }
 
+// ── Mobile bottom nav ─────────────────────────────────────────────────────────
 export function BottomNav() {
-  const [location, navigate] = useLocation();
+  const [location] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
-
-  const moreLongPress = useLongPress(() => { setMoreOpen(false); navigate("/admin"); }, 5000);
 
   return (
     <>
@@ -115,9 +133,7 @@ export function BottomNav() {
           <Link key={href} href={href} className="flex-1">
             <span
               className={`flex flex-col items-center gap-0.5 py-2 text-center cursor-pointer transition-colors ${
-                isActive(href, location)
-                  ? "text-primary"
-                  : "text-muted-foreground"
+                isActive(href, location) ? "text-primary" : "text-muted-foreground"
               }`}
               data-testid={`bottom-nav-${label.toLowerCase().replace(/\s+/g, "-")}`}
             >
@@ -127,10 +143,9 @@ export function BottomNav() {
           </Link>
         ))}
         <button
-          className="flex-1 flex flex-col items-center gap-0.5 py-2 text-muted-foreground select-none"
+          className="flex-1 flex flex-col items-center gap-0.5 py-2 text-muted-foreground"
           onClick={() => setMoreOpen(true)}
           data-testid="bottom-nav-more"
-          {...moreLongPress}
         >
           <MoreHorizontal className="w-5 h-5" />
           <span className="text-[10px] font-medium leading-none">More</span>

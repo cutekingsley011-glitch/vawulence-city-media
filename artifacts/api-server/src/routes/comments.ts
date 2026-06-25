@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { commentsTable, usersTable } from "@workspace/db";
-import { eq, desc, sql, and, isNull, isNotNull } from "drizzle-orm";
+import { commentsTable, usersTable, notificationsTable } from "@workspace/db";
+import { eq, desc, sql, and, isNull } from "drizzle-orm";
 import { ListCommentsParams, CreateCommentParams, CreateCommentBody, LikeCommentParams } from "@workspace/api-zod";
 import { awardPoints } from "../lib/points";
 
@@ -111,6 +111,25 @@ router.post("/posts/:postId/comments", async (req, res) => {
       .catch(() => {});
   }
 
+  // Notify parent commenter if this is a reply
+  if (body.data.parentCommentId && body.data.userId && userName) {
+    const [parent] = await db
+      .select()
+      .from(commentsTable)
+      .where(eq(commentsTable.id, body.data.parentCommentId))
+      .limit(1);
+    if (parent?.userId && parent.userId !== body.data.userId) {
+      await db.insert(notificationsTable).values({
+        userId: parent.userId,
+        type: "reply",
+        actorName: userName,
+        targetCommentId: parent.id,
+        targetPostId: params.data.postId,
+        targetVoteCardId: null,
+      }).catch(() => {});
+    }
+  }
+
   res.status(201).json(toDto(comment));
 });
 
@@ -131,6 +150,20 @@ router.post("/comments/:id/like", async (req, res) => {
   if (!comment) {
     res.status(404).json({ error: "Not found" });
     return;
+  }
+
+  // Notify comment owner about the like (optional body: { actorName, actorUserId })
+  const actorName = typeof req.body?.actorName === "string" ? req.body.actorName : null;
+  const actorUserId = typeof req.body?.actorUserId === "string" ? req.body.actorUserId : null;
+  if (actorName && comment.userId && comment.userId !== actorUserId) {
+    await db.insert(notificationsTable).values({
+      userId: comment.userId,
+      type: "like",
+      actorName,
+      targetCommentId: comment.id,
+      targetPostId: comment.postId ?? null,
+      targetVoteCardId: comment.voteCardId ?? null,
+    }).catch(() => {});
   }
 
   res.json(toDto(comment));

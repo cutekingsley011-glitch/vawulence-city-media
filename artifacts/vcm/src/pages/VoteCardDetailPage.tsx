@@ -5,7 +5,6 @@ import {
   useCastVote,
   useListVoteCardComments,
   useCreateVoteCardComment,
-  useLikeComment,
   getGetVoteCardQueryKey,
   getListVoteCardCommentsQueryKey,
 } from "@workspace/api-client-react";
@@ -69,7 +68,6 @@ export default function VoteCardDetailPage() {
 
   const castVote = useCastVote();
   const createComment = useCreateVoteCardComment();
-  const likeComment = useLikeComment();
 
   const [voted, setVoted] = useState<number | null>(null);
   const [counts, setCounts] = useState<{ [key: number]: number } | null>(null);
@@ -269,7 +267,15 @@ export default function VoteCardDetailPage() {
                 <p className="text-sm text-foreground leading-relaxed">{c.content}</p>
                 <button
                   className="flex items-center gap-1 mt-2 text-xs text-muted-foreground hover:text-primary"
-                  onClick={() => likeComment.mutate({ id: c.id })}
+                  onClick={async () => {
+                    const { getStoredUser } = await import("@/lib/user");
+                    const u = getStoredUser();
+                    await fetch(`/api/comments/${c.id}/like`, {
+                      method: "POST", headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ actorName: u?.name ?? null, actorUserId: u?.id ?? null }),
+                    });
+                    queryClient.invalidateQueries({ queryKey: ["vote-card-comments", id] });
+                  }}
                 >
                   <Heart className="w-3 h-3" />
                   {c.likeCount}
