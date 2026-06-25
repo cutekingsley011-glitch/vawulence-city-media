@@ -35,12 +35,12 @@ export function TopNav() {
     <>
       <header className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white border-b border-border shadow-sm h-14 items-center px-6">
         <Link href="/">
-          <span
-            className="text-2xl font-extrabold text-primary tracking-tight mr-8 cursor-pointer"
+          <img
+            src="/vcm-logo.png"
+            alt="Vawulence City Media"
+            className="h-10 w-auto mr-8 cursor-pointer object-contain"
             data-testid="logo-vcm"
-          >
-            VCM
-          </span>
+          />
         </Link>
         <nav className="flex items-center gap-1 flex-1">
           {NAV_ITEMS.map(({ label, href, icon: Icon }) => (

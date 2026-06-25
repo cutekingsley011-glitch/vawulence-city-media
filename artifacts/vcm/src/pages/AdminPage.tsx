@@ -72,7 +72,7 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
       <div className="bg-white border border-border rounded-2xl p-8 w-full max-w-sm shadow-lg" data-testid="admin-login">
         <div className="text-center mb-6">
-          <span className="text-3xl font-extrabold text-primary">VCM</span>
+          <img src="/vcm-logo.png" alt="VCM" className="h-14 w-auto object-contain mx-auto mb-1" />
           <p className="text-sm text-muted-foreground mt-1">Admin Dashboard</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">

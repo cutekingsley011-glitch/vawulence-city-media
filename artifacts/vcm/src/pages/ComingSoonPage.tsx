@@ -6,8 +6,8 @@ interface Props {
 export default function ComingSoonPage({ title, description }: Props) {
   return (
     <div className="max-w-2xl mx-auto px-3 py-16 text-center" data-testid="coming-soon-page">
-      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-        <span className="text-2xl font-extrabold text-primary">VCM</span>
+      <div className="w-20 h-20 flex items-center justify-center mx-auto mb-4">
+        <img src="/vcm-logo.png" alt="VCM" className="h-20 w-auto object-contain" />
       </div>
       <h1 className="text-2xl font-extrabold text-foreground mb-2" data-testid="coming-soon-title">
         {title}

@@ -50,7 +50,7 @@ export default function JoinModal({ open, onJoined }: Props) {
       >
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-2xl font-extrabold text-primary tracking-tight">VCM</span>
+            <img src="/vcm-logo.png" alt="VCM" className="h-10 w-auto object-contain" />
           </div>
           <DialogTitle className="text-xl font-bold text-foreground">
             Join the Conversation
