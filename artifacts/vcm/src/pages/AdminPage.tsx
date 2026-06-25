@@ -333,7 +333,7 @@ function AdminPanel() {
   // Event form
   const [evtForm, setEvtForm] = useState({ title: "", description: "", venue: "", eventDate: "", imageUrl: "", videoUrl: "", isPaid: false, ticketPrice: "" });
   // Contest form
-  const [ctForm, setCtForm] = useState({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", options: "" });
+  const [ctForm, setCtForm] = useState({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", optionCount: 2, options: ["", ""] });
   // Marketplace state
   const [marketItems, setMarketItems] = useState<AdminMarketItem[]>([]);
   const [marketLoading, setMarketLoading] = useState(false);
@@ -555,11 +555,11 @@ function AdminPanel() {
         entryFee: Number(ctForm.entryFee) * 100,
         maxEntrants: Number(ctForm.maxEntrants),
         closesAt: new Date(ctForm.closesAt).toISOString(),
-        options: ctForm.options ? ctForm.options.split(",").map((s) => s.trim()).filter(Boolean) : null,
+        options: ctForm.options.filter((s) => s.trim()).length >= 2 ? ctForm.options.map((s) => s.trim()).filter(Boolean) : null,
       }),
     });
     toast.success("Contest created!");
-    setCtForm({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", options: "" });
+    setCtForm({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", optionCount: 2, options: ["", ""] });
     loadContests();
   }
 
@@ -1036,7 +1036,43 @@ function AdminPanel() {
                   <Input type="number" placeholder="Max entrants *" value={ctForm.maxEntrants} onChange={(e) => setCtForm((f) => ({ ...f, maxEntrants: e.target.value }))} />
                 </div>
                 <Input type="datetime-local" value={ctForm.closesAt} onChange={(e) => setCtForm((f) => ({ ...f, closesAt: e.target.value }))} />
-                <Input placeholder="Options (comma-separated, optional)" value={ctForm.options} onChange={(e) => setCtForm((f) => ({ ...f, options: e.target.value }))} />
+                {/* Option count selector + individual fields */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-semibold text-muted-foreground shrink-0">How many options?</span>
+                    <div className="flex gap-1">
+                      {[2, 3, 4].map((n) => (
+                        <button
+                          key={n}
+                          type="button"
+                          onClick={() => {
+                            const next = Array.from({ length: n }, (_, i) => ctForm.options[i] ?? "");
+                            setCtForm((f) => ({ ...f, optionCount: n, options: next }));
+                          }}
+                          className={`px-3 py-1 rounded-lg text-xs font-bold border transition-colors ${
+                            ctForm.optionCount === n
+                              ? "bg-primary text-white border-primary"
+                              : "bg-white text-muted-foreground border-border hover:border-primary hover:text-primary"
+                          }`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {ctForm.options.map((opt, i) => (
+                    <Input
+                      key={i}
+                      placeholder={`Option ${String.fromCharCode(65 + i)} (e.g. ${["Wizkid", "Davido", "Burna Boy", "Asake"][i]})`}
+                      value={opt}
+                      onChange={(e) => {
+                        const next = [...ctForm.options];
+                        next[i] = e.target.value;
+                        setCtForm((f) => ({ ...f, options: next }));
+                      }}
+                    />
+                  ))}
+                </div>
                 <Button type="submit" size="sm"><Trophy className="w-3.5 h-3.5 mr-1" />Create Contest</Button>
               </form>
             </div>
