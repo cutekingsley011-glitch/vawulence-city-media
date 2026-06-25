@@ -56,7 +56,7 @@ interface AdminJob { id: number; title: string; companyName: string; description
 interface AdminSpillSession { id: number; questionText: string; scheduledTime: string | null; isLive: boolean; createdAt: string; }
 
 const ADMIN_SESSION_KEY = "vcm_admin";
-const ADMIN_PASSWORD = "vcmadmin2024";
+const ADMIN_PASSWORD = "vcmadmin6969";
 
 // ─── Auth gate ────────────────────────────────────────────────────────────────
 function AdminLogin({ onLogin }: { onLogin: () => void }) {

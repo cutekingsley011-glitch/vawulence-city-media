@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Home, FileText, Vote, Trophy, MoreHorizontal, ShoppingBag, CalendarDays, Megaphone, Trophy as TrophyIcon, Crown, Heart, Wrench, Briefcase, Flame } from "lucide-react";
 
@@ -27,21 +27,45 @@ function isActive(href: string, location: string) {
   return location.startsWith(href);
 }
 
+function useLongPress(onLongPress: () => void, ms = 5000) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const start = useCallback(() => {
+    timerRef.current = setTimeout(() => { onLongPress(); }, ms);
+  }, [onLongPress, ms]);
+
+  const cancel = useCallback(() => {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+  }, []);
+
+  return {
+    onMouseDown: start,
+    onMouseUp: cancel,
+    onMouseLeave: cancel,
+    onTouchStart: start,
+    onTouchEnd: cancel,
+    onTouchCancel: cancel,
+  };
+}
+
 export function TopNav() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  const logoLongPress = useLongPress(() => navigate("/admin"), 5000);
 
   return (
     <>
       <header className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white border-b border-border shadow-sm h-14 items-center px-6">
-        <Link href="/">
-          <img
-            src="/vcm-logo.png"
-            alt="Vawulence City Media"
-            className="h-10 w-auto mr-8 cursor-pointer object-contain"
-            data-testid="logo-vcm"
-          />
-        </Link>
+        <img
+          src="/vcm-logo.png"
+          alt="Vawulence City Media"
+          className="h-10 w-auto mr-8 cursor-pointer object-contain select-none"
+          data-testid="logo-vcm"
+          draggable={false}
+          {...logoLongPress}
+          onClick={() => navigate("/")}
+        />
         <nav className="flex items-center gap-1 flex-1">
           {NAV_ITEMS.map(({ label, href, icon: Icon }) => (
             <Link key={href} href={href}>
@@ -67,11 +91,6 @@ export function TopNav() {
             More
           </button>
         </nav>
-        <Link href="/admin">
-          <span className="text-xs text-muted-foreground hover:text-primary cursor-pointer" data-testid="nav-admin">
-            Admin
-          </span>
-        </Link>
       </header>
 
       <MoreSheet open={moreOpen} onClose={() => setMoreOpen(false)} />
@@ -80,8 +99,10 @@ export function TopNav() {
 }
 
 export function BottomNav() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
+
+  const moreLongPress = useLongPress(() => { setMoreOpen(false); navigate("/admin"); }, 5000);
 
   return (
     <>
@@ -106,9 +127,10 @@ export function BottomNav() {
           </Link>
         ))}
         <button
-          className="flex-1 flex flex-col items-center gap-0.5 py-2 text-muted-foreground"
+          className="flex-1 flex flex-col items-center gap-0.5 py-2 text-muted-foreground select-none"
           onClick={() => setMoreOpen(true)}
           data-testid="bottom-nav-more"
+          {...moreLongPress}
         >
           <MoreHorizontal className="w-5 h-5" />
           <span className="text-[10px] font-medium leading-none">More</span>
