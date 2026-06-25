@@ -49,6 +49,10 @@ interface AdminTransaction { id: number; userId: string; userName: string; type:
 interface AdminSubPlan { id: number; name: string; durationDays: number; price: number; }
 
 const TIER_LABELS: Record<string, string> = { "1week": "1 Week", "2weeks": "2 Weeks", "1month": "1 Month", "2months": "2 Months" };
+interface AdminMarketItem { id: number; name: string; description: string; price: number; imageUrls: string[]; category: string; status: string; createdAt: string; }
+interface AdminConnection { id: number; name: string; ageBracket: string; state: string; photoUrl: string | null; lookingFor: string; bioText: string; status: string; createdAt: string; }
+interface AdminEscrowReq { id: number; userId: string | null; description: string; amount: number; status: string; notes: string | null; createdAt: string; }
+interface AdminJob { id: number; title: string; companyName: string; description: string; flyerImageUrl: string | null; requirements: string[]; applyMethod: string; applyContact: string; status: string; createdAt: string; }
 
 const ADMIN_SESSION_KEY = "vcm_admin";
 const ADMIN_PASSWORD = "vcmadmin2024";
@@ -318,6 +322,21 @@ function AdminPanel() {
   const [evtForm, setEvtForm] = useState({ title: "", description: "", venue: "", eventDate: "", imageUrl: "", isPaid: false, ticketPrice: "" });
   // Contest form
   const [ctForm, setCtForm] = useState({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", options: "" });
+  // Marketplace state
+  const [marketItems, setMarketItems] = useState<AdminMarketItem[]>([]);
+  const [marketLoading, setMarketLoading] = useState(false);
+  const [marketForm, setMarketForm] = useState({ name: "", description: "", price: "", imageUrls: "", category: "General" });
+  // Connections state
+  const [connections, setConnections] = useState<AdminConnection[]>([]);
+  const [connLoading, setConnLoading] = useState(false);
+  // Escrow state
+  const [escrowReqs, setEscrowReqs] = useState<AdminEscrowReq[]>([]);
+  const [escrowLoading, setEscrowLoading] = useState(false);
+  const [escrowForm, setEscrowForm] = useState({ description: "", amount: "", notes: "" });
+  // Recruitment state
+  const [jobs, setJobs] = useState<AdminJob[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobForm, setJobForm] = useState({ title: "", companyName: "", description: "", flyerImageUrl: "", requirements: "", applyMethod: "whatsapp", applyContact: "" });
 
   function setVcOpt(idx: number, val: string) {
     setVcOpts((prev) => { const next = [...prev]; next[idx] = val; return next; });
@@ -460,6 +479,22 @@ function AdminPanel() {
   function loadSubPlans() {
     fetch("/api/subscription-plans").then((r) => r.json()).then((d) => { setSubPlans(Array.isArray(d) ? d : []); }).catch(() => {});
   }
+  function loadMarket() {
+    setMarketLoading(true);
+    fetch("/api/admin/marketplace").then((r) => r.json()).then((d) => { setMarketItems(Array.isArray(d) ? d : []); setMarketLoading(false); }).catch(() => setMarketLoading(false));
+  }
+  function loadConnections() {
+    setConnLoading(true);
+    fetch("/api/admin/connections").then((r) => r.json()).then((d) => { setConnections(Array.isArray(d) ? d : []); setConnLoading(false); }).catch(() => setConnLoading(false));
+  }
+  function loadEscrow() {
+    setEscrowLoading(true);
+    fetch("/api/admin/escrow-requests").then((r) => r.json()).then((d) => { setEscrowReqs(Array.isArray(d) ? d : []); setEscrowLoading(false); }).catch(() => setEscrowLoading(false));
+  }
+  function loadJobs() {
+    setJobsLoading(true);
+    fetch("/api/admin/recruitment").then((r) => r.json()).then((d) => { setJobs(Array.isArray(d) ? d : []); setJobsLoading(false); }).catch(() => setJobsLoading(false));
+  }
 
   // Create event
   async function handleCreateEvent(e: React.FormEvent) {
@@ -527,6 +562,95 @@ function AdminPanel() {
     loadContests();
   }
 
+  // ── Marketplace handlers ──
+  async function handleCreateMarketItem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!marketForm.name || !marketForm.description || !marketForm.price) return;
+    await fetch("/api/admin/marketplace", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: marketForm.name, description: marketForm.description,
+        price: Math.round(Number(marketForm.price) * 100),
+        imageUrls: marketForm.imageUrls ? marketForm.imageUrls.split(",").map((s) => s.trim()).filter(Boolean) : [],
+        category: marketForm.category,
+      }),
+    });
+    setMarketForm({ name: "", description: "", price: "", imageUrls: "", category: "General" });
+    loadMarket();
+  }
+  async function handleMarkSold(id: number) {
+    if (!confirm("Mark as sold? This hides the item from public view immediately.")) return;
+    await fetch(`/api/admin/marketplace/${id}/sold`, { method: "POST" });
+    loadMarket();
+  }
+  async function handleDeleteMarketItem(id: number) {
+    if (!confirm("Delete this listing?")) return;
+    await fetch(`/api/admin/marketplace/${id}`, { method: "DELETE" });
+    loadMarket();
+  }
+
+  // ── Connections handlers ──
+  async function handleApproveConnection(id: number) {
+    await fetch(`/api/admin/connections/${id}/approve`, { method: "POST" });
+    loadConnections();
+  }
+  async function handleRejectConnection(id: number) {
+    if (!confirm("Reject this connection profile?")) return;
+    await fetch(`/api/admin/connections/${id}/reject`, { method: "POST" });
+    loadConnections();
+  }
+  async function handleDeleteConnection(id: number) {
+    if (!confirm("Remove this approved profile? (e.g. complaint/dispute)")) return;
+    await fetch(`/api/admin/connections/${id}`, { method: "DELETE" });
+    loadConnections();
+  }
+
+  // ── Escrow handlers ──
+  async function handleCreateEscrow(e: React.FormEvent) {
+    e.preventDefault();
+    if (!escrowForm.description) return;
+    await fetch("/api/admin/escrow-requests", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description: escrowForm.description, amount: Math.round(Number(escrowForm.amount) * 100) || 0, notes: escrowForm.notes || null }),
+    });
+    setEscrowForm({ description: "", amount: "", notes: "" });
+    loadEscrow();
+  }
+  async function handleEscrowStatus(id: number, status: string) {
+    await fetch(`/api/admin/escrow-requests/${id}/status`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    loadEscrow();
+  }
+
+  // ── Recruitment handlers ──
+  async function handleCreateJob(e: React.FormEvent) {
+    e.preventDefault();
+    if (!jobForm.title || !jobForm.companyName || !jobForm.description || !jobForm.applyContact) return;
+    await fetch("/api/admin/recruitment", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: jobForm.title, companyName: jobForm.companyName, description: jobForm.description,
+        flyerImageUrl: jobForm.flyerImageUrl || null,
+        requirements: jobForm.requirements ? jobForm.requirements.split("\n").map((s) => s.trim()).filter(Boolean) : [],
+        applyMethod: jobForm.applyMethod, applyContact: jobForm.applyContact,
+      }),
+    });
+    setJobForm({ title: "", companyName: "", description: "", flyerImageUrl: "", requirements: "", applyMethod: "whatsapp", applyContact: "" });
+    loadJobs();
+  }
+  async function handleCloseJob(id: number) {
+    if (!confirm("Close this posting? It will be hidden from public view.")) return;
+    await fetch(`/api/admin/recruitment/${id}/close`, { method: "POST" });
+    loadJobs();
+  }
+  async function handleDeleteJob(id: number) {
+    if (!confirm("Delete this job posting?")) return;
+    await fetch(`/api/admin/recruitment/${id}`, { method: "DELETE" });
+    loadJobs();
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-3 py-4">
       <div className="flex items-center justify-between mb-6">
@@ -570,6 +694,10 @@ function AdminPanel() {
           <TabsTrigger value="contests" className="flex-1 text-xs" data-testid="tab-contests" onClick={loadContests}>Contests</TabsTrigger>
           <TabsTrigger value="transactions" className="flex-1 text-xs" data-testid="tab-transactions" onClick={loadTransactions}>Ledger</TabsTrigger>
           <TabsTrigger value="settings" className="flex-1 text-xs" data-testid="tab-settings" onClick={loadSubPlans}>Settings</TabsTrigger>
+          <TabsTrigger value="market" className="flex-1 text-xs" onClick={loadMarket}>Market</TabsTrigger>
+          <TabsTrigger value="conn" className="flex-1 text-xs" onClick={loadConnections}>Connect</TabsTrigger>
+          <TabsTrigger value="escrow" className="flex-1 text-xs" onClick={loadEscrow}>Escrow</TabsTrigger>
+          <TabsTrigger value="jobs" className="flex-1 text-xs" onClick={loadJobs}>Jobs</TabsTrigger>
         </TabsList>
 
         {/* ── Posts tab ── */}
@@ -1004,6 +1132,173 @@ function AdminPanel() {
             </div>
           </div>
         </TabsContent>
+
+        {/* ── Marketplace tab ── */}
+        <TabsContent value="market">
+          <div className="space-y-4">
+            <div className="border border-border rounded-xl p-4 bg-white">
+              <h3 className="font-bold text-sm mb-3">Add New Listing</h3>
+              <form onSubmit={handleCreateMarketItem} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Input placeholder="Item name *" value={marketForm.name} onChange={(e) => setMarketForm({ ...marketForm, name: e.target.value })} />
+                  <Input placeholder="Price in ₦ *" type="number" value={marketForm.price} onChange={(e) => setMarketForm({ ...marketForm, price: e.target.value })} />
+                </div>
+                <Textarea placeholder="Description *" rows={2} value={marketForm.description} onChange={(e) => setMarketForm({ ...marketForm, description: e.target.value })} />
+                <Input placeholder="Category (e.g. Electronics, Fashion)" value={marketForm.category} onChange={(e) => setMarketForm({ ...marketForm, category: e.target.value })} />
+                <Input placeholder="Photo URLs (comma-separated)" value={marketForm.imageUrls} onChange={(e) => setMarketForm({ ...marketForm, imageUrls: e.target.value })} />
+                <Button type="submit" size="sm" disabled={!marketForm.name || !marketForm.price}>Add Listing</Button>
+              </form>
+            </div>
+            <div className="space-y-2">
+              {marketLoading ? <Skeleton className="h-16 rounded-xl" /> : marketItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No listings yet.</p>
+              ) : marketItems.map((item) => (
+                <div key={item.id} className="border border-border rounded-xl p-3 bg-white flex items-center justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">₦{(item.price / 100).toLocaleString("en-NG")} · {item.category}</p>
+                    <Badge variant={item.status === "available" ? "default" : "secondary"} className="text-xs mt-1">{item.status}</Badge>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    {item.status === "available" && (
+                      <Button size="sm" variant="outline" className="text-orange-600 border-orange-200" onClick={() => handleMarkSold(item.id)}>Mark Sold</Button>
+                    )}
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDeleteMarketItem(item.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Connections tab ── */}
+        <TabsContent value="conn">
+          <div className="space-y-3">
+            {connLoading ? <Skeleton className="h-16 rounded-xl" /> : connections.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-6">No connection profiles yet.</p>
+            ) : connections.map((c) => (
+              <div key={c.id} className="border border-border rounded-xl p-3 bg-white">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <p className="font-medium text-sm">{c.name}</p>
+                      <Badge variant="outline" className="text-xs">{c.ageBracket}</Badge>
+                      <Badge variant={c.status === "approved" ? "default" : c.status === "pending" ? "secondary" : "destructive"} className="text-xs">{c.status}</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{c.state} · Looking for: {c.lookingFor}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{c.bioText}</p>
+                  </div>
+                  <div className="flex gap-1.5 shrink-0">
+                    {c.status === "pending" && (
+                      <>
+                        <Button size="sm" onClick={() => handleApproveConnection(c.id)} className="h-7 px-2 text-xs gap-1"><Check className="w-3 h-3" />Approve</Button>
+                        <Button size="sm" variant="outline" onClick={() => handleRejectConnection(c.id)} className="h-7 px-2 text-xs gap-1 text-destructive border-destructive/30"><X className="w-3 h-3" />Reject</Button>
+                      </>
+                    )}
+                    {c.status === "approved" && (
+                      <Button size="sm" variant="ghost" className="h-7 text-destructive hover:text-destructive" onClick={() => handleDeleteConnection(c.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+
+        {/* ── Escrow tab ── */}
+        <TabsContent value="escrow">
+          <div className="space-y-4">
+            <div className="border border-border rounded-xl p-4 bg-white">
+              <h3 className="font-bold text-sm mb-3">Log New Escrow Deal</h3>
+              <form onSubmit={handleCreateEscrow} className="space-y-3">
+                <Textarea placeholder="Deal description *" rows={2} value={escrowForm.description} onChange={(e) => setEscrowForm({ ...escrowForm, description: e.target.value })} />
+                <Input placeholder="Deal amount in ₦ (optional)" type="number" value={escrowForm.amount} onChange={(e) => setEscrowForm({ ...escrowForm, amount: e.target.value })} />
+                <Input placeholder="Notes (optional)" value={escrowForm.notes} onChange={(e) => setEscrowForm({ ...escrowForm, notes: e.target.value })} />
+                <Button type="submit" size="sm" disabled={!escrowForm.description}>Log Deal</Button>
+              </form>
+            </div>
+            <div className="space-y-2">
+              {escrowLoading ? <Skeleton className="h-16 rounded-xl" /> : escrowReqs.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No escrow deals logged yet.</p>
+              ) : escrowReqs.map((r) => (
+                <div key={r.id} className="border border-border rounded-xl p-3 bg-white">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="text-sm font-medium line-clamp-2">{r.description}</p>
+                      {r.amount > 0 && <p className="text-xs text-muted-foreground">₦{(r.amount / 100).toLocaleString("en-NG")}</p>}
+                      {r.notes && <p className="text-xs text-muted-foreground italic mt-0.5">{r.notes}</p>}
+                    </div>
+                    <Badge className={`shrink-0 text-xs ${r.status === "released" ? "bg-green-100 text-green-700" : r.status === "confirmed" ? "bg-blue-100 text-blue-700" : r.status === "paid_in" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-700"}`}>
+                      {r.status.replace("_", " ")}
+                    </Badge>
+                  </div>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {["pending", "paid_in", "confirmed", "released"].map((s) => (
+                      <Button key={s} size="sm" variant={r.status === s ? "default" : "outline"} className="h-6 px-2 text-xs" onClick={() => handleEscrowStatus(r.id, s)}>
+                        {s.replace("_", " ")}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Jobs tab ── */}
+        <TabsContent value="jobs">
+          <div className="space-y-4">
+            <div className="border border-border rounded-xl p-4 bg-white">
+              <h3 className="font-bold text-sm mb-3">Post a Job</h3>
+              <form onSubmit={handleCreateJob} className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Input placeholder="Job title *" value={jobForm.title} onChange={(e) => setJobForm({ ...jobForm, title: e.target.value })} />
+                  <Input placeholder="Company name *" value={jobForm.companyName} onChange={(e) => setJobForm({ ...jobForm, companyName: e.target.value })} />
+                </div>
+                <Textarea placeholder="Full job description *" rows={3} value={jobForm.description} onChange={(e) => setJobForm({ ...jobForm, description: e.target.value })} />
+                <Textarea placeholder="Requirements (one per line, e.g. Must reside in Abakaliki)" rows={3} value={jobForm.requirements} onChange={(e) => setJobForm({ ...jobForm, requirements: e.target.value })} />
+                <Input placeholder="Flyer image URL (optional)" value={jobForm.flyerImageUrl} onChange={(e) => setJobForm({ ...jobForm, flyerImageUrl: e.target.value })} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Select value={jobForm.applyMethod} onValueChange={(v) => setJobForm({ ...jobForm, applyMethod: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="whatsapp">WhatsApp number</SelectItem>
+                      <SelectItem value="office_address">Office address</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input placeholder={jobForm.applyMethod === "whatsapp" ? "Phone number (e.g. 08012345678)" : "Office address"} value={jobForm.applyContact} onChange={(e) => setJobForm({ ...jobForm, applyContact: e.target.value })} />
+                </div>
+                <Button type="submit" size="sm" disabled={!jobForm.title || !jobForm.companyName || !jobForm.description || !jobForm.applyContact}>Post Job</Button>
+              </form>
+            </div>
+            <div className="space-y-2">
+              {jobsLoading ? <Skeleton className="h-16 rounded-xl" /> : jobs.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No job postings yet.</p>
+              ) : jobs.map((j) => (
+                <div key={j.id} className="border border-border rounded-xl p-3 bg-white flex items-center justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{j.title}</p>
+                    <p className="text-xs text-muted-foreground">{j.companyName} · {j.applyMethod === "whatsapp" ? "WhatsApp" : "Office"}</p>
+                    <Badge variant={j.status === "open" ? "default" : "secondary"} className="text-xs mt-1">{j.status}</Badge>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    {j.status === "open" && (
+                      <Button size="sm" variant="outline" className="text-orange-600 border-orange-200" onClick={() => handleCloseJob(j.id)}>Close</Button>
+                    )}
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDeleteJob(j.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </TabsContent>
+
       </Tabs>
 
       <PostFormModal

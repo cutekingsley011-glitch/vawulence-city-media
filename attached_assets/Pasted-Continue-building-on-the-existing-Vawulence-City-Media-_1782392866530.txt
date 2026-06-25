@@ -1,0 +1,31 @@
+Continue building on the existing Vawulence City Media app. This is Stage 4 — add the following on top of what already exists. Do not remove or rewrite existing functionality; extend it.
+
+REPLACE THE "MARKETPLACE" PLACEHOLDER WITH A FULL MARKETPLACE:
+- marketplace_items table: (id, name, description, price, image_urls [array, support multiple photos], category, status [available/sold], created_at)
+- Public Marketplace page: grid/list of available items only (sold items are completely hidden from public view, not just marked), filterable by category
+- Item detail page: full photos, description, price, and a "Message Admin to Buy" button that opens WhatsApp with a pre-filled message including the item name (e.g. "Hi, I'm interested in [Item Name] for ₦[Price]")
+- Admin: full CRUD on listings — add item (name, price, photos, description, category), and critically, a "Mark as Sold" button that immediately and permanently removes the item from public view
+
+ADD "CONNECTIONS" PAGE (inside the "More" menu):
+- connections table: (id, user_id, name, age_bracket [18-20/20-25/25-30/30-35], state, photo_url [optional, nullable], looking_for [Male/Female/Bi/Gay/Lesbian], bio_text, consent_given [boolean, must be true to submit], status [pending/approved/rejected], created_at)
+- Submission form: name, age bracket dropdown, state, optional photo upload, looking_for dropdown, free-text bio box, and a required consent checkbox with text like "I confirm this is really me and I agree to have this shown publicly on Vawulence City Media" — form cannot submit unless this is checked
+- Submissions go to an admin approval queue first, same pattern as Gists — nothing shows publicly until approved
+- Public Connections feed: approved cards only, showing photo (if provided), name, age bracket, state, looking_for, bio text
+- Each card has a "Request Contact" button that opens WhatsApp to the admin number with a pre-filled message (e.g. "Hi, I'd like contact info for [Name]'s profile on Connections")
+- Admin: approval queue (approve/reject), and ability to remove any already-approved card at any time (for complaints/disputes)
+
+ADD "SERVICES" PAGE (inside the "More" menu):
+- A simple hub page with 4 service cards: Escrow, CAC Registration, Content Creation, Country Numbers
+- Each service card expands to (or links to) a simple info page: short description of the service, and a "Contact Admin" button that opens WhatsApp with a pre-filled message naming that specific service (e.g. "Hi, I'm interested in the Escrow service")
+- For Escrow specifically, add a basic request-tracking tool in admin:
+  - escrow_requests table: (id, user_id, description, amount, status [pending/paid_in/confirmed/released], created_at, notes)
+  - Admin can update status manually as a deal progresses through these stages
+  - This is purely a tracking tool — no money moves through the platform itself for this feature, it just helps admin keep records instead of relying on memory/WhatsApp scrollback
+
+ADD "RECRUITMENT" PAGE (inside the "More" menu):
+- job_postings table: (id, title, company_name, description, flyer_image_url [optional], requirements [array of text strings, e.g. "Must reside in Abakaliki", "Female only", "Must be a graduate"], apply_method [whatsapp/office_address], apply_contact [phone number or address text], status [open/closed], created_at)
+- Public Recruitment page: list of open job postings, each showing title, company, flyer image if provided, and requirements as a clear bullet list
+- Job detail/expanded view: full description + an "Apply" button — if apply_method is whatsapp, opens WhatsApp to apply_contact number; if office_address, just displays the address text clearly with a "Copy Address" button
+- Admin: full CRUD on job postings, including marking a posting as closed (hides it from public view, but don't delete the record)
+
+Keep all new pages consistent with the existing white/blue branding and component patterns already established (same card styles, same approval-queue pattern used for Gists, same WhatsApp-button pattern already used elsewhere in the app).

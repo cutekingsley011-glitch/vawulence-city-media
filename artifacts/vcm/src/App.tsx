@@ -18,6 +18,11 @@ import EventDetailPage from "@/pages/EventDetailPage";
 import AdsPage from "@/pages/AdsPage";
 import ContestsPage from "@/pages/ContestsPage";
 import VipPage from "@/pages/VipPage";
+import MarketplacePage from "@/pages/MarketplacePage";
+import MarketplaceItemPage from "@/pages/MarketplaceItemPage";
+import ConnectionsPage from "@/pages/ConnectionsPage";
+import ServicesPage from "@/pages/ServicesPage";
+import RecruitmentPage from "@/pages/RecruitmentPage";
 import NotFound from "@/pages/not-found";
 import { useTrackVisit } from "@workspace/api-client-react";
 import { getStoredUser } from "@/lib/user";
@@ -62,9 +67,11 @@ function AppShell() {
           <Route path="/contests" component={ContestsPage} />
           <Route path="/vip" component={VipPage} />
           <Route path="/goat" component={VoteCardsPage} />
-          <Route path="/marketplace">
-            <ComingSoonPage title="Marketplace" description="Buy, sell, and connect with vendors across Nigeria. Coming soon." />
-          </Route>
+          <Route path="/marketplace/:id" component={MarketplaceItemPage} />
+          <Route path="/marketplace" component={MarketplacePage} />
+          <Route path="/connections" component={ConnectionsPage} />
+          <Route path="/services" component={ServicesPage} />
+          <Route path="/recruitment" component={RecruitmentPage} />
           <Route path="/admin" component={AdminPage} />
           <Route component={NotFound} />
         </Switch>

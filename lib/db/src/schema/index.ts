@@ -13,3 +13,7 @@ export * from "./transactions";
 export * from "./ads";
 export * from "./contests";
 export * from "./subscription_plans";
+export * from "./marketplace";
+export * from "./connections";
+export * from "./escrow_requests";
+export * from "./job_postings";

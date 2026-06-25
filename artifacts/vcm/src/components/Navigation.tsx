@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Home, FileText, Vote, Trophy, MoreHorizontal, ShoppingBag, CalendarDays, Megaphone, Trophy as TrophyIcon, Crown } from "lucide-react";
+import { Home, FileText, Vote, Trophy, MoreHorizontal, ShoppingBag, CalendarDays, Megaphone, Trophy as TrophyIcon, Crown, Heart, Wrench, Briefcase, Mic } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
@@ -15,11 +15,11 @@ const MORE_ITEMS = [
   { label: "Contests", href: "/contests", icon: TrophyIcon, comingSoon: false },
   { label: "VIP", href: "/vip", icon: Crown, comingSoon: false },
   { label: "Advertise", href: "/advertise", icon: Megaphone, comingSoon: false },
-  { label: "Marketplace", href: "/marketplace", icon: ShoppingBag, comingSoon: true },
-  { label: "Connections", href: null, comingSoon: true },
-  { label: "Services", href: null, comingSoon: true },
-  { label: "Recruitment", href: null, comingSoon: true },
-  { label: "Podcast", href: null, comingSoon: true },
+  { label: "Marketplace", href: "/marketplace", icon: ShoppingBag, comingSoon: false },
+  { label: "Connections", href: "/connections", icon: Heart, comingSoon: false },
+  { label: "Services", href: "/services", icon: Wrench, comingSoon: false },
+  { label: "Recruitment", href: "/recruitment", icon: Briefcase, comingSoon: false },
+  { label: "Podcast", href: null, icon: Mic, comingSoon: true },
 ];
 
 function isActive(href: string, location: string) {

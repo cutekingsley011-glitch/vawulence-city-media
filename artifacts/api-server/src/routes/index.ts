@@ -16,6 +16,10 @@ import transactionsRouter from "./transactions";
 import adsRouter from "./ads";
 import contestsRouter from "./contests";
 import subscriptionsRouter from "./subscriptions";
+import marketplaceRouter from "./marketplace";
+import connectionsRouter from "./connections";
+import servicesRouter from "./services";
+import recruitmentRouter from "./recruitment";
 
 const router: IRouter = Router();
 
@@ -36,5 +40,9 @@ router.use(transactionsRouter);
 router.use(adsRouter);
 router.use(contestsRouter);
 router.use(subscriptionsRouter);
+router.use(marketplaceRouter);
+router.use(connectionsRouter);
+router.use(servicesRouter);
+router.use(recruitmentRouter);
 
 export default router;
