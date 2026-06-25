@@ -34,6 +34,7 @@ router.get("/posts", async (req, res) => {
       content: postsTable.content,
       excerpt: postsTable.excerpt,
       imageUrl: postsTable.imageUrl,
+      videoUrl: postsTable.videoUrl,
       category: postsTable.category,
       isBreaking: postsTable.isBreaking,
       createdAt: postsTable.createdAt,
@@ -91,6 +92,7 @@ router.post("/posts", async (req, res) => {
       content: body.data.content,
       excerpt: body.data.excerpt ?? null,
       imageUrl: body.data.imageUrl ?? null,
+      videoUrl: (req.body as Record<string, unknown>).videoUrl as string ?? null,
       category: body.data.category,
       isBreaking: body.data.isBreaking ?? false,
     })
@@ -179,6 +181,8 @@ router.patch("/posts/:id", async (req, res) => {
   if (body.data.imageUrl !== undefined) updates.imageUrl = body.data.imageUrl;
   if (body.data.category !== undefined) updates.category = body.data.category;
   if (body.data.isBreaking !== undefined) updates.isBreaking = body.data.isBreaking;
+  const rawVideoUrl = (req.body as Record<string, unknown>).videoUrl;
+  if (rawVideoUrl !== undefined) updates.videoUrl = (rawVideoUrl as string | null) ?? null;
 
   const [post] = await db
     .update(postsTable)

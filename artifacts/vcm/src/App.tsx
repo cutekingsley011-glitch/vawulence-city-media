@@ -23,9 +23,18 @@ import MarketplaceItemPage from "@/pages/MarketplaceItemPage";
 import ConnectionsPage from "@/pages/ConnectionsPage";
 import ServicesPage from "@/pages/ServicesPage";
 import RecruitmentPage from "@/pages/RecruitmentPage";
+import SpillPage from "@/pages/SpillPage";
+import InstallPromptBanner from "@/components/InstallPromptBanner";
 import NotFound from "@/pages/not-found";
 import { useTrackVisit } from "@workspace/api-client-react";
 import { getStoredUser } from "@/lib/user";
+
+// Register service worker
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
+} else if ("serviceWorker" in navigator && !import.meta.env.PROD) {
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
+}
 
 const queryClient = new QueryClient();
 
@@ -72,12 +81,14 @@ function AppShell() {
           <Route path="/connections" component={ConnectionsPage} />
           <Route path="/services" component={ServicesPage} />
           <Route path="/recruitment" component={RecruitmentPage} />
+          <Route path="/spill" component={SpillPage} />
           <Route path="/admin" component={AdminPage} />
           <Route component={NotFound} />
         </Switch>
       </main>
 
       <BottomNav />
+      <InstallPromptBanner />
     </>
   );
 }

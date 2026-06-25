@@ -1,12 +1,13 @@
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, ThumbsUp } from "lucide-react";
+import { MessageCircle, ThumbsUp, PlayCircle } from "lucide-react";
 
 interface Post {
   id: number;
   title: string;
   excerpt?: string | null;
   imageUrl?: string | null;
+  videoUrl?: string | null;
   category: string;
   isBreaking: boolean;
   createdAt: string;
@@ -31,7 +32,7 @@ export default function PostCard({ post }: Props) {
         className="flex gap-3 p-3 bg-card border border-border rounded-lg hover:shadow-md transition-shadow cursor-pointer"
         data-testid={`card-post-${post.id}`}
       >
-        <div className="shrink-0 w-24 h-20 md:w-32 md:h-24 rounded-md overflow-hidden bg-muted">
+        <div className="shrink-0 w-24 h-20 md:w-32 md:h-24 rounded-md overflow-hidden bg-muted relative">
           <img
             src={post.imageUrl ?? FALLBACK}
             alt={post.title}
@@ -41,6 +42,11 @@ export default function PostCard({ post }: Props) {
               (e.target as HTMLImageElement).src = FALLBACK;
             }}
           />
+          {post.videoUrl && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <PlayCircle className="w-8 h-8 text-white drop-shadow" />
+            </div>
+          )}
         </div>
         <div className="flex-1 min-w-0 flex flex-col justify-between">
           <div>

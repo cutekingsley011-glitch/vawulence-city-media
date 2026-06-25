@@ -20,6 +20,9 @@ import marketplaceRouter from "./marketplace";
 import connectionsRouter from "./connections";
 import servicesRouter from "./services";
 import recruitmentRouter from "./recruitment";
+import spillRouter from "./spill";
+import pushRouter from "./push";
+import ogRouter from "./og";
 
 const router: IRouter = Router();
 
@@ -44,5 +47,8 @@ router.use(marketplaceRouter);
 router.use(connectionsRouter);
 router.use(servicesRouter);
 router.use(recruitmentRouter);
+router.use(spillRouter);
+router.use(pushRouter);
+router.use(ogRouter);
 
 export default router;

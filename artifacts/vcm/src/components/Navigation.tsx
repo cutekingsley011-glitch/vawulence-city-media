@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Home, FileText, Vote, Trophy, MoreHorizontal, ShoppingBag, CalendarDays, Megaphone, Trophy as TrophyIcon, Crown, Heart, Wrench, Briefcase, Mic } from "lucide-react";
+import { Home, FileText, Vote, Trophy, MoreHorizontal, ShoppingBag, CalendarDays, Megaphone, Trophy as TrophyIcon, Crown, Heart, Wrench, Briefcase, Flame } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/", icon: Home },
@@ -19,7 +19,7 @@ const MORE_ITEMS = [
   { label: "Connections", href: "/connections", icon: Heart, comingSoon: false },
   { label: "Services", href: "/services", icon: Wrench, comingSoon: false },
   { label: "Recruitment", href: "/recruitment", icon: Briefcase, comingSoon: false },
-  { label: "Podcast", href: null, icon: Mic, comingSoon: true },
+  { label: "Spill the Tea", href: "/spill", icon: Flame, comingSoon: false },
 ];
 
 function isActive(href: string, location: string) {

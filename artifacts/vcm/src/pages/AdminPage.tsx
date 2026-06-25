@@ -53,6 +53,7 @@ interface AdminMarketItem { id: number; name: string; description: string; price
 interface AdminConnection { id: number; name: string; ageBracket: string; state: string; photoUrl: string | null; lookingFor: string; bioText: string; status: string; createdAt: string; }
 interface AdminEscrowReq { id: number; userId: string | null; description: string; amount: number; status: string; notes: string | null; createdAt: string; }
 interface AdminJob { id: number; title: string; companyName: string; description: string; flyerImageUrl: string | null; requirements: string[]; applyMethod: string; applyContact: string; status: string; createdAt: string; }
+interface AdminSpillSession { id: number; questionText: string; scheduledTime: string | null; isLive: boolean; createdAt: string; }
 
 const ADMIN_SESSION_KEY = "vcm_admin";
 const ADMIN_PASSWORD = "vcmadmin2024";
@@ -126,11 +127,12 @@ interface PostFormData {
   content: string;
   excerpt: string;
   imageUrl: string;
+  videoUrl: string;
   category: string;
   isBreaking: boolean;
 }
 
-const EMPTY_POST: PostFormData = { title: "", content: "", excerpt: "", imageUrl: "", category: "", isBreaking: false };
+const EMPTY_POST: PostFormData = { title: "", content: "", excerpt: "", imageUrl: "", videoUrl: "", category: "", isBreaking: false };
 
 function PostFormModal({
   open,
@@ -157,14 +159,16 @@ function PostFormModal({
       setError("Title, content, and category are required.");
       return;
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = {
       title: form.title.trim(),
       content: form.content.trim(),
       excerpt: form.excerpt.trim() || undefined,
       imageUrl: form.imageUrl.trim() || undefined,
+      videoUrl: form.videoUrl.trim() || undefined,
       category: form.category,
       isBreaking: form.isBreaking,
-    };
+    } as any;
 
     if (editId) {
       updatePost.mutate(
@@ -238,6 +242,15 @@ function PostFormModal({
               onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
               placeholder="https://..."
               data-testid="input-post-image"
+              disabled={isPending}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Video URL (optional — YouTube or Cloudinary)</Label>
+            <Input
+              value={form.videoUrl}
+              onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
+              placeholder="https://youtube.com/watch?v=... or Cloudinary URL"
               disabled={isPending}
             />
           </div>
@@ -337,6 +350,14 @@ function AdminPanel() {
   const [jobs, setJobs] = useState<AdminJob[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
   const [jobForm, setJobForm] = useState({ title: "", companyName: "", description: "", flyerImageUrl: "", requirements: "", applyMethod: "whatsapp", applyContact: "" });
+  // Spill the Tea state
+  const [spillSessions, setSpillSessions] = useState<AdminSpillSession[]>([]);
+  const [spillLoading, setSpillLoading] = useState(false);
+  const [spillForm, setSpillForm] = useState({ questionText: "", scheduledTime: "" });
+  // Push notify state
+  const [notifyForm, setNotifyForm] = useState({ title: "", body: "", url: "" });
+  const [notifyResult, setNotifyResult] = useState<{ sent: number; failed: number } | null>(null);
+  const [notifySending, setNotifySending] = useState(false);
 
   function setVcOpt(idx: number, val: string) {
     setVcOpts((prev) => { const next = [...prev]; next[idx] = val; return next; });
@@ -495,6 +516,10 @@ function AdminPanel() {
     setJobsLoading(true);
     fetch("/api/admin/recruitment").then((r) => r.json()).then((d) => { setJobs(Array.isArray(d) ? d : []); setJobsLoading(false); }).catch(() => setJobsLoading(false));
   }
+  function loadSpill() {
+    setSpillLoading(true);
+    fetch("/api/admin/spill/sessions").then((r) => r.json()).then((d) => { setSpillSessions(Array.isArray(d) ? d : []); setSpillLoading(false); }).catch(() => setSpillLoading(false));
+  }
 
   // Create event
   async function handleCreateEvent(e: React.FormEvent) {
@@ -560,6 +585,45 @@ function AdminPanel() {
     if (!confirm("Delete this contest?")) return;
     await fetch(`/api/contests/${id}`, { method: "DELETE" });
     loadContests();
+  }
+
+  // ── Push notify handlers ──
+  async function handleSendNotification(e: React.FormEvent) {
+    e.preventDefault();
+    if (!notifyForm.title || !notifyForm.body) return;
+    setNotifySending(true);
+    setNotifyResult(null);
+    const r = await fetch("/api/admin/push/send", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: notifyForm.title, body: notifyForm.body, url: notifyForm.url || "/" }),
+    });
+    if (r.ok) { const d = await r.json(); setNotifyResult(d); setNotifyForm({ title: "", body: "", url: "" }); }
+    setNotifySending(false);
+  }
+
+  // ── Spill the Tea handlers ──
+  async function handleCreateSpillSession(e: React.FormEvent) {
+    e.preventDefault();
+    if (!spillForm.questionText) return;
+    await fetch("/api/admin/spill/sessions", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ questionText: spillForm.questionText, scheduledTime: spillForm.scheduledTime || null }),
+    });
+    setSpillForm({ questionText: "", scheduledTime: "" });
+    loadSpill();
+  }
+  async function handleGoLive(id: number) {
+    await fetch(`/api/admin/spill/sessions/${id}/go-live`, { method: "POST" });
+    loadSpill();
+  }
+  async function handleEndSpill(id: number) {
+    await fetch(`/api/admin/spill/sessions/${id}/end`, { method: "POST" });
+    loadSpill();
+  }
+  async function handleDeleteSpillSession(id: number) {
+    if (!confirm("Delete this session and all its messages?")) return;
+    await fetch(`/api/admin/spill/sessions/${id}`, { method: "DELETE" });
+    loadSpill();
   }
 
   // ── Marketplace handlers ──
@@ -698,6 +762,8 @@ function AdminPanel() {
           <TabsTrigger value="conn" className="flex-1 text-xs" onClick={loadConnections}>Connect</TabsTrigger>
           <TabsTrigger value="escrow" className="flex-1 text-xs" onClick={loadEscrow}>Escrow</TabsTrigger>
           <TabsTrigger value="jobs" className="flex-1 text-xs" onClick={loadJobs}>Jobs</TabsTrigger>
+          <TabsTrigger value="spill" className="flex-1 text-xs" onClick={loadSpill}>Spill</TabsTrigger>
+          <TabsTrigger value="notify" className="flex-1 text-xs">Notify</TabsTrigger>
         </TabsList>
 
         {/* ── Posts tab ── */}
@@ -745,6 +811,7 @@ function AdminPanel() {
                             content: post.content,
                             excerpt: post.excerpt ?? "",
                             imageUrl: post.imageUrl ?? "",
+                            videoUrl: (post as { videoUrl?: string | null }).videoUrl ?? "",
                             category: post.category,
                             isBreaking: post.isBreaking,
                           },
@@ -1296,6 +1363,62 @@ function AdminPanel() {
                 </div>
               ))}
             </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Spill the Tea tab ── */}
+        <TabsContent value="spill">
+          <div className="space-y-4">
+            <div className="border border-border rounded-xl p-4 bg-white">
+              <h3 className="font-bold text-sm mb-3">Schedule New Session</h3>
+              <form onSubmit={handleCreateSpillSession} className="space-y-3">
+                <Textarea placeholder="Tonight's question * (e.g. Who cheated and got away with it?)" rows={2} value={spillForm.questionText} onChange={(e) => setSpillForm({ ...spillForm, questionText: e.target.value })} />
+                <Input type="datetime-local" value={spillForm.scheduledTime} onChange={(e) => setSpillForm({ ...spillForm, scheduledTime: e.target.value })} />
+                <Button type="submit" size="sm" disabled={!spillForm.questionText}>Schedule Session</Button>
+              </form>
+            </div>
+            <div className="space-y-2">
+              {spillLoading ? <Skeleton className="h-16 rounded-xl" /> : spillSessions.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No sessions yet.</p>
+              ) : spillSessions.map((s) => (
+                <div key={s.id} className="border border-border rounded-xl p-3 bg-white">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{s.questionText}</p>
+                      {s.scheduledTime && <p className="text-xs text-muted-foreground mt-0.5">{new Date(s.scheduledTime).toLocaleString("en-NG")}</p>}
+                    </div>
+                    <Badge className={`shrink-0 text-xs ${s.isLive ? "bg-red-500 text-white animate-pulse" : "bg-gray-100 text-gray-700"}`}>{s.isLive ? "LIVE" : "Ended"}</Badge>
+                  </div>
+                  <div className="flex gap-2">
+                    {!s.isLive && <Button size="sm" className="h-7 text-xs gap-1" onClick={() => handleGoLive(s.id)}>🔴 Go Live</Button>}
+                    {s.isLive && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleEndSpill(s.id)}>End Session</Button>}
+                    <Button size="sm" variant="ghost" className="h-7 text-destructive hover:text-destructive" onClick={() => handleDeleteSpillSession(s.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Push Notify tab ── */}
+        <TabsContent value="notify">
+          <div className="border border-border rounded-xl p-4 bg-white">
+            <h3 className="font-bold text-sm mb-1">Send Push Notification</h3>
+            <p className="text-xs text-muted-foreground mb-4">Broadcasts to all users who have subscribed to notifications.</p>
+            <form onSubmit={handleSendNotification} className="space-y-3">
+              <Input placeholder="Notification title *" value={notifyForm.title} onChange={(e) => setNotifyForm({ ...notifyForm, title: e.target.value })} />
+              <Textarea placeholder="Message body *" rows={3} value={notifyForm.body} onChange={(e) => setNotifyForm({ ...notifyForm, body: e.target.value })} />
+              <Input placeholder="Link URL (optional, e.g. /gists)" value={notifyForm.url} onChange={(e) => setNotifyForm({ ...notifyForm, url: e.target.value })} />
+              <Button type="submit" disabled={notifySending || !notifyForm.title || !notifyForm.body} className="w-full">
+                {notifySending ? "Sending…" : "Send to All Subscribers"}
+              </Button>
+            </form>
+            {notifyResult && (
+              <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
+                ✓ Sent to {notifyResult.sent} subscriber{notifyResult.sent !== 1 ? "s" : ""}
+                {notifyResult.failed > 0 && ` · ${notifyResult.failed} failed (expired subscriptions cleaned up)`}
+              </div>
+            )}
           </div>
         </TabsContent>
 

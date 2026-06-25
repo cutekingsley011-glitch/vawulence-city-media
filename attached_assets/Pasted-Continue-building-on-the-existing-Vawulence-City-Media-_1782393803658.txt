@@ -1,0 +1,35 @@
+Continue building on the existing Vawulence City Media app. This is Stage 5 — the final polish stage. Add the following on top of everything already built. Do not remove or rewrite existing functionality; extend it.
+
+PWA (PROGRESSIVE WEB APP) SETUP:
+- Add a proper web app manifest (manifest.json) with app name "Vawulence City Media", short name "VCM", theme color blue, background color white, and icon files at standard sizes (192x192, 512x512) using the VCM logo
+- Implement a service worker for basic offline caching of static assets (so the app loads fast and doesn't fully break with a weak connection)
+- Add an "Add to Home Screen" prompt: after a user has visited 2-3 times (track visit count in local storage), show a friendly banner/modal: "Add Vawulence City Media to your home screen for quick access!" with an install button using the browser's native install prompt API
+- Ensure the app is installable on both Android (Chrome) and iOS (Safari "Add to Home Screen" flow)
+
+PUSH NOTIFICATIONS:
+- Implement web push notifications (using a service like Firebase Cloud Messaging or OneSignal — choose whichever integrates most simply with the existing Supabase/React stack)
+- Request notification permission from users with a clear, friendly prompt (not immediately on page load — trigger it after some engagement, e.g. after their first comment or vote)
+- Store each user's push subscription token in the users table (add a push_token column)
+- Build an admin tool: "Send Notification" — a simple form (title + message text) that admin can use to manually send a push notification to all subscribed users, for big moments (new gist drop, big contest, breaking content)
+- This does not need to be automated/scheduled yet — manual admin trigger only for this stage
+
+WHATSAPP SHARE PREVIEWS (RICH LINK PREVIEWS):
+- For every shareable content type (posts, gists, vote cards, marketplace items, events, connections cards), generate proper Open Graph meta tags (og:title, og:description, og:image) dynamically per item, so when a link is shared in WhatsApp, it shows a rich preview card with image and text instead of a bare link
+- og:image should use the item's actual photo if available, or a branded fallback image (VCM logo/background) if not
+- og:title and og:description should be pulled from the actual content (e.g. post title, gist excerpt, event name) — make descriptions enticing/punchy where possible, not just raw text dumps
+- Test that this works correctly when the link is pasted into WhatsApp specifically, since that's the primary sharing channel for this platform
+
+VIDEO EMBEDDING:
+- Add support for video content in posts and the Trending feed: add a video_url field to the posts table (and vote_cards table if relevant)
+- Videos should NOT be uploaded as raw files to the server/Railway — instead, support embedding via YouTube (unlisted links) or Cloudinary video hosting URLs
+- Admin post creation form gets a "Video URL" field (optional) — if provided, the post displays an embedded video player instead of (or alongside) an image
+- Video posts should autoplay muted on scroll-into-view in the feed (common modern social feed behavior), with tap-to-unmute, and play normally with sound on the full post page
+
+SPILL THE TEA LIVE:
+- spill_sessions table: (id, question_text, scheduled_time, is_live [boolean], created_at)
+- spill_messages table: (id, session_id, message_text, created_at) — always anonymous, no user_id stored or displayed, consistent with the Gists anonymity rule
+- Admin: schedule a session (set the nightly question + time, e.g. "Who cheated and got away with it?" at 8:00 PM), and a manual "Go Live" toggle to open submissions for that session
+- Public "Spill the Tea Live" page (inside "More" menu): shows the current session's question, a live-updating feed of anonymous messages as they come in (newest at top, auto-refresh or real-time via Supabase subscriptions), and a submission box for users to add their own anonymous message while the session is live
+- Once admin toggles the session off (or scheduled time passes), the page shows "Tonight's session has ended — check back tomorrow at 8PM" and the message feed becomes read-only/archived
+
+Keep all new features consistent with the existing white/blue branding and component patterns already established throughout the app.

@@ -4,3 +4,5 @@
 - [Paystack integration pattern](paystack-integration.md) — Placeholder keys in shared env vars; verify-then-record pattern for payment routes; skip drizzle push (needs TTY), use executeSql instead.
 - [Stage 3 architecture](stage3-architecture.md) — SERVICE_FEE=50000 kobo added to every transaction; new tables: events, tickets, transactions, ads, ad_settings, contests, contest_entries, subscription_plans; users has is_subscriber + subscription_expires_at; posts has is_vip.
 - [Stage 4 architecture](stage4-architecture.md) — Marketplace, Connections, Services (Escrow tracking), Recruitment; VITE_ADMIN_WA placeholder must be updated by user to real WhatsApp number.
+- [API server zod import](api-server-zod.md) — zod is not pre-installed in api-server; must add `"zod": "catalog:"` to its package.json dependencies then `pnpm install`.
+- [VoteCard OG fields](vcm-vote-card-schema.md) — og.ts must use `card.title`, `card.option1Label`, `card.option2Label`, `card.option3Label` (not question/option1/option2/option3).

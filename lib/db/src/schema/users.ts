@@ -12,6 +12,7 @@ export const usersTable = pgTable("users", {
   referredBy: text("referred_by"),
   isSubscriber: boolean("is_subscriber").notNull().default(false),
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  pushToken: text("push_token"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

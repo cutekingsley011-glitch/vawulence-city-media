@@ -20,6 +20,54 @@ import { ArrowLeft, ThumbsUp, Laugh, Frown, Zap, MessageCircle, Heart, Share2 } 
 
 const FALLBACK = "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format";
 
+function getYouTubeEmbedUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("youtube.com")) {
+      const v = u.searchParams.get("v");
+      if (v) return `https://www.youtube.com/embed/${v}?autoplay=0&rel=0`;
+    }
+    if (u.hostname === "youtu.be") {
+      return `https://www.youtube.com/embed/${u.pathname.slice(1)}?autoplay=0&rel=0`;
+    }
+    if (u.hostname.includes("youtube.com") && u.pathname.includes("/embed/")) {
+      return url;
+    }
+  } catch { /* noop */ }
+  return null;
+}
+
+function VideoEmbed({ url }: { url: string }) {
+  const embedUrl = getYouTubeEmbedUrl(url);
+  if (embedUrl) {
+    return (
+      <div className="rounded-xl overflow-hidden mb-4 bg-black aspect-video">
+        <iframe
+          src={embedUrl}
+          title="Video"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="w-full h-full"
+        />
+      </div>
+    );
+  }
+  // Cloudinary or direct video URL
+  return (
+    <div className="rounded-xl overflow-hidden mb-4 bg-black aspect-video">
+      <video
+        src={url}
+        controls
+        autoPlay
+        muted
+        playsInline
+        className="w-full h-full object-contain"
+        data-testid="video-post"
+      />
+    </div>
+  );
+}
+
 const REACTIONS = [
   { type: "like" as const, label: "Like", icon: ThumbsUp, color: "text-blue-600" },
   { type: "laugh" as const, label: "Laugh", icon: Laugh, color: "text-yellow-500" },
@@ -175,9 +223,8 @@ export default function PostPage() {
   }
 
   function handleShare() {
-    const shareText = encodeURIComponent(
-      `Check this out: ${post?.title ?? ""} - ${window.location.href}`
-    );
+    const ogUrl = `${window.location.origin}/api/og/post/${postId}`;
+    const shareText = encodeURIComponent(`${post?.title ?? ""} 🔥\n${ogUrl}`);
     window.open(`https://wa.me/?text=${shareText}`, "_blank");
   }
 
@@ -240,8 +287,10 @@ export default function PostPage() {
         {post.title}
       </h1>
 
-      {/* Image */}
-      {(post.imageUrl || true) && (
+      {/* Video or Image */}
+      {(post as { videoUrl?: string | null }).videoUrl ? (
+        <VideoEmbed url={(post as { videoUrl?: string | null }).videoUrl!} />
+      ) : (
         <div className="rounded-xl overflow-hidden mb-4 bg-muted aspect-video">
           <img
             src={post.imageUrl ?? FALLBACK}

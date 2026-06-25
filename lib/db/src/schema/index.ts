@@ -17,3 +17,5 @@ export * from "./marketplace";
 export * from "./connections";
 export * from "./escrow_requests";
 export * from "./job_postings";
+export * from "./spill_sessions";
+export * from "./spill_messages";

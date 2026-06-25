@@ -11,6 +11,7 @@ export const postsTable = pgTable("posts", {
   category: text("category").notNull(),
   isBreaking: boolean("is_breaking").notNull().default(false),
   isVip: boolean("is_vip").notNull().default(false),
+  videoUrl: text("video_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

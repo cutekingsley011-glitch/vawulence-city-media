@@ -1,0 +1,26 @@
+{
+  "name": "Vawulence City Media",
+  "short_name": "VCM",
+  "description": "Nigerian entertainment, gossip, and news — Entertainment Without Border.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#1D4ED8",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/vcm-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/vcm-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["news", "entertainment"],
+  "lang": "en"
+}
