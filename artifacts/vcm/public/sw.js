@@ -1,4 +1,4 @@
-const CACHE_NAME = "vcm-v1";
+const CACHE_NAME = "vcm-v2";
 const STATIC_ASSETS = [
   "/",
   "/vcm-icon.png",

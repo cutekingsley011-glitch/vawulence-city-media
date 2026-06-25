@@ -29,11 +29,35 @@ import NotFound from "@/pages/not-found";
 import { useTrackVisit } from "@workspace/api-client-react";
 import { getStoredUser } from "@/lib/user";
 
-// Register service worker
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
-  navigator.serviceWorker.register("/sw.js").catch(() => {});
-} else if ("serviceWorker" in navigator && !import.meta.env.PROD) {
-  navigator.serviceWorker.register("/sw.js").catch(() => {});
+// Register service worker in production only.
+// In dev, unregister any stale SW so it cannot serve cached old code.
+if ("serviceWorker" in navigator) {
+  if (import.meta.env.PROD) {
+    navigator.serviceWorker.register("/sw.js").then((reg) => {
+      // When a new SW takes over, reload so users get the fresh build
+      reg.addEventListener("updatefound", () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener("statechange", () => {
+          if (newWorker.state === "activated" && navigator.serviceWorker.controller) {
+            window.location.reload();
+          }
+        });
+      });
+    }).catch(() => {});
+    // Also reload any time the controller changes (covers skipWaiting case)
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      window.location.reload();
+    });
+  } else {
+    // Dev: kill any stale service worker so it cannot intercept Vite's module requests
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      for (const reg of regs) reg.unregister();
+    });
+    caches.keys().then((keys) => {
+      for (const key of keys) caches.delete(key);
+    });
+  }
 }
 
 const queryClient = new QueryClient();
@@ -53,6 +77,10 @@ function AppShell() {
     if (!user) {
       setTimeout(() => setShowJoin(true), 500);
     }
+
+    const openJoin = () => setShowJoin(true);
+    window.addEventListener("vcm:open-join", openJoin);
+    return () => window.removeEventListener("vcm:open-join", openJoin);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

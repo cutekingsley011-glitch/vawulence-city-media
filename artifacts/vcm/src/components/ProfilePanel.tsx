@@ -373,7 +373,22 @@ export function ProfileTrigger({ className }: { className?: string }) {
     return () => clearInterval(iv);
   }, [user?.id]);
 
-  if (!user) return null;
+  // Not joined yet — show a guest icon that opens the join modal
+  if (!user) {
+    return (
+      <button
+        onClick={() => window.dispatchEvent(new CustomEvent("vcm:open-join"))}
+        className={`relative flex items-center justify-center ${className ?? ""}`}
+        aria-label="Join VCM"
+      >
+        <div className="w-8 h-8 rounded-full border-2 border-primary flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+          </svg>
+        </div>
+      </button>
+    );
+  }
 
   return (
     <>
