@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, FileCheck, Video, Phone, CalendarCheck, ArrowLeft, MessageCircle } from "lucide-react";
+import { Shield, FileCheck, Video, Phone, CalendarCheck, Megaphone, ArrowLeft, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const ADMIN_WA = import.meta.env.VITE_ADMIN_WA ?? "2348000000000";
@@ -64,6 +64,16 @@ const SERVICES: Service[] = [
       "Need help planning your next event? Vawulence City Media offers full event planning and coordination services — from concept to execution.\n\nWhat we handle:\n• Venue sourcing and booking\n• Event design and décor\n• MC, DJ, and entertainment sourcing\n• Photography and videography coverage\n• Guest management and logistics\n• Corporate events, birthdays, weddings, and more\n\nContact admin with your event type, date, and budget to get started.",
     color: "text-pink-700",
     bg: "bg-pink-50 border-pink-200",
+  },
+  {
+    key: "ads",
+    icon: Megaphone,
+    title: "Ads & Business Promotion",
+    tagline: "Put your brand in front of thousands",
+    description:
+      "Want your business in front of thousands across Ebonyi State? Vawulence City Media offers business promotion and advertising packages tailored to your brand.",
+    color: "text-yellow-700",
+    bg: "bg-yellow-50 border-yellow-200",
   },
 ];
 
