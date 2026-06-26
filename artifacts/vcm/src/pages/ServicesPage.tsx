@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, FileCheck, Video, Phone, ArrowLeft, MessageCircle } from "lucide-react";
+import { Shield, FileCheck, Video, Phone, CalendarCheck, ArrowLeft, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const ADMIN_WA = import.meta.env.VITE_ADMIN_WA ?? "2348000000000";
@@ -54,6 +54,16 @@ const SERVICES: Service[] = [
       "Get verified virtual phone numbers for any country — USA, UK, Canada, Germany, and more.\n\nUse cases:\n• Verifying international apps and platforms\n• Business caller ID in a foreign country\n• WhatsApp and Telegram registrations\n• Anonymous communication\n\nNumbers are typically delivered within minutes. Contact admin with your preferred country.",
     color: "text-orange-700",
     bg: "bg-orange-50 border-orange-200",
+  },
+  {
+    key: "events",
+    icon: CalendarCheck,
+    title: "Event Planning",
+    tagline: "From concept to execution",
+    description:
+      "Need help planning your next event? Vawulence City Media offers full event planning and coordination services — from concept to execution.\n\nWhat we handle:\n• Venue sourcing and booking\n• Event design and décor\n• MC, DJ, and entertainment sourcing\n• Photography and videography coverage\n• Guest management and logistics\n• Corporate events, birthdays, weddings, and more\n\nContact admin with your event type, date, and budget to get started.",
+    color: "text-pink-700",
+    bg: "bg-pink-50 border-pink-200",
   },
 ];
 
