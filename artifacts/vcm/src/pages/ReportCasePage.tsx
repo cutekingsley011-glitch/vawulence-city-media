@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Flag, ImageIcon, Send, ChevronDown, ChevronUp, ThumbsUp, MessageSquare, CornerDownRight } from "lucide-react";
+import { Flag, ImageIcon, Send, ChevronDown, ChevronUp, ThumbsUp, MessageSquare, CornerDownRight, TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -310,10 +310,13 @@ export default function ReportCasePage() {
             </div>
 
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-xs text-amber-800 space-y-1">
-              <p className="font-semibold">Before you submit:</p>
+              <p className="font-semibold flex items-center gap-1.5">
+                <TriangleAlert className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                Before you submit:
+              </p>
               <p>• Your submission is 100% anonymous — no name or identity is stored.</p>
               <p>• All cases are reviewed by our team before appearing publicly.</p>
-              <p>• False or defamatory reports may be declined.</p>
+              <p className="text-red-700 font-medium">• False, malicious, or defamatory accusations are punishable by law. The submitter may be held personally liable for damages caused by false reports.</p>
             </div>
 
             <Button type="submit" disabled={submitting || !caseText.trim() || imageUrls.length === 0} className="w-full gap-2">
