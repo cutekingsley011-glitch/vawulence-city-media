@@ -248,13 +248,14 @@ export default function MarketplacePage() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Original / Last Price (₦)</Label>
+                  <Label>Last Price (₦)</Label>
                   <Input
                     type="number"
                     value={form.lastPrice}
                     onChange={(e) => setForm({ ...form, lastPrice: e.target.value })}
-                    placeholder="What did you buy it for?"
+                    placeholder="Enter your price"
                   />
+                  <p className="text-[11px] text-muted-foreground">Include a 5% commission in your price.</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Reason for Sale</Label>

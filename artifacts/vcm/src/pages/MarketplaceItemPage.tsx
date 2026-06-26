@@ -150,7 +150,7 @@ export default function MarketplaceItemPage() {
             )}
             {item.lastPrice && (
               <div className="flex items-center justify-between px-4 py-3">
-                <span className="text-xs font-medium text-muted-foreground">Original Price</span>
+                <span className="text-xs font-medium text-muted-foreground">Last Price</span>
                 <span className="text-sm font-semibold">₦{(item.lastPrice / 100).toLocaleString("en-NG")}</span>
               </div>
             )}
