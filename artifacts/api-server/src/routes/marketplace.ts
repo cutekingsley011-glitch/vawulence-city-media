@@ -28,10 +28,11 @@ router.get("/marketplace/:id", async (req, res) => {
 
 // POST /marketplace — user-submitted listing (goes to pending queue)
 router.post("/marketplace", async (req, res) => {
-  const { name, description, price, imageUrls, category, submittedByName, submittedByEmail } = req.body as {
+  const { name, description, price, imageUrls, category, submittedByName, submittedByEmail, howLongUsed, location, lastPrice, reasonForSale } = req.body as {
     name: string; description: string; price: number;
     imageUrls?: string[]; category?: string;
     submittedByName?: string; submittedByEmail?: string;
+    howLongUsed?: string; location?: string; lastPrice?: number; reasonForSale?: string;
   };
   if (!name || !description || !price) {
     res.status(400).json({ error: "name, description, price required" });
@@ -44,6 +45,10 @@ router.post("/marketplace", async (req, res) => {
     status: "pending",
     submittedByName: submittedByName ?? null,
     submittedByEmail: submittedByEmail ?? null,
+    howLongUsed: howLongUsed ?? null,
+    location: location ?? null,
+    lastPrice: lastPrice ?? null,
+    reasonForSale: reasonForSale ?? null,
   }).returning();
   res.status(201).json({ ...item, createdAt: item.createdAt.toISOString() });
 });

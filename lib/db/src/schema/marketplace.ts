@@ -12,5 +12,10 @@ export const marketplaceItemsTable = pgTable("marketplace_items", {
   // nullable — set when submitted by a community user (not admin)
   submittedByName: text("submitted_by_name"),
   submittedByEmail: text("submitted_by_email"),
+  // Seller-provided product details
+  howLongUsed: text("how_long_used"),
+  location: text("location"),
+  lastPrice: integer("last_price"),
+  reasonForSale: text("reason_for_sale"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

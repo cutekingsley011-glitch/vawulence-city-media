@@ -15,6 +15,10 @@ interface MarketplaceItem {
   imageUrls: string[];
   category: string;
   status: "available" | "sold";
+  howLongUsed: string | null;
+  location: string | null;
+  lastPrice: number | null;
+  reasonForSale: string | null;
   createdAt: string;
 }
 
@@ -128,6 +132,36 @@ export default function MarketplaceItemPage() {
           <h2 className="font-semibold text-sm mb-2 text-foreground">Description</h2>
           <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{item.description}</p>
         </div>
+
+        {/* Extra seller details */}
+        {(item.howLongUsed || item.location || item.lastPrice || item.reasonForSale) && (
+          <div className="border border-border rounded-xl divide-y divide-border overflow-hidden">
+            {item.howLongUsed && (
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-xs font-medium text-muted-foreground">How Long Used</span>
+                <span className="text-sm font-semibold">{item.howLongUsed}</span>
+              </div>
+            )}
+            {item.location && (
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-xs font-medium text-muted-foreground">Location</span>
+                <span className="text-sm font-semibold">{item.location}</span>
+              </div>
+            )}
+            {item.lastPrice && (
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-xs font-medium text-muted-foreground">Original Price</span>
+                <span className="text-sm font-semibold">₦{(item.lastPrice / 100).toLocaleString("en-NG")}</span>
+              </div>
+            )}
+            {item.reasonForSale && (
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-xs font-medium text-muted-foreground">Reason for Sale</span>
+                <span className="text-sm font-semibold text-right max-w-[60%]">{item.reasonForSale}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <a

@@ -37,6 +37,7 @@ export default function MarketplacePage() {
   // Sell form state
   const [form, setForm] = useState({
     name: "", description: "", price: "", category: "General", imageUrls: [] as string[],
+    howLongUsed: "", location: "", lastPrice: "", reasonForSale: "",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -70,11 +71,15 @@ export default function MarketplacePage() {
           imageUrls: form.imageUrls,
           submittedByName: user?.name ?? null,
           submittedByEmail: user?.email ?? null,
+          howLongUsed: form.howLongUsed.trim() || null,
+          location: form.location.trim() || null,
+          lastPrice: form.lastPrice ? Math.round(Number(form.lastPrice) * 100) : null,
+          reasonForSale: form.reasonForSale.trim() || null,
         }),
       });
       if (!res.ok) throw new Error();
       setSubmitted(true);
-      setForm({ name: "", description: "", price: "", category: "General", imageUrls: [] });
+      setForm({ name: "", description: "", price: "", category: "General", imageUrls: [], howLongUsed: "", location: "", lastPrice: "", reasonForSale: "" });
     } catch { toast.error("Failed to submit listing. Try again."); }
     finally { setSubmitting(false); }
   }
@@ -222,6 +227,45 @@ export default function MarketplacePage() {
                   rows={3}
                 />
               </div>
+              <div className="border-t border-border pt-4 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Product Details</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>How Long Used</Label>
+                    <Input
+                      value={form.howLongUsed}
+                      onChange={(e) => setForm({ ...form, howLongUsed: e.target.value })}
+                      placeholder="e.g. 6 months, 2 years"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Location</Label>
+                    <Input
+                      value={form.location}
+                      onChange={(e) => setForm({ ...form, location: e.target.value })}
+                      placeholder="e.g. Lagos, Abuja"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Original / Last Price (₦)</Label>
+                  <Input
+                    type="number"
+                    value={form.lastPrice}
+                    onChange={(e) => setForm({ ...form, lastPrice: e.target.value })}
+                    placeholder="What did you buy it for?"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Reason for Sale</Label>
+                  <Input
+                    value={form.reasonForSale}
+                    onChange={(e) => setForm({ ...form, reasonForSale: e.target.value })}
+                    placeholder="e.g. Upgrading, no longer needed"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-1.5">
                 <Label>Photos <span className="text-muted-foreground font-normal">(up to 5)</span></Label>
                 <MediaUploadMulti
