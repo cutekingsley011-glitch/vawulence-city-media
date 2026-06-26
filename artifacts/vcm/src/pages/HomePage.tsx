@@ -19,15 +19,26 @@ function Masthead() {
 
   return (
     <div
-      className={`w-full transition-all duration-300 overflow-hidden ${
-        compact ? "max-h-14 py-2" : "max-h-52 py-7"
+      className={`w-full transition-all duration-300 overflow-hidden relative ${
+        compact ? "max-h-14 py-2" : "max-h-[260px] min-h-[200px] py-8"
       }`}
-      style={{
-        background: "linear-gradient(135deg, #0f1b4d 0%, #1D4ED8 60%, #2563EB 100%)",
-      }}
+      style={
+        compact
+          ? { background: "linear-gradient(135deg, #0f1b4d 0%, #1D4ED8 60%, #2563EB 100%)" }
+          : {
+              backgroundImage: "url('/vcm-flyer.jpeg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center 18%",
+            }
+      }
       data-testid="home-masthead"
     >
-      <div className="max-w-2xl mx-auto px-4 flex items-center justify-center">
+      {/* Dark overlay — only in full mode so text stays readable */}
+      {!compact && (
+        <div className="absolute inset-0 bg-black/55 pointer-events-none" />
+      )}
+
+      <div className="relative z-10 max-w-2xl mx-auto px-4 flex items-center justify-center">
         {compact ? (
           /* Compact strip */
           <div className="flex items-center gap-2.5">
@@ -41,25 +52,28 @@ function Masthead() {
             </span>
           </div>
         ) : (
-          /* Full masthead */
+          /* Full hero */
           <div className="text-center">
             <img
               src={vcmLogo}
               alt="VCM Logo"
-              className="h-16 mx-auto object-contain mb-3"
+              className="h-16 mx-auto object-contain mb-3 drop-shadow-lg"
               data-testid="masthead-logo"
             />
             <p
-              className="text-white font-extrabold tracking-[0.18em] uppercase"
-              style={{ fontSize: "1.1rem", textShadow: "0 1px 4px rgba(0,0,0,0.4)" }}
+              className="text-white font-extrabold tracking-[0.18em] uppercase drop-shadow"
+              style={{ fontSize: "1.1rem", textShadow: "0 2px 8px rgba(0,0,0,0.7)" }}
               data-testid="masthead-brand"
             >
               Vawulence City Media
             </p>
-            <p className="text-blue-100 text-xs tracking-[0.22em] uppercase font-medium mt-1.5 opacity-90">
+            <p
+              className="text-white/90 text-xs tracking-[0.22em] uppercase font-medium mt-1.5"
+              style={{ textShadow: "0 1px 6px rgba(0,0,0,0.65)" }}
+            >
               Entertainment Without Border.
             </p>
-            <div className="mt-3 h-px w-16 mx-auto bg-blue-300/40 rounded-full" />
+            <div className="mt-3 h-px w-16 mx-auto bg-white/30 rounded-full" />
           </div>
         )}
       </div>
