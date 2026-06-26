@@ -51,14 +51,17 @@ export function MobileHeader() {
   const logoLongPress = useLongPress(() => navigate("/admin"), 5000);
   return (
     <header className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-border h-11 flex items-center justify-between px-4">
-      <img
-        src="/vcm-logo.png"
-        alt="VCM"
-        className="h-7 w-auto object-contain select-none cursor-pointer"
-        draggable={false}
-        {...logoLongPress}
-        onClick={() => navigate("/")}
-      />
+      <div className="flex items-center gap-2" onClick={() => navigate("/")} {...logoLongPress}>
+        <img
+          src="/vcm-logo.png"
+          alt="VCM"
+          className="h-7 w-auto object-contain select-none cursor-pointer"
+          draggable={false}
+        />
+        <span className="font-bold text-sm text-foreground leading-tight select-none cursor-pointer">
+          Vawulence City Media
+        </span>
+      </div>
       <ProfileTrigger />
     </header>
   );
