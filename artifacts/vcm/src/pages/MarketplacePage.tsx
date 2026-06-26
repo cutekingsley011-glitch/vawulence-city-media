@@ -24,7 +24,7 @@ interface MarketplaceItem {
   createdAt: string;
 }
 
-const CATEGORIES = ["All", "Electronics", "Fashion", "Home", "Food", "Beauty", "Cars", "General"];
+const CATEGORIES = ["All", "Electronics", "Cars", "General"];
 const SELL_CATEGORIES = CATEGORIES.filter((c) => c !== "All");
 
 export default function MarketplacePage() {

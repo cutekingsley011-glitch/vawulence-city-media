@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
-  Rss, FileText, Vote, Trophy, ShoppingBag, CalendarDays,
+  Home, FileText, Vote, Trophy, ShoppingBag, CalendarDays,
   Heart, Wrench, Briefcase, Mic, Award, Flag,
 } from "lucide-react";
 import { ProfileTrigger } from "./ProfilePanel";
@@ -9,7 +9,7 @@ import { ProfileTrigger } from "./ProfilePanel";
 // ── All scrollable tabs ───────────────────────────────────────────────────────
 // Priority order: Feed, Marketplace, Connections, Report Case — then the rest
 const ALL_TABS = [
-  { label: "Feed",        href: "/",              icon: Rss },
+  { label: "Home",        href: "/",              icon: Home },
   { label: "Marketplace", href: "/marketplace",   icon: ShoppingBag },
   { label: "Connections", href: "/connections",   icon: Heart },
   { label: "Report Case", href: "/report-case",   icon: Flag },
