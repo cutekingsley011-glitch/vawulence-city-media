@@ -26,6 +26,7 @@ import ogRouter from "./og";
 import notificationsRouter from "./notifications";
 import storageRouter from "./storage";
 import reportCasesRouter from "./report_cases";
+import chatRouter from "./chat";
 
 const router: IRouter = Router();
 
@@ -56,5 +57,6 @@ router.use(ogRouter);
 router.use(notificationsRouter);
 router.use(storageRouter);
 router.use(reportCasesRouter);
+router.use(chatRouter);
 
 export default router;

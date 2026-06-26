@@ -41,7 +41,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, Pencil, Trash2, Check, X, Vote, CalendarDays, Trophy, Crown } from "lucide-react";
+import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, Pencil, Trash2, Check, X, Vote, CalendarDays, Trophy, Crown, MessageCircle, VolumeX, Ban } from "lucide-react";
 
 // ─── Types for new sections ───────────────────────────────────────────────────
 interface AdminEvent { id: number; title: string; venue: string; eventDate: string; isPaid: boolean; ticketPrice: number | null; status: "upcoming" | "past"; }
@@ -55,6 +55,7 @@ interface AdminConnection { id: number; name: string; ageBracket: string; state:
 interface AdminEscrowReq { id: number; userId: string | null; description: string; amount: number; status: string; notes: string | null; createdAt: string; }
 interface AdminJob { id: number; title: string; companyName: string; description: string; flyerImageUrl: string | null; requirements: string[]; applyMethod: string; applyContact: string; status: string; createdAt: string; }
 interface AdminSpillSession { id: number; questionText: string; scheduledTime: string | null; isLive: boolean; createdAt: string; }
+interface AdminChatMessage { id: number; userId: string; messageText: string; senderName: string | null; createdAt: string; isBanned: boolean | null; mutedUntil: string | null; }
 
 const ADMIN_SESSION_KEY = "vcm_admin";
 const ADMIN_PASSWORD = "vcmadmin6969";
@@ -357,6 +358,9 @@ function AdminPanel() {
   // Report Cases state
   const [reportCases, setReportCases] = useState<AdminReportCase[]>([]);
   const [rcLoading, setRcLoading] = useState(false);
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<AdminChatMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
   // Push notify state
   const [notifyForm, setNotifyForm] = useState({ title: "", body: "", url: "" });
   const [notifyResult, setNotifyResult] = useState<{ sent: number; failed: number } | null>(null);
@@ -522,6 +526,36 @@ function AdminPanel() {
   function loadSpill() {
     setSpillLoading(true);
     fetch("/api/admin/spill/sessions").then((r) => r.json()).then((d) => { setSpillSessions(Array.isArray(d) ? d : []); setSpillLoading(false); }).catch(() => setSpillLoading(false));
+  }
+  function loadChat() {
+    setChatLoading(true);
+    fetch("/api/admin/chat/messages").then((r) => r.json()).then((d) => { setChatMessages(Array.isArray(d) ? d : []); setChatLoading(false); }).catch(() => setChatLoading(false));
+  }
+  async function handleDeleteChatMessage(id: number) {
+    if (!confirm("Delete this message?")) return;
+    await fetch(`/api/admin/chat/messages/${id}`, { method: "DELETE" });
+    loadChat();
+  }
+  async function handleMuteUser(userId: string, hours: number) {
+    await fetch(`/api/admin/chat/users/${userId}/mute`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ hours }) });
+    toast.success(`User muted for ${hours}h`);
+    loadChat();
+  }
+  async function handleUnmuteUser(userId: string) {
+    await fetch(`/api/admin/chat/users/${userId}/unmute`, { method: "POST" });
+    toast.success("User unmuted");
+    loadChat();
+  }
+  async function handleBanUser(userId: string) {
+    if (!confirm("Ban this user from chat permanently?")) return;
+    await fetch(`/api/admin/chat/users/${userId}/ban`, { method: "POST" });
+    toast.success("User banned");
+    loadChat();
+  }
+  async function handleUnbanUser(userId: string) {
+    await fetch(`/api/admin/chat/users/${userId}/unban`, { method: "POST" });
+    toast.success("User unbanned");
+    loadChat();
   }
 
   // Create event
@@ -781,6 +815,7 @@ function AdminPanel() {
           <TabsTrigger value="jobs" className="flex-1 text-xs" onClick={loadJobs}>Jobs</TabsTrigger>
           <TabsTrigger value="spill" className="flex-1 text-xs" onClick={loadSpill}>Spill</TabsTrigger>
           <TabsTrigger value="notify" className="flex-1 text-xs">Notify</TabsTrigger>
+          <TabsTrigger value="chat" className="flex-1 text-xs" onClick={loadChat}>Chat</TabsTrigger>
           <TabsTrigger value="cases" className="flex-1 text-xs" onClick={loadReportCases}>
             Cases {reportCases.filter((r) => r.status === "pending").length > 0 ? `(${reportCases.filter((r) => r.status === "pending").length})` : ""}
           </TabsTrigger>
@@ -1487,6 +1522,69 @@ function AdminPanel() {
                 </div>
               ))}
             </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Chat Room tab ── */}
+        <TabsContent value="chat">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-sm">Chat Room Messages</h3>
+                <p className="text-xs text-muted-foreground">Live 6–8 PM WAT. Refresh to update.</p>
+              </div>
+              <Button size="sm" variant="outline" onClick={loadChat}>Refresh</Button>
+            </div>
+            {chatLoading ? (
+              <div className="space-y-2">{[1,2,3].map((i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div>
+            ) : chatMessages.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No messages yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {chatMessages.map((m) => {
+                  const isMuted = m.mutedUntil && new Date(m.mutedUntil) > new Date();
+                  return (
+                    <div key={m.id} className="border border-border rounded-xl p-3 bg-white">
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                            <span className="text-xs font-bold text-primary">{m.senderName ?? "Anonymous"}</span>
+                            {m.isBanned && <Badge className="text-[10px] h-4 bg-red-100 text-red-700 border-red-200">Banned</Badge>}
+                            {isMuted && <Badge className="text-[10px] h-4 bg-orange-100 text-orange-700 border-orange-200">Muted</Badge>}
+                            <span className="text-[10px] text-muted-foreground">{new Date(m.createdAt).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" })}</span>
+                          </div>
+                          <p className="text-sm text-foreground break-words">{m.messageText}</p>
+                        </div>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive hover:text-destructive shrink-0" onClick={() => handleDeleteChatMessage(m.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                      {/* Per-user moderation */}
+                      <div className="flex items-center gap-1.5 flex-wrap mt-1 pt-1.5 border-t border-border/50">
+                        {!m.isBanned ? (
+                          <>
+                            {isMuted ? (
+                              <Button size="sm" variant="outline" className="h-6 text-[11px] px-2" onClick={() => handleUnmuteUser(m.userId)}>Unmute</Button>
+                            ) : (
+                              <>
+                                <Button size="sm" variant="outline" className="h-6 text-[11px] px-2 gap-1" onClick={() => handleMuteUser(m.userId, 1)}><VolumeX className="w-3 h-3" />1h</Button>
+                                <Button size="sm" variant="outline" className="h-6 text-[11px] px-2 gap-1" onClick={() => handleMuteUser(m.userId, 24)}>24h</Button>
+                                <Button size="sm" variant="outline" className="h-6 text-[11px] px-2 gap-1" onClick={() => handleMuteUser(m.userId, 168)}>7d</Button>
+                              </>
+                            )}
+                            <Button size="sm" variant="outline" className="h-6 text-[11px] px-2 gap-1 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => handleBanUser(m.userId)}>
+                              <Ban className="w-3 h-3" />Ban
+                            </Button>
+                          </>
+                        ) : (
+                          <Button size="sm" variant="outline" className="h-6 text-[11px] px-2" onClick={() => handleUnbanUser(m.userId)}>Unban</Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </TabsContent>
 

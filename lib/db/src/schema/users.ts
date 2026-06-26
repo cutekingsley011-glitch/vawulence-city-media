@@ -13,6 +13,8 @@ export const usersTable = pgTable("users", {
   isSubscriber: boolean("is_subscriber").notNull().default(false),
   subscriptionExpiresAt: timestamp("subscription_expires_at"),
   pushToken: text("push_token"),
+  mutedUntil: timestamp("muted_until", { withTimezone: true }),
+  isBanned: boolean("is_banned").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

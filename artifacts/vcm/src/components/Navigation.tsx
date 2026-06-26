@@ -2,9 +2,9 @@ import { Link, useLocation } from "wouter";
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Home, FileText, Vote, Trophy, ShoppingBag, CalendarDays,
-  Heart, Briefcase, Mic, Award, Flag,
+  Heart, Briefcase, MessageCircle, Award, Flag,
   Menu, Shield, FileCheck, Video, Phone, CalendarCheck, Megaphone,
-  MessageCircle, ArrowLeft,
+  ArrowLeft,
 } from "lucide-react";
 import { ProfileTrigger } from "./ProfilePanel";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -22,7 +22,7 @@ const ALL_TABS = [
   { label: "Events",      href: "/events",        icon: CalendarDays },
   { label: "Recruitment", href: "/recruitment",   icon: Briefcase },
   { label: "Leaderboard", href: "/leaderboard",   icon: Trophy },
-  { label: "Podcast",     href: "/podcast",       icon: Mic },
+  { label: "Chat Room",   href: "/chat",          icon: MessageCircle },
   { label: "Contests",    href: "/contests",      icon: Award },
 ] as const;
 
