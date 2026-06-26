@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 const ADMIN_WA = import.meta.env.VITE_ADMIN_WA ?? "2348000000000";
 
 const AGE_BRACKETS = ["18-20", "20-25", "25-30", "30-35"];
+const GENDERS = ["Male", "Female", "Non-binary", "Prefer not to say"];
 const LOOKING_FOR = ["Male", "Female", "Bi", "Gay", "Lesbian"];
 const NG_STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
@@ -27,6 +28,7 @@ interface Connection {
   id: number;
   name: string;
   ageBracket: string;
+  gender: string | null;
   state: string;
   photoUrl: string | null;
   lookingFor: string;
@@ -35,11 +37,11 @@ interface Connection {
 }
 
 interface FormState {
-  name: string; ageBracket: string; state: string;
+  name: string; ageBracket: string; gender: string; state: string;
   photoUrl: string; lookingFor: string; bioText: string; consent: boolean;
 }
 
-const EMPTY_FORM: FormState = { name: "", ageBracket: "", state: "", photoUrl: "", lookingFor: "", bioText: "", consent: false };
+const EMPTY_FORM: FormState = { name: "", ageBracket: "", gender: "", state: "", photoUrl: "", lookingFor: "", bioText: "", consent: false };
 
 export default function ConnectionsPage() {
   const [profiles, setProfiles] = useState<Connection[]>([]);
@@ -70,7 +72,8 @@ export default function ConnectionsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: form.name.trim(), ageBracket: form.ageBracket, state: form.state,
+          name: form.name.trim(), ageBracket: form.ageBracket,
+          gender: form.gender || null, state: form.state,
           photoUrl: form.photoUrl.trim() || null, lookingFor: form.lookingFor,
           bioText: form.bioText.trim(), consentGiven: true,
         }),
@@ -129,8 +132,9 @@ export default function ConnectionsPage() {
                         <h2 className="font-bold text-foreground">{p.name}</h2>
                         <Badge variant="outline" className="text-xs">{p.ageBracket}</Badge>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                        <MapPin className="w-3 h-3" /> {p.state}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {p.state}</span>
+                        {p.gender && <span className="text-muted-foreground/70">· {p.gender}</span>}
                       </div>
                       <div className="text-xs text-muted-foreground mb-2">
                         Looking for: <span className="font-medium text-foreground">{p.lookingFor}</span>
@@ -177,14 +181,23 @@ export default function ConnectionsPage() {
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label>State *</Label>
-                  <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                  <Label>Gender</Label>
+                  <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
+                    <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
                     <SelectContent>
-                      {NG_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      {GENDERS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="space-y-1">
+                <Label>State *</Label>
+                <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                  <SelectContent>
+                    {NG_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1">
                 <Label>Looking for *</Label>

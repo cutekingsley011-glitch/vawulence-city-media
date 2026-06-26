@@ -5,6 +5,7 @@ export const connectionsTable = pgTable("connections", {
   userId: text("user_id"),
   name: text("name").notNull(),
   ageBracket: text("age_bracket").notNull(),
+  gender: text("gender"),
   state: text("state").notNull(),
   photoUrl: text("photo_url"),
   lookingFor: text("looking_for").notNull(),

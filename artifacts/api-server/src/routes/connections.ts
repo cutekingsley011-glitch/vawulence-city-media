@@ -15,8 +15,8 @@ router.get("/connections", async (_req, res) => {
 
 // POST /connections — submit a profile (goes to pending)
 router.post("/connections", async (req, res) => {
-  const { userId, name, ageBracket, state, photoUrl, lookingFor, bioText, consentGiven } = req.body as {
-    userId?: string; name: string; ageBracket: string; state: string;
+  const { userId, name, ageBracket, gender, state, photoUrl, lookingFor, bioText, consentGiven } = req.body as {
+    userId?: string; name: string; ageBracket: string; gender?: string; state: string;
     photoUrl?: string; lookingFor: string; bioText: string; consentGiven: boolean;
   };
   if (!name || !ageBracket || !state || !lookingFor || !bioText) {
@@ -24,7 +24,7 @@ router.post("/connections", async (req, res) => {
   }
   if (!consentGiven) { res.status(400).json({ error: "Consent required" }); return; }
   const [row] = await db.insert(connectionsTable).values({
-    userId: userId ?? null, name, ageBracket, state, photoUrl: photoUrl ?? null,
+    userId: userId ?? null, name, ageBracket, gender: gender ?? null, state, photoUrl: photoUrl ?? null,
     lookingFor, bioText, consentGiven: true, status: "pending",
   }).returning();
   res.status(201).json(fmt(row));
