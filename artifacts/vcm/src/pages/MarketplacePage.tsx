@@ -37,7 +37,7 @@ export default function MarketplacePage() {
   // Sell form state
   const [form, setForm] = useState({
     name: "", description: "", price: "", category: "General", imageUrls: [] as string[],
-    howLongUsed: "", location: "", lastPrice: "", reasonForSale: "",
+    howLongUsed: "", location: "", lastPrice: "", reasonForSale: "", sellerWhatsapp: "",
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -75,11 +75,12 @@ export default function MarketplacePage() {
           location: form.location.trim() || null,
           lastPrice: form.lastPrice ? Math.round(Number(form.lastPrice) * 100) : null,
           reasonForSale: form.reasonForSale.trim() || null,
+          sellerWhatsapp: form.sellerWhatsapp.trim() || null,
         }),
       });
       if (!res.ok) throw new Error();
       setSubmitted(true);
-      setForm({ name: "", description: "", price: "", category: "General", imageUrls: [], howLongUsed: "", location: "", lastPrice: "", reasonForSale: "" });
+      setForm({ name: "", description: "", price: "", category: "General", imageUrls: [], howLongUsed: "", location: "", lastPrice: "", reasonForSale: "", sellerWhatsapp: "" });
     } catch { toast.error("Failed to submit listing. Try again."); }
     finally { setSubmitting(false); }
   }
@@ -266,6 +267,16 @@ export default function MarketplacePage() {
                   />
                 </div>
               </div>
+              <div className="space-y-1.5">
+                <Label>WhatsApp Number <span className="text-destructive">*</span></Label>
+                <Input
+                  type="tel"
+                  value={form.sellerWhatsapp}
+                  onChange={(e) => setForm({ ...form, sellerWhatsapp: e.target.value })}
+                  placeholder="e.g. 08012345678"
+                />
+                <p className="text-[11px] text-muted-foreground">Buyers will contact you via WhatsApp. Not shown publicly.</p>
+              </div>
 
               <div className="space-y-1.5">
                 <Label>Photos <span className="text-muted-foreground font-normal">(up to 5)</span></Label>
@@ -278,7 +289,7 @@ export default function MarketplacePage() {
               <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
                 Listings are reviewed before going public. We'll contact you on WhatsApp to confirm details.
               </p>
-              <Button type="submit" disabled={submitting || !form.name || !form.description || !form.price} className="w-full gap-2">
+              <Button type="submit" disabled={submitting || !form.name || !form.description || !form.price || !form.sellerWhatsapp.trim()} className="w-full gap-2">
                 <Send className="w-4 h-4" />
                 {submitting ? "Submitting…" : "Submit for Review"}
               </Button>

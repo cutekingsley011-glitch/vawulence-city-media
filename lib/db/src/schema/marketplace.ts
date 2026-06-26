@@ -17,5 +17,6 @@ export const marketplaceItemsTable = pgTable("marketplace_items", {
   location: text("location"),
   lastPrice: integer("last_price"),
   reasonForSale: text("reason_for_sale"),
+  sellerWhatsapp: text("seller_whatsapp"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

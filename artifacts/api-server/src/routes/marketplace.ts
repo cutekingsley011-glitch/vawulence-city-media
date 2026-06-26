@@ -5,6 +5,13 @@ import { eq, or } from "drizzle-orm";
 
 const router = Router();
 
+// Strip private fields before sending to public callers
+function toPublic(i: typeof marketplaceItemsTable.$inferSelect) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { sellerWhatsapp, submittedByEmail, ...pub } = i;
+  return { ...pub, createdAt: i.createdAt.toISOString() };
+}
+
 // GET /marketplace — available items only (public)
 router.get("/marketplace", async (_req, res) => {
   const items = await db
@@ -12,7 +19,7 @@ router.get("/marketplace", async (_req, res) => {
     .from(marketplaceItemsTable)
     .where(eq(marketplaceItemsTable.status, "available"))
     .orderBy(marketplaceItemsTable.createdAt);
-  res.json(items.map((i) => ({ ...i, createdAt: i.createdAt.toISOString() })));
+  res.json(items.map(toPublic));
 });
 
 // GET /marketplace/:id
@@ -23,16 +30,17 @@ router.get("/marketplace/:id", async (req, res) => {
     res.status(404).json({ error: "Not found" });
     return;
   }
-  res.json({ ...item, createdAt: item.createdAt.toISOString() });
+  res.json(toPublic(item));
 });
 
 // POST /marketplace — user-submitted listing (goes to pending queue)
 router.post("/marketplace", async (req, res) => {
-  const { name, description, price, imageUrls, category, submittedByName, submittedByEmail, howLongUsed, location, lastPrice, reasonForSale } = req.body as {
+  const { name, description, price, imageUrls, category, submittedByName, submittedByEmail, howLongUsed, location, lastPrice, reasonForSale, sellerWhatsapp } = req.body as {
     name: string; description: string; price: number;
     imageUrls?: string[]; category?: string;
     submittedByName?: string; submittedByEmail?: string;
     howLongUsed?: string; location?: string; lastPrice?: number; reasonForSale?: string;
+    sellerWhatsapp?: string;
   };
   if (!name || !description || !price) {
     res.status(400).json({ error: "name, description, price required" });
@@ -49,8 +57,9 @@ router.post("/marketplace", async (req, res) => {
     location: location ?? null,
     lastPrice: lastPrice ?? null,
     reasonForSale: reasonForSale ?? null,
+    sellerWhatsapp: sellerWhatsapp ?? null,
   }).returning();
-  res.status(201).json({ ...item, createdAt: item.createdAt.toISOString() });
+  res.status(201).json(toPublic(item));
 });
 
 // GET /admin/marketplace — all items for admin (including pending)

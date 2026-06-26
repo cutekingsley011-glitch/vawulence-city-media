@@ -49,7 +49,7 @@ interface AdminContest { id: number; title: string; entryFee: number; currentEnt
 interface AdminTransaction { id: number; userId: string; userName: string; type: string; baseAmountNaira: number; serviceFeeNaira: number; totalAmountNaira: number; paystackReference: string; status: string; createdAt: string; description: string; }
 interface AdminSubPlan { id: number; name: string; durationDays: number; price: number; }
 
-interface AdminMarketItem { id: number; name: string; description: string; price: number; imageUrls: string[]; category: string; status: string; submittedByName: string | null; submittedByEmail: string | null; createdAt: string; }
+interface AdminMarketItem { id: number; name: string; description: string; price: number; imageUrls: string[]; category: string; status: string; submittedByName: string | null; submittedByEmail: string | null; sellerWhatsapp: string | null; createdAt: string; }
 interface AdminReportCase { id: number; caseText: string; imageUrls: string[]; status: string; createdAt: string; }
 interface AdminConnection { id: number; name: string; ageBracket: string; state: string; photoUrl: string | null; lookingFor: string; bioText: string; status: string; createdAt: string; }
 interface AdminEscrowReq { id: number; userId: string | null; description: string; amount: number; status: string; notes: string | null; createdAt: string; }
@@ -1277,7 +1277,12 @@ function AdminPanel() {
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{item.name}</p>
                           <p className="text-xs text-muted-foreground">₦{(item.price / 100).toLocaleString("en-NG")} · {item.category}</p>
-                          {item.submittedByName && <p className="text-xs text-muted-foreground mt-0.5">By: {item.submittedByName} · {item.submittedByEmail}</p>}
+                          {item.submittedByName && <p className="text-xs text-muted-foreground mt-0.5">By: {item.submittedByName}</p>}
+                          {item.sellerWhatsapp && (
+                            <p className="text-xs font-medium text-green-700 mt-0.5 flex items-center gap-1">
+                              <span>📱</span> WhatsApp: {item.sellerWhatsapp}
+                            </p>
+                          )}
                         </div>
                         <div className="flex gap-1.5 shrink-0">
                           <Button size="sm" onClick={() => handleApproveMkt(item.id)} className="h-7 px-2 text-xs gap-1"><Check className="w-3 h-3" />Approve</Button>
