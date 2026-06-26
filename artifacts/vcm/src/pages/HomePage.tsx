@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useListPosts, useListCategories, useGetTrending, getListPostsQueryKey } from "@workspace/api-client-react";
+import { useListPosts, useGetTrending } from "@workspace/api-client-react";
 import PostCard from "@/components/PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
@@ -113,12 +113,7 @@ function TrendingFeed() {
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState<"feed" | "trending">("feed");
-  const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined);
-  const { data: categories } = useListCategories();
-  const { data: posts, isLoading } = useListPosts(
-    activeCategory ? { category: activeCategory } : {},
-    { query: { queryKey: getListPostsQueryKey(activeCategory ? { category: activeCategory } : {}) } }
-  );
+  const { data: posts, isLoading } = useListPosts({});
 
   return (
     <div className="min-h-screen">
@@ -170,39 +165,6 @@ export default function HomePage() {
           <TrendingFeed />
         ) : (
           <>
-            {/* Category filter */}
-            <div
-              className="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar"
-              data-testid="category-filter"
-              style={{ scrollbarWidth: "none" }}
-            >
-              <button
-                onClick={() => setActiveCategory(undefined)}
-                className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                  !activeCategory
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "bg-white text-muted-foreground border-border hover:border-primary hover:text-primary"
-                }`}
-                data-testid="filter-all"
-              >
-                All
-              </button>
-              {categories?.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.name === activeCategory ? undefined : cat.name)}
-                  className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
-                    activeCategory === cat.name
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-white text-muted-foreground border-border hover:border-primary hover:text-primary"
-                  }`}
-                  data-testid={`filter-${cat.name.toLowerCase()}`}
-                >
-                  {cat.name}
-                </button>
-              ))}
-            </div>
-
             {isLoading ? (
               <div className="space-y-3" data-testid="posts-loading">
                 {Array.from({ length: 5 }).map((_, i) => (

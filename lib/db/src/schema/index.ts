@@ -20,3 +20,4 @@ export * from "./job_postings";
 export * from "./spill_sessions";
 export * from "./spill_messages";
 export * from "./notifications";
+export * from "./report_cases";

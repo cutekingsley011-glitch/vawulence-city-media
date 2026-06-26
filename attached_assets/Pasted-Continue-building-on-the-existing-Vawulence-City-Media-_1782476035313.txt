@@ -1,0 +1,28 @@
+Continue building on the existing Vawulence City Media app. Apply the following structural changes and additions.
+
+1. REPLACE CATEGORY-BASED HOME PAGE WITH A UNIFIED "FEED":
+- Remove all separate category tabs/pages (Gossip, Entertainment, News, Politics, etc. as distinct navigation destinations)
+- The Home page becomes "Feed" with two toggle views at the top: "Feed" (newest first, all post types mixed together) and "Trending" (existing trending logic, ranked by engagement)
+- Category can remain as a tag/label shown on each post card for context, but it is no longer a separate page or filter destination
+- Update the scrollable bottom nav: rename "Home" to "Feed"
+
+2. REORDER THE SCROLLABLE NAV STRIP so Feed, Marketplace, Connections, and Report Case sit first/most prominent in the strip (leftmost, so they're visible without scrolling), followed by the rest (Events, Services, Ads, Recruitment, Leaderboard, Podcast, Contests) in the scrollable overflow.
+
+3. ADD "REPORT CASE" FEATURE (new tab in the nav strip, positioned with Feed/Marketplace/Connections):
+- report_cases table: (id, case_text [unlimited length], image_urls [array, max 5 images], status [pending/approved/declined], created_at)
+- No user_id or any submitter identity stored or displayed anywhere — fully anonymous, same pattern as the existing Gists feature
+- Public "Report Case" page: two views — "View Cases" (feed of approved cases only, each showing the case text, attached images, and a comment section identical to the existing post comment system — likes sort to top, one level of replies) and "Create/Upload" (a form: large text box for case description, image upload supporting up to 5 photos)
+- Submitted cases go into an admin approval queue, not visible publicly until approved
+- Admin dashboard: new "Report Case" section showing pending submissions, with Approve/Decline buttons only — approving makes it instantly live on the public "View Cases" feed, declining discards it (or keep a declined record for admin's own reference, hidden from public either way)
+
+4. CONVERT MARKETPLACE FROM ADMIN-ONLY TO USER-GENERATED WITH APPROVAL:
+- Update the existing marketplace_items table: add submitted_by_user_id (nullable, since admin can still post directly if needed) and status field now includes "pending" as well as "available"/"sold"
+- Public Marketplace page gets a new "Sell" or "Post a Product" button alongside the existing browse view
+- Submission form (available to any signed-in user): product name, category, price, description, photo upload (multiple images, from gallery/photos)
+- Submitted listings go into an admin approval queue — same pattern as Report Case and Gists — not visible publicly until approved
+- Admin dashboard: existing Marketplace admin section now shows a pending queue with Approve/Decline buttons; approved listings go live on the public browse page; admin still retains existing "Mark as Sold" ability on any live listing (which removes it from public view, same as before)
+- Admin no longer needs to manually create listings from scratch — their marketplace workload is now just approve/decline (plus marking sold), unless they personally want to post something directly
+
+5. CONNECTIONS: no functional changes — just confirm it's positioned in the reprioritized nav strip alongside Feed, Marketplace, and Report Case (per change #2 above).
+
+Keep all new pages and the approval-queue patterns consistent with existing design (white/blue branding) and the same UI pattern already used for Gist approval.

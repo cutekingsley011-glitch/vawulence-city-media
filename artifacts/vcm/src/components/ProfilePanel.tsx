@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getStoredUser, setStoredUser } from "@/lib/user";
-import { Bell, Activity, Check, Heart, MessageSquare, ChevronRight, Lock } from "lucide-react";
+import { Bell, Activity, Check, Heart, MessageSquare, ChevronRight, Lock, BellOff } from "lucide-react";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 // ── Badge tiers (mirrors Leaderboard + server points lib) ───────────────────
 const BADGE_TIERS = [
@@ -66,6 +67,7 @@ export function ProfilePanel({ open, onClose, onUnreadChange }: {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
 
+  const { permission, subscribed, subscribe, unsubscribe } = usePushNotifications();
   const didLoad = useRef(false);
 
   useEffect(() => {
@@ -203,7 +205,7 @@ export function ProfilePanel({ open, onClose, onUnreadChange }: {
 
           {/* Points + badge */}
           {profile ? (
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
               <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${tier?.color ?? "bg-gray-100 text-gray-600"}`}>
                 {tier?.name}
               </span>
@@ -213,6 +215,21 @@ export function ProfilePanel({ open, onClose, onUnreadChange }: {
             </div>
           ) : (
             <Skeleton className="h-6 w-40 mt-2 rounded-full" />
+          )}
+
+          {/* Push notification toggle */}
+          {"Notification" in window && (
+            <button
+              onClick={() => (subscribed || permission === "granted") ? unsubscribe() : subscribe()}
+              className={`mt-2 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                subscribed
+                  ? "bg-primary/10 text-primary border-primary/30 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+                  : "bg-muted text-muted-foreground border-border hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+              }`}
+            >
+              {subscribed ? <Bell className="w-3 h-3" /> : <BellOff className="w-3 h-3" />}
+              {subscribed ? "Notifications On" : "Enable Notifications"}
+            </button>
           )}
         </SheetHeader>
 

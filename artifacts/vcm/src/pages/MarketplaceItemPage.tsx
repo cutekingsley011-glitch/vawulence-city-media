@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRoute, Link } from "wouter";
-import { ArrowLeft, ShoppingBag, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ShoppingBag, MessageCircle, ChevronLeft, ChevronRight, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,7 +55,9 @@ export default function MarketplaceItemPage() {
   }
 
   const photos = item.imageUrls && item.imageUrls.length > 0 ? item.imageUrls : [];
+  const ogUrl = `${window.location.origin}/api/og/market/${item.id}`;
   const waText = encodeURIComponent(`Hi, I'm interested in ${item.name} for ₦${(item.price / 100).toLocaleString("en-NG")} on VCM Marketplace`);
+  const waShare = encodeURIComponent(`🛒 ${item.name} — ₦${(item.price / 100).toLocaleString("en-NG")}\n${ogUrl}`);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
@@ -127,18 +129,32 @@ export default function MarketplaceItemPage() {
           <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{item.description}</p>
         </div>
 
-        <a
-          href={`https://wa.me/${ADMIN_WA}?text=${waText}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Button className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white h-12 text-base">
-            <MessageCircle className="w-5 h-5" />
-            Message Admin to Buy
-          </Button>
-        </a>
+        <div className="grid grid-cols-2 gap-3">
+          <a
+            href={`https://wa.me/${ADMIN_WA}?text=${waText}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="contents"
+          >
+            <Button className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white h-12 text-base">
+              <MessageCircle className="w-5 h-5" />
+              Buy via WhatsApp
+            </Button>
+          </a>
+          <a
+            href={`https://wa.me/?text=${waShare}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="contents"
+          >
+            <Button variant="outline" className="w-full gap-2 h-12 text-base">
+              <Share2 className="w-5 h-5" />
+              Share Listing
+            </Button>
+          </a>
+        </div>
         <p className="text-xs text-muted-foreground text-center">
-          Tapping the button opens WhatsApp with a pre-filled message to the VCM admin.
+          "Buy via WhatsApp" messages our admin directly to complete your purchase.
         </p>
       </div>
     </div>

@@ -49,7 +49,8 @@ interface AdminContest { id: number; title: string; entryFee: number; currentEnt
 interface AdminTransaction { id: number; userId: string; userName: string; type: string; baseAmountNaira: number; serviceFeeNaira: number; totalAmountNaira: number; paystackReference: string; status: string; createdAt: string; description: string; }
 interface AdminSubPlan { id: number; name: string; durationDays: number; price: number; }
 
-interface AdminMarketItem { id: number; name: string; description: string; price: number; imageUrls: string[]; category: string; status: string; createdAt: string; }
+interface AdminMarketItem { id: number; name: string; description: string; price: number; imageUrls: string[]; category: string; status: string; submittedByName: string | null; submittedByEmail: string | null; createdAt: string; }
+interface AdminReportCase { id: number; caseText: string; imageUrls: string[]; status: string; createdAt: string; }
 interface AdminConnection { id: number; name: string; ageBracket: string; state: string; photoUrl: string | null; lookingFor: string; bioText: string; status: string; createdAt: string; }
 interface AdminEscrowReq { id: number; userId: string | null; description: string; amount: number; status: string; notes: string | null; createdAt: string; }
 interface AdminJob { id: number; title: string; companyName: string; description: string; flyerImageUrl: string | null; requirements: string[]; applyMethod: string; applyContact: string; status: string; createdAt: string; }
@@ -353,6 +354,9 @@ function AdminPanel() {
   const [spillSessions, setSpillSessions] = useState<AdminSpillSession[]>([]);
   const [spillLoading, setSpillLoading] = useState(false);
   const [spillForm, setSpillForm] = useState({ questionText: "", scheduledTime: "" });
+  // Report Cases state
+  const [reportCases, setReportCases] = useState<AdminReportCase[]>([]);
+  const [rcLoading, setRcLoading] = useState(false);
   // Push notify state
   const [notifyForm, setNotifyForm] = useState({ title: "", body: "", url: "" });
   const [notifyResult, setNotifyResult] = useState<{ sent: number; failed: number } | null>(null);
@@ -511,6 +515,10 @@ function AdminPanel() {
     setJobsLoading(true);
     fetch("/api/admin/recruitment").then((r) => r.json()).then((d) => { setJobs(Array.isArray(d) ? d : []); setJobsLoading(false); }).catch(() => setJobsLoading(false));
   }
+  function loadReportCases() {
+    setRcLoading(true);
+    fetch("/api/admin/report-cases").then((r) => r.json()).then((d) => { setReportCases(Array.isArray(d) ? d : []); setRcLoading(false); }).catch(() => setRcLoading(false));
+  }
   function loadSpill() {
     setSpillLoading(true);
     fetch("/api/admin/spill/sessions").then((r) => r.json()).then((d) => { setSpillSessions(Array.isArray(d) ? d : []); setSpillLoading(false); }).catch(() => setSpillLoading(false));
@@ -613,6 +621,28 @@ function AdminPanel() {
     loadSpill();
   }
 
+  // ── Report Case handlers ──
+  async function handleApproveCase(id: number) {
+    await fetch(`/api/admin/report-cases/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "approved" }) });
+    toast.success("Case approved and published!");
+    loadReportCases();
+  }
+  async function handleDeclineCase(id: number) {
+    if (!confirm("Decline this case? It will be hidden from the public.")) return;
+    await fetch(`/api/admin/report-cases/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "declined" }) });
+    loadReportCases();
+  }
+  // ── Marketplace pending handlers ──
+  async function handleApproveMkt(id: number) {
+    await fetch(`/api/admin/marketplace/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "available" }) });
+    toast.success("Listing approved and now live!");
+    loadMarket();
+  }
+  async function handleDeclineMkt(id: number) {
+    if (!confirm("Decline this listing? It will be deleted.")) return;
+    await fetch(`/api/admin/marketplace/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: "declined" }) });
+    loadMarket();
+  }
   // ── Marketplace handlers ──
   async function handleCreateMarketItem(e: React.FormEvent) {
     e.preventDefault();
@@ -751,6 +781,9 @@ function AdminPanel() {
           <TabsTrigger value="jobs" className="flex-1 text-xs" onClick={loadJobs}>Jobs</TabsTrigger>
           <TabsTrigger value="spill" className="flex-1 text-xs" onClick={loadSpill}>Spill</TabsTrigger>
           <TabsTrigger value="notify" className="flex-1 text-xs">Notify</TabsTrigger>
+          <TabsTrigger value="cases" className="flex-1 text-xs" onClick={loadReportCases}>
+            Cases {reportCases.filter((r) => r.status === "pending").length > 0 ? `(${reportCases.filter((r) => r.status === "pending").length})` : ""}
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Posts tab ── */}
@@ -1196,8 +1229,39 @@ function AdminPanel() {
         {/* ── Marketplace tab ── */}
         <TabsContent value="market">
           <div className="space-y-4">
+            {/* Pending approval queue */}
+            {marketItems.filter((i) => i.status === "pending").length > 0 && (
+              <div className="border border-amber-200 rounded-xl p-4 bg-amber-50">
+                <h3 className="font-bold text-sm mb-3 text-amber-800">
+                  Pending Review ({marketItems.filter((i) => i.status === "pending").length})
+                </h3>
+                <div className="space-y-2">
+                  {marketItems.filter((i) => i.status === "pending").map((item) => (
+                    <div key={item.id} className="border border-amber-200 rounded-xl p-3 bg-white">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">₦{(item.price / 100).toLocaleString("en-NG")} · {item.category}</p>
+                          {item.submittedByName && <p className="text-xs text-muted-foreground mt-0.5">By: {item.submittedByName} · {item.submittedByEmail}</p>}
+                        </div>
+                        <div className="flex gap-1.5 shrink-0">
+                          <Button size="sm" onClick={() => handleApproveMkt(item.id)} className="h-7 px-2 text-xs gap-1"><Check className="w-3 h-3" />Approve</Button>
+                          <Button size="sm" variant="outline" onClick={() => handleDeclineMkt(item.id)} className="h-7 px-2 text-xs gap-1 text-destructive border-destructive/30"><X className="w-3 h-3" />Decline</Button>
+                        </div>
+                      </div>
+                      {item.imageUrls.length > 0 && (
+                        <div className="flex gap-1 mt-2">
+                          {item.imageUrls.slice(0, 3).map((u, i) => <img key={i} src={u} className="h-12 w-16 object-cover rounded border" />)}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Admin create listing */}
             <div className="border border-border rounded-xl p-4 bg-white">
-              <h3 className="font-bold text-sm mb-3">Add New Listing</h3>
+              <h3 className="font-bold text-sm mb-3">Add New Listing (Admin)</h3>
               <form onSubmit={handleCreateMarketItem} className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <Input placeholder="Item name *" value={marketForm.name} onChange={(e) => setMarketForm({ ...marketForm, name: e.target.value })} />
@@ -1209,10 +1273,11 @@ function AdminPanel() {
                 <Button type="submit" size="sm" disabled={!marketForm.name || !marketForm.price}>Add Listing</Button>
               </form>
             </div>
+            {/* Live listings */}
             <div className="space-y-2">
-              {marketLoading ? <Skeleton className="h-16 rounded-xl" /> : marketItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">No listings yet.</p>
-              ) : marketItems.map((item) => (
+              {marketLoading ? <Skeleton className="h-16 rounded-xl" /> : marketItems.filter((i) => i.status !== "pending").length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No active listings yet.</p>
+              ) : marketItems.filter((i) => i.status !== "pending").map((item) => (
                 <div key={item.id} className="border border-border rounded-xl p-3 bg-white flex items-center justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{item.name}</p>
@@ -1230,6 +1295,38 @@ function AdminPanel() {
                 </div>
               ))}
             </div>
+          </div>
+        </TabsContent>
+
+        {/* ── Report Cases tab ── */}
+        <TabsContent value="cases">
+          <div className="space-y-3">
+            {rcLoading ? (
+              <Skeleton className="h-24 rounded-xl" />
+            ) : reportCases.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No cases submitted yet.</p>
+            ) : reportCases.map((rc) => (
+              <div key={rc.id} className={`border rounded-xl p-4 bg-white ${rc.status === "pending" ? "border-amber-300" : rc.status === "approved" ? "border-green-200" : "border-border opacity-60"}`}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <Badge variant={rc.status === "approved" ? "default" : rc.status === "pending" ? "secondary" : "destructive"} className="text-xs shrink-0">
+                    {rc.status}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">{new Date(rc.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</span>
+                </div>
+                <p className="text-sm leading-relaxed line-clamp-4 mb-2">{rc.caseText}</p>
+                {rc.imageUrls.length > 0 && (
+                  <div className="flex gap-1 mb-3">
+                    {rc.imageUrls.slice(0, 3).map((u, i) => <img key={i} src={u} className="h-12 w-16 object-cover rounded border" />)}
+                  </div>
+                )}
+                {rc.status === "pending" && (
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => handleApproveCase(rc.id)} className="h-7 px-3 text-xs gap-1"><Check className="w-3 h-3" />Approve</Button>
+                    <Button size="sm" variant="outline" onClick={() => handleDeclineCase(rc.id)} className="h-7 px-3 text-xs gap-1 text-destructive border-destructive/30"><X className="w-3 h-3" />Decline</Button>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </TabsContent>
 

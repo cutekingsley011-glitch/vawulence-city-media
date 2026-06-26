@@ -1,9 +1,17 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ShoppingBag, Tag } from "lucide-react";
+import { ShoppingBag, Tag, Plus, X, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MediaUploadMulti } from "@/components/MediaUpload";
+import { getStoredUser } from "@/lib/user";
+import { toast } from "sonner";
 
 interface MarketplaceItem {
   id: number;
@@ -17,11 +25,20 @@ interface MarketplaceItem {
 }
 
 const CATEGORIES = ["All", "Electronics", "Fashion", "Home", "Food", "Beauty", "Cars", "General"];
+const SELL_CATEGORIES = CATEGORIES.filter((c) => c !== "All");
 
 export default function MarketplacePage() {
   const [items, setItems] = useState<MarketplaceItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [cat, setCat] = useState("All");
+  const [sellOpen, setSellOpen] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  // Sell form state
+  const [form, setForm] = useState({
+    name: "", description: "", price: "", category: "General", imageUrls: [] as string[],
+  });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -33,13 +50,49 @@ export default function MarketplacePage() {
 
   const filtered = cat === "All" ? items : items.filter((i) => i.category === cat);
 
+  async function handleSell(e: React.FormEvent) {
+    e.preventDefault();
+    const user = getStoredUser();
+    if (!form.name || !form.description || !form.price) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/marketplace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          description: form.description.trim(),
+          price: Math.round(Number(form.price) * 100),
+          category: form.category,
+          imageUrls: form.imageUrls,
+          submittedByName: user?.name ?? null,
+          submittedByEmail: user?.email ?? null,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      setSubmitted(true);
+      setForm({ name: "", description: "", price: "", category: "General", imageUrls: [] });
+    } catch { toast.error("Failed to submit listing. Try again."); }
+    finally { setSubmitting(false); }
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <div className="flex items-center gap-2 mb-2">
-        <ShoppingBag className="w-6 h-6 text-primary" />
-        <h1 className="text-2xl font-bold">Marketplace</h1>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <ShoppingBag className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold">Marketplace</h1>
+        </div>
+        <Button size="sm" className="gap-1.5" onClick={() => { setSubmitted(false); setSellOpen(true); }}>
+          <Plus className="w-4 h-4" />
+          Sell Something
+        </Button>
       </div>
-      <p className="text-sm text-muted-foreground mb-5">Buy quality items from verified sellers. Message admin to purchase.</p>
+      <p className="text-sm text-muted-foreground mb-5">Buy quality items from the community. Tap a listing to see contact details.</p>
 
       {/* Category filter */}
       <div className="flex gap-2 flex-wrap mb-6">
@@ -56,6 +109,7 @@ export default function MarketplacePage() {
         ))}
       </div>
 
+      {/* Grid */}
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-64 rounded-xl" />)}
@@ -64,6 +118,7 @@ export default function MarketplacePage() {
         <div className="text-center py-16 text-muted-foreground">
           <ShoppingBag className="mx-auto mb-3 w-12 h-12 opacity-40" />
           <p className="text-lg">No items available{cat !== "All" ? ` in ${cat}` : ""} right now.</p>
+          <Button className="mt-4" size="sm" onClick={() => { setSubmitted(false); setSellOpen(true); }}>Be the first to sell</Button>
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
@@ -103,6 +158,89 @@ export default function MarketplacePage() {
           ))}
         </div>
       )}
+
+      {/* Sell dialog */}
+      <Dialog open={sellOpen} onOpenChange={(o) => { if (!o) { setSellOpen(false); setSubmitted(false); } }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-primary" />
+              List a Product
+            </DialogTitle>
+          </DialogHeader>
+
+          {submitted ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                <ShoppingBag className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Listing Submitted!</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Your listing is under review. It will appear publicly once approved by our team.
+              </p>
+              <div className="flex gap-2 justify-center">
+                <Button variant="outline" size="sm" onClick={() => setSubmitted(false)}>List Another</Button>
+                <Button size="sm" onClick={() => setSellOpen(false)}>Done</Button>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSell} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Product Name *</Label>
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g. iPhone 14 Pro"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Price (₦) *</Label>
+                  <Input
+                    type="number"
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    placeholder="e.g. 150000"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Category</Label>
+                  <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {SELL_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Description *</Label>
+                <Textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="Condition, specs, why you're selling…"
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Photos <span className="text-muted-foreground font-normal">(up to 5)</span></Label>
+                <MediaUploadMulti
+                  maxMB={10}
+                  values={form.imageUrls}
+                  onChange={(urls) => setForm({ ...form, imageUrls: urls })}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                Listings are reviewed before going public. We'll contact you on WhatsApp to confirm details.
+              </p>
+              <Button type="submit" disabled={submitting || !form.name || !form.description || !form.price} className="w-full gap-2">
+                <Send className="w-4 h-4" />
+                {submitting ? "Submitting…" : "Submit for Review"}
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

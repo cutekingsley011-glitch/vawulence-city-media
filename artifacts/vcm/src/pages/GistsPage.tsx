@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageSquarePlus, Clock } from "lucide-react";
+import { MessageSquarePlus, Clock, Share2 } from "lucide-react";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-NG", {
@@ -133,7 +133,17 @@ export default function GistsPage() {
                   <img src={gist.imageUrl} alt="Gist image" className="w-full max-h-64 object-cover" />
                 </div>
               )}
-              <p className="text-xs text-muted-foreground mt-2 italic">Anonymous</p>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-xs text-muted-foreground italic">Anonymous</p>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`🔥 VCM Gist: ${gist.content.slice(0, 120)}${gist.content.length > 120 ? "…" : ""}\n\n${window.location.origin}/api/og/gist/${gist.id}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-green-600 transition-colors"
+                >
+                  <Share2 className="w-3 h-3" /> Share
+                </a>
+              </div>
             </article>
           ))}
         </div>

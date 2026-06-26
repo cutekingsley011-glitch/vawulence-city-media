@@ -1,24 +1,26 @@
 import { Link, useLocation } from "wouter";
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
-  Home, FileText, Vote, Trophy, ShoppingBag, CalendarDays,
-  Megaphone, Crown, Heart, Wrench, Briefcase, Flame, Mic, Award,
+  Rss, FileText, Vote, Trophy, ShoppingBag, CalendarDays,
+  Heart, Wrench, Briefcase, Mic, Award, Flag,
 } from "lucide-react";
 import { ProfileTrigger } from "./ProfilePanel";
 
 // ── All scrollable tabs ───────────────────────────────────────────────────────
+// Priority order: Feed, Marketplace, Connections, Report Case — then the rest
 const ALL_TABS = [
-  { label: "Home",        href: "/",           icon: Home },
-  { label: "Gists",       href: "/gists",      icon: FileText },
-  { label: "Polls",       href: "/polls",      icon: Vote },
-  { label: "Marketplace", href: "/marketplace",icon: ShoppingBag },
-  { label: "Events",      href: "/events",     icon: CalendarDays },
-  { label: "Connections", href: "/connections",icon: Heart },
-  { label: "Services",    href: "/services",   icon: Wrench },
-  { label: "Recruitment", href: "/recruitment",icon: Briefcase },
-  { label: "Leaderboard", href: "/leaderboard",icon: Trophy },
-  { label: "Podcast",     href: "/podcast",    icon: Mic },
-  { label: "Contests",    href: "/contests",   icon: Award },
+  { label: "Feed",        href: "/",              icon: Rss },
+  { label: "Marketplace", href: "/marketplace",   icon: ShoppingBag },
+  { label: "Connections", href: "/connections",   icon: Heart },
+  { label: "Report Case", href: "/report-case",   icon: Flag },
+  { label: "Gists",       href: "/gists",         icon: FileText },
+  { label: "Polls",       href: "/polls",         icon: Vote },
+  { label: "Events",      href: "/events",        icon: CalendarDays },
+  { label: "Services",    href: "/services",      icon: Wrench },
+  { label: "Recruitment", href: "/recruitment",   icon: Briefcase },
+  { label: "Leaderboard", href: "/leaderboard",   icon: Trophy },
+  { label: "Podcast",     href: "/podcast",       icon: Mic },
+  { label: "Contests",    href: "/contests",      icon: Award },
 ] as const;
 
 // Desktop nav shows the first 6 without overflow
@@ -71,53 +73,55 @@ export function TopNav() {
     <header className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white border-b border-border shadow-sm h-14 items-center px-6 gap-0">
       <img
         src="/vcm-logo.png"
-        alt="Vawulence City Media"
-        className="h-10 w-auto mr-6 cursor-pointer object-contain select-none shrink-0"
-        data-testid="logo-vcm"
+        alt="VCM"
+        className="h-8 w-auto object-contain mr-6 select-none cursor-pointer"
         draggable={false}
         {...logoLongPress}
         onClick={() => navigate("/")}
       />
-      <nav className="flex items-center gap-0.5 flex-1 overflow-x-auto">
-        {ALL_TABS.map(({ label, href, icon: Icon }) => (
-          <Link key={href} href={href}>
-            <span
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
-                isActive(href, location)
+      <nav className="flex items-center gap-1 flex-1">
+        {DESKTOP_TABS.map(({ label, href, icon: Icon }) => {
+          const active = isActive(href, location);
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                active
                   ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
-              data-testid={`nav-${label.toLowerCase().replace(/\s+/g, "-")}`}
             >
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className="w-4 h-4" />
               {label}
-            </span>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </nav>
-      <ProfileTrigger className="ml-3 shrink-0" />
+      <ProfileTrigger />
     </header>
   );
 }
 
-// ── Mobile scrollable tab strip ───────────────────────────────────────────────
+// ── Mobile bottom nav ─────────────────────────────────────────────────────────
 export function BottomNav() {
   const [location] = useLocation();
   const stripRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
 
-  // Scroll the active tab into view on route change
+  // Auto-scroll active tab into view
   useEffect(() => {
     const activeIdx = ALL_TABS.findIndex((t) => isActive(t.href, location));
-    if (activeIdx === -1) return;
+    if (activeIdx < 0) return;
     const el = tabRefs.current[activeIdx];
-    if (el && stripRef.current) {
-      const strip = stripRef.current;
-      const tabLeft = el.offsetLeft;
-      const tabWidth = el.offsetWidth;
-      const stripWidth = strip.offsetWidth;
-      const targetScroll = tabLeft - stripWidth / 2 + tabWidth / 2;
-      strip.scrollTo({ left: Math.max(0, targetScroll), behavior: "smooth" });
+    const strip = stripRef.current;
+    if (!el || !strip) return;
+    const elLeft = el.offsetLeft;
+    const elRight = elLeft + el.offsetWidth;
+    const stripLeft = strip.scrollLeft;
+    const stripRight = stripLeft + strip.offsetWidth;
+    if (elLeft < stripLeft || elRight > stripRight) {
+      strip.scrollTo({ left: elLeft - 16, behavior: "smooth" });
     }
   }, [location]);
 
