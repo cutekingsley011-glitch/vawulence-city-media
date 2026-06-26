@@ -206,6 +206,7 @@ export default function ReportCasePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!caseText.trim()) { toast.error("Please describe the case."); return; }
+    if (imageUrls.length === 0) { toast.error("Evidence photos are required. Please attach at least one photo."); return; }
     setSubmitting(true);
     try {
       const res = await fetch("/api/report-cases", {
@@ -293,12 +294,18 @@ export default function ReportCasePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-semibold">Photos <span className="font-normal text-muted-foreground">(optional, up to 5)</span></label>
+                <label className="text-sm font-semibold">
+                  Attach Evidence <span className="text-destructive">*</span>
+                  <span className="font-normal text-muted-foreground text-xs ml-1">(up to 5 photos — required)</span>
+                </label>
                 <MediaUploadMulti
                   maxMB={10}
                   values={imageUrls}
                   onChange={setImageUrls}
                 />
+                {imageUrls.length === 0 && (
+                  <p className="text-xs text-destructive">At least one photo is required to submit a case.</p>
+                )}
               </div>
             </div>
 
@@ -309,7 +316,7 @@ export default function ReportCasePage() {
               <p>• False or defamatory reports may be declined.</p>
             </div>
 
-            <Button type="submit" disabled={submitting || !caseText.trim()} className="w-full gap-2">
+            <Button type="submit" disabled={submitting || !caseText.trim() || imageUrls.length === 0} className="w-full gap-2">
               <Send className="w-4 h-4" />
               {submitting ? "Submitting…" : "Submit Anonymously"}
             </Button>
