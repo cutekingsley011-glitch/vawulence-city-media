@@ -68,7 +68,7 @@ function AdminLogin({ onLogin }: { onLogin: () => void }) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (pw === ADMIN_PASSWORD) {
-      sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
+      localStorage.setItem(ADMIN_SESSION_KEY, "1");
       onLogin();
     } else {
       setError("Incorrect password.");
@@ -778,7 +778,7 @@ function AdminPanel() {
           variant="outline"
           size="sm"
           onClick={() => {
-            sessionStorage.removeItem(ADMIN_SESSION_KEY);
+            localStorage.removeItem(ADMIN_SESSION_KEY);
             window.location.reload();
           }}
           data-testid="button-admin-logout"
@@ -1629,7 +1629,7 @@ function AdminPanel() {
 
 // ─── Top-level component ──────────────────────────────────────────────────────
 export default function AdminPage() {
-  const [authed, setAuthed] = useState(() => !!sessionStorage.getItem(ADMIN_SESSION_KEY));
+  const [authed, setAuthed] = useState(() => !!localStorage.getItem(ADMIN_SESSION_KEY));
   if (!authed) return <AdminLogin onLogin={() => setAuthed(true)} />;
   return <AdminPanel />;
 }
