@@ -292,6 +292,9 @@ function PostFormModal({
 
 // ─── Main admin panel ─────────────────────────────────────────────────────────
 function AdminPanel() {
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try { return localStorage.getItem("vcm_admin_tab") ?? "posts"; } catch { return "posts"; }
+  });
   const queryClient = useQueryClient();
   const { data: stats } = useGetAdminStats();
   const { data: posts, isLoading: postsLoading } = useListPosts({});
@@ -350,7 +353,21 @@ function AdminPanel() {
   // Recruitment state
   const [jobs, setJobs] = useState<AdminJob[]>([]);
   const [jobsLoading, setJobsLoading] = useState(false);
-  const [jobForm, setJobForm] = useState({ title: "", companyName: "", description: "", flyerImageUrl: "", requirements: "", applyMethod: "whatsapp", applyContact: "" });
+  const [jobForm, setJobFormRaw] = useState(() => {
+    try {
+      const saved = localStorage.getItem("vcm_admin_job_draft");
+      if (saved) return JSON.parse(saved) as { title: string; companyName: string; description: string; flyerImageUrl: string; requirements: string; applyMethod: string; applyContact: string };
+    } catch { /* ignore */ }
+    return { title: "", companyName: "", description: "", flyerImageUrl: "", requirements: "", applyMethod: "whatsapp", applyContact: "" };
+  });
+  function setJobForm(v: typeof jobForm) {
+    setJobFormRaw(v);
+    try { localStorage.setItem("vcm_admin_job_draft", JSON.stringify(v)); } catch { /* ignore */ }
+  }
+  function clearJobDraft() {
+    setJobFormRaw({ title: "", companyName: "", description: "", flyerImageUrl: "", requirements: "", applyMethod: "whatsapp", applyContact: "" });
+    localStorage.removeItem("vcm_admin_job_draft");
+  }
   // Spill the Tea state
   const [spillSessions, setSpillSessions] = useState<AdminSpillSession[]>([]);
   const [spillLoading, setSpillLoading] = useState(false);
@@ -753,7 +770,7 @@ function AdminPanel() {
         applyMethod: jobForm.applyMethod, applyContact: jobForm.applyContact,
       }),
     });
-    setJobForm({ title: "", companyName: "", description: "", flyerImageUrl: "", requirements: "", applyMethod: "whatsapp", applyContact: "" });
+    clearJobDraft();
     loadJobs();
   }
   async function handleCloseJob(id: number) {
@@ -798,7 +815,7 @@ function AdminPanel() {
         <StatCard label="Vote Cards" value={stats?.totalVoteCards} icon={Vote} color="bg-indigo-500" />
       </div>
 
-      <Tabs defaultValue="posts">
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); try { localStorage.setItem("vcm_admin_tab", v); } catch { /**/ } }}>
         <TabsList className="w-full mb-4 flex-wrap h-auto gap-1">
           <TabsTrigger value="posts" className="flex-1 text-xs" data-testid="tab-posts">Posts</TabsTrigger>
           <TabsTrigger value="gists" className="flex-1 text-xs" data-testid="tab-gists">
