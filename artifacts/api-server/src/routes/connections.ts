@@ -7,17 +7,24 @@ const router = Router();
 
 const fmt = (c: typeof connectionsTable.$inferSelect) => ({ ...c, createdAt: c.createdAt.toISOString() });
 
-// GET /connections — approved only
+// Public fmt — strips private whatsappNumber before sending to users
+const fmtPublic = (c: typeof connectionsTable.$inferSelect) => {
+  const { whatsappNumber: _w, ...rest } = fmt(c);
+  return rest;
+};
+
+// GET /connections — approved only (no private fields)
 router.get("/connections", async (_req, res) => {
   const rows = await db.select().from(connectionsTable).where(eq(connectionsTable.status, "approved")).orderBy(connectionsTable.createdAt);
-  res.json(rows.map(fmt));
+  res.json(rows.map(fmtPublic));
 });
 
 // POST /connections — submit a profile (goes to pending)
 router.post("/connections", async (req, res) => {
-  const { userId, name, ageBracket, gender, state, photoUrl, lookingFor, bioText, consentGiven } = req.body as {
+  const { userId, name, ageBracket, gender, state, photoUrl, lookingFor, lookingForAge, preferredLocation, whatsappNumber, bioText, consentGiven } = req.body as {
     userId?: string; name: string; ageBracket: string; gender?: string; state: string;
-    photoUrl?: string; lookingFor: string; bioText: string; consentGiven: boolean;
+    photoUrl?: string; lookingFor: string; lookingForAge?: string; preferredLocation?: string;
+    whatsappNumber?: string; bioText: string; consentGiven: boolean;
   };
   if (!name || !ageBracket || !state || !lookingFor || !bioText) {
     res.status(400).json({ error: "Missing required fields" }); return;
@@ -25,9 +32,10 @@ router.post("/connections", async (req, res) => {
   if (!consentGiven) { res.status(400).json({ error: "Consent required" }); return; }
   const [row] = await db.insert(connectionsTable).values({
     userId: userId ?? null, name, ageBracket, gender: gender ?? null, state, photoUrl: photoUrl ?? null,
-    lookingFor, bioText, consentGiven: true, status: "pending",
+    lookingFor, lookingForAge: lookingForAge ?? null, preferredLocation: preferredLocation ?? null,
+    whatsappNumber: whatsappNumber ?? null, bioText, consentGiven: true, status: "pending",
   }).returning();
-  res.status(201).json(fmt(row));
+  res.status(201).json(fmtPublic(row));
 });
 
 // GET /admin/connections

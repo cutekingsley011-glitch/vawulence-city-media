@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { MediaUpload } from "@/components/MediaUpload";
-import { Heart, MessageCircle, User, MapPin, Search } from "lucide-react";
+import { Heart, MessageCircle, User, MapPin, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,16 +32,39 @@ interface Connection {
   state: string;
   photoUrl: string | null;
   lookingFor: string;
+  lookingForAge: string | null;
+  preferredLocation: string | null;
   bioText: string;
   createdAt: string;
 }
 
 interface FormState {
   name: string; ageBracket: string; gender: string; state: string;
-  photoUrl: string; lookingFor: string; bioText: string; consent: boolean;
+  photoUrl: string; lookingFor: string; lookingForAge: string;
+  preferredLocation: string; whatsappNumber: string; bioText: string; consent: boolean;
 }
 
-const EMPTY_FORM: FormState = { name: "", ageBracket: "", gender: "", state: "", photoUrl: "", lookingFor: "", bioText: "", consent: false };
+const EMPTY_FORM: FormState = { name: "", ageBracket: "", gender: "", state: "", photoUrl: "", lookingFor: "", lookingForAge: "", preferredLocation: "", whatsappNumber: "", bioText: "", consent: false };
+
+function BioText({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > 160;
+  return (
+    <div className="mb-3">
+      <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+        {isLong && !expanded ? text.slice(0, 160) + "…" : text}
+      </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="flex items-center gap-0.5 text-xs text-primary font-medium mt-1"
+        >
+          {expanded ? <><ChevronUp className="w-3 h-3" /> See less</> : <><ChevronDown className="w-3 h-3" /> See more</>}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function ConnectionsPage() {
   const [profiles, setProfiles] = useState<Connection[]>([]);
@@ -75,6 +98,9 @@ export default function ConnectionsPage() {
           name: form.name.trim(), ageBracket: form.ageBracket,
           gender: form.gender || null, state: form.state,
           photoUrl: form.photoUrl.trim() || null, lookingFor: form.lookingFor,
+          lookingForAge: form.lookingForAge || null,
+          preferredLocation: form.preferredLocation || null,
+          whatsappNumber: form.whatsappNumber.trim() || null,
           bioText: form.bioText.trim(), consentGiven: true,
         }),
       });
@@ -139,7 +165,17 @@ export default function ConnectionsPage() {
                       <div className="text-xs text-muted-foreground mb-2">
                         Looking for: <span className="font-medium text-foreground">{p.lookingFor}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground line-clamp-3 mb-3">{p.bioText}</p>
+                      {p.lookingForAge && (
+                        <div className="text-xs text-muted-foreground mb-1">
+                          Preferred age: <span className="font-medium text-foreground">{p.lookingForAge}</span>
+                        </div>
+                      )}
+                      {p.preferredLocation && (
+                        <div className="text-xs text-muted-foreground mb-2">
+                          Preferred location: <span className="font-medium text-foreground">{p.preferredLocation}</span>
+                        </div>
+                      )}
+                      <BioText text={p.bioText} />
                       <a href={`https://wa.me/${ADMIN_WA}?text=${waText}`} target="_blank" rel="noopener noreferrer">
                         <Button size="sm" className="w-full gap-1.5 bg-green-600 hover:bg-green-700 text-white">
                           <MessageCircle className="w-3.5 h-3.5" /> Request Contact
@@ -207,6 +243,35 @@ export default function ConnectionsPage() {
                     {LOOKING_FOR.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label>Preferred Age Range <span className="text-muted-foreground">(optional)</span></Label>
+                  <Select value={form.lookingForAge} onValueChange={(v) => setForm({ ...form, lookingForAge: v })}>
+                    <SelectTrigger><SelectValue placeholder="Any age" /></SelectTrigger>
+                    <SelectContent>
+                      {AGE_BRACKETS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label>Preferred Location <span className="text-muted-foreground">(optional)</span></Label>
+                  <Select value={form.preferredLocation} onValueChange={(v) => setForm({ ...form, preferredLocation: v })}>
+                    <SelectTrigger><SelectValue placeholder="Any state" /></SelectTrigger>
+                    <SelectContent className="max-h-60 overflow-y-auto">
+                      {NG_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label>Your WhatsApp Number <span className="text-muted-foreground">(private — only admin sees this)</span></Label>
+                <Input
+                  placeholder="e.g. 08012345678"
+                  value={form.whatsappNumber}
+                  onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value })}
+                />
+                <p className="text-[11px] text-muted-foreground">This number is never shown publicly. Admin uses it to connect interested parties.</p>
               </div>
               <div className="space-y-1">
                 <Label>Your Photo <span className="text-muted-foreground">(optional)</span></Label>

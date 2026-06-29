@@ -51,7 +51,7 @@ interface AdminSubPlan { id: number; name: string; durationDays: number; price: 
 
 interface AdminMarketItem { id: number; name: string; description: string; price: number; imageUrls: string[]; category: string; status: string; submittedByName: string | null; submittedByEmail: string | null; sellerWhatsapp: string | null; createdAt: string; }
 interface AdminReportCase { id: number; caseText: string; imageUrls: string[]; status: string; createdAt: string; }
-interface AdminConnection { id: number; name: string; ageBracket: string; state: string; photoUrl: string | null; lookingFor: string; bioText: string; status: string; createdAt: string; }
+interface AdminConnection { id: number; name: string; ageBracket: string; state: string; photoUrl: string | null; lookingFor: string; lookingForAge: string | null; preferredLocation: string | null; whatsappNumber: string | null; bioText: string; status: string; createdAt: string; }
 interface AdminEscrowReq { id: number; userId: string | null; description: string; amount: number; status: string; notes: string | null; createdAt: string; }
 interface AdminJob { id: number; title: string; companyName: string; description: string; flyerImageUrl: string | null; requirements: string[]; applyMethod: string; applyContact: string; status: string; createdAt: string; }
 interface AdminSpillSession { id: number; questionText: string; scheduledTime: string | null; isLive: boolean; createdAt: string; }
@@ -1414,6 +1414,16 @@ function AdminPanel() {
                       <Badge variant={c.status === "approved" ? "default" : c.status === "pending" ? "secondary" : "destructive"} className="text-xs">{c.status}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">{c.state} · Looking for: {c.lookingFor}</p>
+                    {c.whatsappNumber && (
+                      <p className="text-xs font-medium text-green-700 mt-0.5">📱 WhatsApp: {c.whatsappNumber}</p>
+                    )}
+                    {(c.lookingForAge || c.preferredLocation) && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {c.lookingForAge && <>Wants age: <span className="font-medium">{c.lookingForAge}</span></>}
+                        {c.lookingForAge && c.preferredLocation && " · "}
+                        {c.preferredLocation && <>Prefers: <span className="font-medium">{c.preferredLocation}</span></>}
+                      </p>
+                    )}
                     <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{c.bioText}</p>
                   </div>
                   <div className="flex gap-1.5 shrink-0">
