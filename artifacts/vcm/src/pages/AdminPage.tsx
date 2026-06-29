@@ -259,16 +259,24 @@ function PostFormModal({
           </div>
           <div className="space-y-1">
             <Label>Category</Label>
-            <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })} disabled={isPending}>
-              <SelectTrigger data-testid="select-post-category">
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories?.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex flex-wrap gap-2 pt-1" data-testid="select-post-category">
+              {categories?.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setForm({ ...form, category: cat.name })}
+                  className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                    form.category === cat.name
+                      ? "bg-primary text-white border-primary"
+                      : "bg-white text-foreground border-border hover:border-primary"
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+            {!form.category && <p className="text-xs text-muted-foreground">Tap a category above</p>}
           </div>
           <div className="flex items-center gap-3">
             <Switch
