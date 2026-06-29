@@ -16,7 +16,7 @@ async function uploadFile(file: File, maxMB: number): Promise<string> {
   const { uploadURL, objectPath } = await res.json();
   const put = await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
   if (!put.ok) throw new Error("Upload failed.");
-  return `/api/storage${objectPath}`;
+  return objectPath;
 }
 
 // ── Single-file upload ────────────────────────────────────────────────────────

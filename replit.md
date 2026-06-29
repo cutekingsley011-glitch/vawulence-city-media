@@ -37,7 +37,7 @@ A Nigerian entertainment, gossip, and news web app. Built with a React + Vite fr
 
 - Contract-first API: OpenAPI spec → Orval generates React Query hooks + Zod schemas
 - No traditional auth: users identified by localStorage `vcm_user` (name + email), no password
-- Admin protected by hardcoded password `vcmadmin2024` stored in sessionStorage key `vcm_admin`
+- Admin protected by hardcoded password `vcmadmin6969` stored in localStorage key `vcm_admin`
 - Breaking news route `/posts/breaking` registered BEFORE `/posts/:id` in Express (order matters)
 - Gists are anonymous: submitted content is stored without user identity, published Saturdays after admin review
 

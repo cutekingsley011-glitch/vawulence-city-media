@@ -1,21 +1,34 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { createClient } from "@supabase/supabase-js";
 import { randomUUID } from "crypto";
+import { logger } from "./logger";
 
-const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID ?? "";
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID ?? "";
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY ?? "";
-const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME ?? "";
-const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL ?? "").replace(/\/$/, "");
+const SUPABASE_URL = process.env.SUPABASE_URL ?? "";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+export const BUCKET_NAME = process.env.SUPABASE_STORAGE_BUCKET ?? "vcm-media";
 
-const s3Client = new S3Client({
-  region: "auto",
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
-  },
-});
+function getAdminClient() {
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
+  });
+}
+
+/** Ensure the vcm-media bucket exists and is public. Call once at server startup. */
+export async function initializeStorage(): Promise<void> {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    logger.warn("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set — storage uploads disabled");
+    return;
+  }
+  const supabase = getAdminClient();
+  const { data: bucket } = await supabase.storage.getBucket(BUCKET_NAME);
+  if (!bucket) {
+    const { error } = await supabase.storage.createBucket(BUCKET_NAME, { public: true });
+    if (error) {
+      logger.error({ err: error }, `Failed to create storage bucket "${BUCKET_NAME}"`);
+    } else {
+      logger.info({ bucket: BUCKET_NAME }, "Storage bucket created");
+    }
+  }
+}
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -26,11 +39,20 @@ export class ObjectNotFoundError extends Error {
 }
 
 export class ObjectStorageService {
+  /**
+   * Generate a presigned upload URL for direct browser-to-Supabase upload.
+   * Returns:
+   *   uploadURL  — the signed URL the client PUTs the file to
+   *   publicURL  — the permanent public URL to store in the database
+   */
   async getObjectEntityUploadURL(): Promise<{ uploadURL: string; publicURL: string }> {
-    const key = `uploads/${randomUUID()}`;
-    const command = new PutObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key });
-    const uploadURL = await getSignedUrl(s3Client, command, { expiresIn: 900 });
-    const publicURL = `${R2_PUBLIC_URL}/${key}`;
-    return { uploadURL, publicURL };
+    const supabase = getAdminClient();
+    const path = `uploads/${randomUUID()}`;
+    const { data, error } = await supabase.storage.from(BUCKET_NAME).createSignedUploadUrl(path);
+    if (error || !data) {
+      throw new Error(`Failed to create upload URL: ${error?.message ?? "unknown error"}`);
+    }
+    const publicURL = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${path}`;
+    return { uploadURL: data.signedUrl, publicURL };
   }
 }
