@@ -1,0 +1,57 @@
+Railway deployment failed — Build Error
+
+Add an "engines" field to the root package.json to require Node.js 20 or later so Nixpacks selects the correct version. The build is failing because Nixpacks defaults to Node.js 18.20.5, but Vite 7.3.3 requires Node.js 20.19+ and @tailwindcss/oxide v4 needs Node.js 20+ for its native bindings. This same error also caused the previous deployment to fail, confirming it is a pre-existing issue unrelated to the latest commit.
+
+Repository: https://github.com/cutekingsley011-glitch/vawulence-city-media
+Branch: main · Commit: fb4121e — Update post display to show both video and image when available
+
+Add `videoUrl` field to Post schemas in OpenAPI specification and update PostPage component to render both video embeds and cover images.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 5d6c28f1-0a67-4857-b88e-095cd15ee384
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: 11e0f3f1-c9cf-4e5f-a6e3-78a0bee0ef52
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/4cdc7ef1-4e24-4452-ae7f-a7276cc99d9a/5d6c28f1-0a67-4857-b88e-095cd15ee384/qAWCh1B
+Replit-Helium-Checkpoint-Created: true
+Deployment ID: 3a22ced2-b63f-41a7-a135-d1f03f9f1120
+Service ID: 1d3ad30f-b9d6-4ad5-b786-ced67d6894a4
+Environment ID: 15499caa-7bc2-4c90-b13d-8aefd924e2b9
+
+---
+
+## Problem
+The build fails at the `pnpm --filter @workspace/vcm run build` step because Nixpacks defaults to Node.js 18.20.5, but the project requires Node.js 20+.
+
+Build log errors:
+```
+You are using Node.js 18.20.5. Vite requires Node.js version 20.19+ or 22.12+. Please upgrade your Node.js version.
+Error: Cannot find native binding. (@tailwindcss/oxide@4.3.0)
+```
+
+The builder is Nixpacks (set in `railway.toml` via `[build] builder = "NIXPACKS"`). The build command (`pnpm install --frozen-lockfile && pnpm run typecheck:libs && pnpm --filter @workspace/vcm run build && pnpm --filter @workspace/api-server run build`) comes from `railway.toml`.
+
+## Diagnosis
+Nixpacks selects the Node.js version based on the `engines` field in `package.json` or a `.node-version` file. Neither exists in this repository, so Nixpacks defaults to Node.js 18. The project uses Vite 7.3.3 (requires Node.js 20.19+) and @tailwindcss/oxide 4.3.0 (requires Node.js 20+ for native bindings). The Node.js 18 runtime cannot run these packages. The previous deployment (39e94099) failed with the identical error, confirming this is pre-existing and not caused by the latest commit.
+
+## Fix
+1. **File:** `package.json` (repo root)
+2. **Current content (relevant section):**
+```json
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+```
+3. **Replacement:**
+```json
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+```
+4. **Why:** Adding `"engines": { "node": ">=20" }` tells Nixpacks to install Node.js 20+ instead of defaulting to 18. This satisfies both Vite 7.3.3's requirement for Node.js 20.19+ and @tailwindcss/oxide's requirement for Node.js 20+ native bindings.
