@@ -1,41 +1,37 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { RequestUploadUrlBody, RequestUploadUrlResponse } from "@workspace/api-zod";
-import { ObjectStorageService } from "../lib/objectStorage";
+import multer from "multer";
+import { uploadToCloudinary } from "../lib/objectStorage";
 
 const router: IRouter = Router();
-const objectStorageService = new ObjectStorageService();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 100 * 1024 * 1024 },
+});
 
 /**
- * POST /storage/uploads/request-url
+ * POST /storage/uploads
  *
- * Request a presigned URL for direct file upload to Cloudflare R2.
- * The client sends JSON metadata (name, size, contentType) — NOT the file.
- * Then uploads the file directly to the returned presigned PUT URL.
- * The returned objectPath is the public R2 URL — store it in the DB and use
- * it directly as <img src> or <a href>.
+ * Accepts a multipart form with a single `file` field.
+ * Uploads the file to Cloudinary and returns its public URL.
+ *
+ * Response: { objectPath: string }
  */
-router.post("/storage/uploads/request-url", async (req: Request, res: Response) => {
-  const parsed = RequestUploadUrlBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Missing or invalid required fields" });
-    return;
-  }
-
-  try {
-    const { name, size, contentType } = parsed.data;
-    const { uploadURL, publicURL } = await objectStorageService.getObjectEntityUploadURL();
-
-    res.json(
-      RequestUploadUrlResponse.parse({
-        uploadURL,
-        objectPath: publicURL,
-        metadata: { name, size, contentType },
-      }),
-    );
-  } catch (error) {
-    req.log.error({ err: error }, "Error generating upload URL");
-    res.status(500).json({ error: "Failed to generate upload URL" });
-  }
-});
+router.post(
+  "/storage/uploads",
+  upload.single("file"),
+  async (req: Request, res: Response) => {
+    if (!req.file) {
+      res.status(400).json({ error: "No file provided" });
+      return;
+    }
+    try {
+      const url = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
+      res.json({ objectPath: url });
+    } catch (error) {
+      req.log.error({ err: error }, "Cloudinary upload failed");
+      res.status(500).json({ error: "Upload failed. Please try again." });
+    }
+  },
+);
 
 export default router;

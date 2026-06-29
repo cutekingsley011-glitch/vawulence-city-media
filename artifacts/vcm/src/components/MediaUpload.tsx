@@ -7,16 +7,15 @@ async function uploadFile(file: File, maxMB: number): Promise<string> {
   if (file.size > maxMB * 1024 * 1024) {
     throw new Error(`File too large — max ${maxMB} MB.`);
   }
-  const res = await fetch("/api/storage/uploads/request-url", {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch("/api/storage/uploads", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+    body: formData,
   });
-  if (!res.ok) throw new Error("Could not get upload URL.");
-  const { uploadURL, objectPath } = await res.json();
-  const put = await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-  if (!put.ok) throw new Error("Upload failed.");
-  return objectPath;
+  if (!res.ok) throw new Error("Upload failed. Please try again.");
+  const { objectPath } = await res.json();
+  return objectPath as string;
 }
 
 // ── Single-file upload ────────────────────────────────────────────────────────
@@ -42,7 +41,8 @@ export function MediaUpload({ accept, maxMB, label, value, onChange }: {
     }
   }
 
-  const isImage = value && /\.(jpg|jpeg|png|gif|webp)/i.test(value);
+  const isImage = value && /\.(jpg|jpeg|png|gif|webp)/i.test(value) || value?.includes("cloudinary.com");
+  const isVideo = value && (value.includes("/video/") || /\.(mp4|webm|mov)/i.test(value));
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -69,11 +69,13 @@ export function MediaUpload({ accept, maxMB, label, value, onChange }: {
 
       {value && (
         <div className="flex items-center gap-1.5">
-          {isImage
-            ? <img src={value} className="h-10 w-14 object-cover rounded border" alt="preview" />
-            : <span className="text-xs font-medium text-primary flex items-center gap-1">
+          {isVideo
+            ? <span className="text-xs font-medium text-primary flex items-center gap-1">
                 <Video className="w-3.5 h-3.5" />Uploaded ✓
-              </span>}
+              </span>
+            : isImage
+            ? <img src={value} className="h-10 w-14 object-cover rounded border" alt="preview" />
+            : <span className="text-xs text-muted-foreground">Uploaded ✓</span>}
           <Button
             type="button"
             variant="ghost"
