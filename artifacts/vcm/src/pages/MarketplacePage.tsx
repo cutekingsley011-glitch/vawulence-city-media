@@ -256,7 +256,7 @@ export default function MarketplacePage() {
                     onChange={(e) => setForm({ ...form, lastPrice: e.target.value })}
                     placeholder="Enter your price"
                   />
-                  <p className="text-[11px] text-muted-foreground">Include a 5% commission in your price.</p>
+                  <p className="text-[11px] text-muted-foreground">Include a 10% commission in your price.</p>
                 </div>
                 <div className="space-y-1.5">
                   <Label>Reason for Sale</Label>
