@@ -11,9 +11,7 @@ import { eq } from "drizzle-orm";
 
 const router = Router();
 
-const VCM_DOMAIN = process.env.REPLIT_DOMAINS?.split(",")[0]
-  ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-  : "https://vawulencecitymedia.replit.app";
+const VCM_DOMAIN = process.env.VCM_BASE_URL ?? "https://vawulencecitymedia.com";
 
 const FALLBACK_IMG = `${VCM_DOMAIN}/opengraph.jpg`;
 const SITE_NAME = "Vawulence City Media";
