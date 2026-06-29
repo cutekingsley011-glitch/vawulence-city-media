@@ -32,7 +32,7 @@ export const ListPostsResponseItem = zod.object({
   "excerpt": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
   "videoUrl": zod.string().nullish(),
-  "category": zod.string(),
+  "category": zod.string().nullish(),
   "isBreaking": zod.boolean(),
   "createdAt": zod.string(),
   "reactionCount": zod.number(),
@@ -50,7 +50,6 @@ export const CreatePostBody = zod.object({
   "excerpt": zod.string().optional(),
   "imageUrl": zod.string().optional(),
   "videoUrl": zod.string().nullish(),
-  "category": zod.string(),
   "isBreaking": zod.boolean().optional()
 })
 
@@ -90,7 +89,7 @@ export const GetPostResponse = zod.object({
   "excerpt": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
   "videoUrl": zod.string().nullish(),
-  "category": zod.string(),
+  "category": zod.string().nullish(),
   "isBreaking": zod.boolean(),
   "createdAt": zod.string(),
   "reactionCount": zod.number(),
@@ -111,7 +110,6 @@ export const UpdatePostBody = zod.object({
   "excerpt": zod.string().optional(),
   "imageUrl": zod.string().optional(),
   "videoUrl": zod.string().nullish(),
-  "category": zod.string().optional(),
   "isBreaking": zod.boolean().optional()
 })
 
@@ -122,7 +120,7 @@ export const UpdatePostResponse = zod.object({
   "excerpt": zod.string().nullish(),
   "imageUrl": zod.string().nullish(),
   "videoUrl": zod.string().nullish(),
-  "category": zod.string(),
+  "category": zod.string().nullish(),
   "isBreaking": zod.boolean(),
   "createdAt": zod.string(),
   "reactionCount": zod.number(),

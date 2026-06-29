@@ -130,11 +130,10 @@ interface PostFormData {
   excerpt: string;
   imageUrl: string;
   videoUrl: string;
-  category: string;
   isBreaking: boolean;
 }
 
-const EMPTY_POST: PostFormData = { title: "", content: "", excerpt: "", imageUrl: "", videoUrl: "", category: "", isBreaking: false };
+const EMPTY_POST: PostFormData = { title: "", content: "", excerpt: "", imageUrl: "", videoUrl: "", isBreaking: false };
 
 function PostFormModal({
   open,
@@ -149,7 +148,6 @@ function PostFormModal({
 }) {
   const [form, setForm] = useState<PostFormData>(initialData ?? EMPTY_POST);
   const [error, setError] = useState("");
-  const { data: categories } = useListCategories();
   const createPost = useCreatePost();
   const updatePost = useUpdatePost();
   const queryClient = useQueryClient();
@@ -157,8 +155,8 @@ function PostFormModal({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!form.title.trim() || !form.content.trim() || !form.category) {
-      setError("Title, content, and category are required.");
+    if (!form.title.trim() || !form.content.trim()) {
+      setError("Title and content are required.");
       return;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -168,7 +166,6 @@ function PostFormModal({
       excerpt: form.excerpt.trim() || undefined,
       imageUrl: form.imageUrl.trim() || undefined,
       videoUrl: form.videoUrl.trim() || undefined,
-      category: form.category,
       isBreaking: form.isBreaking,
     } as any;
 
@@ -256,27 +253,6 @@ function PostFormModal({
               value={form.videoUrl}
               onChange={(v) => setForm({ ...form, videoUrl: v })}
             />
-          </div>
-          <div className="space-y-1">
-            <Label>Category</Label>
-            <div className="flex flex-wrap gap-2 pt-1" data-testid="select-post-category">
-              {categories?.map((cat) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  disabled={isPending}
-                  onClick={() => setForm({ ...form, category: cat.name })}
-                  className={`px-3 py-1 rounded-full text-sm border transition-colors ${
-                    form.category === cat.name
-                      ? "bg-primary text-white border-primary"
-                      : "bg-white text-foreground border-border hover:border-primary"
-                  }`}
-                >
-                  {cat.name}
-                </button>
-              ))}
-            </div>
-            {!form.category && <p className="text-xs text-muted-foreground">Tap a category above</p>}
           </div>
           <div className="flex items-center gap-3">
             <Switch
@@ -874,7 +850,7 @@ function AdminPanel() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{post.title}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-muted-foreground capitalize">{post.category}</span>
+                      {post.category && <span className="text-xs text-muted-foreground capitalize">{post.category}</span>}
                       {post.isBreaking && (
                         <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded">Breaking</span>
                       )}
@@ -894,7 +870,6 @@ function AdminPanel() {
                             excerpt: post.excerpt ?? "",
                             imageUrl: post.imageUrl ?? "",
                             videoUrl: (post as { videoUrl?: string | null }).videoUrl ?? "",
-                            category: post.category,
                             isBreaking: post.isBreaking,
                           },
                         });

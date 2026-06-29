@@ -8,7 +8,7 @@ export const postsTable = pgTable("posts", {
   content: text("content").notNull(),
   excerpt: text("excerpt"),
   imageUrl: text("image_url"),
-  category: text("category").notNull(),
+  category: text("category"),
   isBreaking: boolean("is_breaking").notNull().default(false),
   isVip: boolean("is_vip").notNull().default(false),
   videoUrl: text("video_url"),

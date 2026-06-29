@@ -771,7 +771,7 @@ components:
     # ── Post ──────────────────────────────────────────────────────────────────
     Post:
       type: object
-      required: [id, title, content, category, isBreaking, createdAt, reactionCount, commentCount]
+      required: [id, title, content, isBreaking, createdAt, reactionCount, commentCount]
       properties:
         id:          { type: integer }
         title:       { type: string }
@@ -779,7 +779,7 @@ components:
         excerpt:     { type: ["string", "null"] }
         imageUrl:    { type: ["string", "null"] }
         videoUrl:    { type: ["string", "null"] }
-        category:    { type: string }
+        category:    { type: ["string", "null"] }
         isBreaking:  { type: boolean }
         createdAt:   { type: string }
         reactionCount: { type: integer }
@@ -787,14 +787,13 @@ components:
 
     PostInput:
       type: object
-      required: [title, content, category]
+      required: [title, content]
       properties:
         title:      { type: string }
         content:    { type: string }
         excerpt:    { type: string }
         imageUrl:   { type: string }
         videoUrl:   { type: ["string", "null"] }
-        category:   { type: string }
         isBreaking: { type: boolean }
 
     PostUpdate:
@@ -805,7 +804,6 @@ components:
         excerpt:    { type: string }
         imageUrl:   { type: string }
         videoUrl:   { type: ["string", "null"] }
-        category:   { type: string }
         isBreaking: { type: boolean }
 
     PostStats:

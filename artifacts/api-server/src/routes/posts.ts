@@ -93,7 +93,7 @@ router.post("/posts", async (req, res) => {
       excerpt: body.data.excerpt ?? null,
       imageUrl: body.data.imageUrl ?? null,
       videoUrl: (req.body as Record<string, unknown>).videoUrl as string ?? null,
-      category: body.data.category,
+      category: null,
       isBreaking: body.data.isBreaking ?? false,
     })
     .returning();
@@ -179,7 +179,6 @@ router.patch("/posts/:id", async (req, res) => {
   if (body.data.content !== undefined) updates.content = body.data.content;
   if (body.data.excerpt !== undefined) updates.excerpt = body.data.excerpt;
   if (body.data.imageUrl !== undefined) updates.imageUrl = body.data.imageUrl;
-  if (body.data.category !== undefined) updates.category = body.data.category;
   if (body.data.isBreaking !== undefined) updates.isBreaking = body.data.isBreaking;
   const rawVideoUrl = (req.body as Record<string, unknown>).videoUrl;
   if (rawVideoUrl !== undefined) updates.videoUrl = (rawVideoUrl as string | null) ?? null;

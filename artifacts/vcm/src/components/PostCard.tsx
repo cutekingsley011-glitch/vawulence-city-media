@@ -8,7 +8,7 @@ interface Post {
   excerpt?: string | null;
   imageUrl?: string | null;
   videoUrl?: string | null;
-  category: string;
+  category?: string | null;
   isBreaking: boolean;
   createdAt: string;
   reactionCount: number;
@@ -51,13 +51,15 @@ export default function PostCard({ post }: Props) {
         <div className="flex-1 min-w-0 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Badge
-                variant="secondary"
-                className="text-xs px-2 py-0.5 bg-primary/10 text-primary border-0 capitalize"
-                data-testid={`badge-category-${post.id}`}
-              >
-                {post.category}
-              </Badge>
+              {post.category && (
+                <Badge
+                  variant="secondary"
+                  className="text-xs px-2 py-0.5 bg-primary/10 text-primary border-0 capitalize"
+                  data-testid={`badge-category-${post.id}`}
+                >
+                  {post.category}
+                </Badge>
+              )}
               {post.isBreaking && (
                 <Badge className="text-xs px-2 py-0.5 bg-red-600 text-white border-0">
                   Breaking

@@ -19,7 +19,8 @@ export interface Post {
   imageUrl?: string | null;
   /** @nullable */
   videoUrl?: string | null;
-  category: string;
+  /** @nullable */
+  category?: string | null;
   isBreaking: boolean;
   createdAt: string;
   reactionCount: number;
@@ -33,7 +34,6 @@ export interface PostInput {
   imageUrl?: string;
   /** @nullable */
   videoUrl?: string | null;
-  category: string;
   isBreaking?: boolean;
 }
 
@@ -44,7 +44,6 @@ export interface PostUpdate {
   imageUrl?: string;
   /** @nullable */
   videoUrl?: string | null;
-  category?: string;
   isBreaking?: boolean;
 }
 
