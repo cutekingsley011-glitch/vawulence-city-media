@@ -31,7 +31,8 @@ export interface PostInput {
   content: string;
   excerpt?: string;
   imageUrl?: string;
-  videoUrl?: string;
+  /** @nullable */
+  videoUrl?: string | null;
   category: string;
   isBreaking?: boolean;
 }
@@ -41,7 +42,8 @@ export interface PostUpdate {
   content?: string;
   excerpt?: string;
   imageUrl?: string;
-  videoUrl?: string;
+  /** @nullable */
+  videoUrl?: string | null;
   category?: string;
   isBreaking?: boolean;
 }

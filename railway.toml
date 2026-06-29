@@ -1,5 +1,5 @@
 [build]
-# pnpm monorepo — builds vcm frontend then api-server
+# pnpm monorepo — builds vcm frontend then api-server (explicit Railway paths)
 builder = "NIXPACKS"
 buildCommand = "pnpm install --frozen-lockfile && pnpm run typecheck:libs && pnpm --filter @workspace/vcm run build && pnpm --filter @workspace/api-server run build"
 

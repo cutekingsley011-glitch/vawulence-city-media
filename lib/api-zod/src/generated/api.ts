@@ -49,7 +49,7 @@ export const CreatePostBody = zod.object({
   "content": zod.string(),
   "excerpt": zod.string().optional(),
   "imageUrl": zod.string().optional(),
-  "videoUrl": zod.string().optional(),
+  "videoUrl": zod.string().nullish(),
   "category": zod.string(),
   "isBreaking": zod.boolean().optional()
 })
@@ -110,7 +110,7 @@ export const UpdatePostBody = zod.object({
   "content": zod.string().optional(),
   "excerpt": zod.string().optional(),
   "imageUrl": zod.string().optional(),
-  "videoUrl": zod.string().optional(),
+  "videoUrl": zod.string().nullish(),
   "category": zod.string().optional(),
   "isBreaking": zod.boolean().optional()
 })

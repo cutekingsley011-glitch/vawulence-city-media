@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Home, FileText, Vote, Trophy, ShoppingBag, CalendarDays,
-  Heart, Briefcase, MessageCircle, Award, Flag,
+  Heart, Briefcase, MessageCircle, Award, Flag, Flame,
   Menu, Shield, FileCheck, Video, Phone, CalendarCheck, Megaphone,
   ArrowLeft,
 } from "lucide-react";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 // Services is now in the hamburger drawer, not the tab strip
 const ALL_TABS = [
   { label: "Home",        href: "/",              icon: Home },
+  { label: "Spill 🔥",    href: "/spill",         icon: Flame },
   { label: "Marketplace", href: "/marketplace",   icon: ShoppingBag },
   { label: "Connections", href: "/connections",   icon: Heart },
   { label: "Report Case", href: "/report-case",   icon: Flag },
