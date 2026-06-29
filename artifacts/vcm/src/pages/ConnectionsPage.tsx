@@ -194,7 +194,7 @@ export default function ConnectionsPage() {
                 <Label>State *</Label>
                 <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v })}>
                   <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60 overflow-y-auto">
                     {NG_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
