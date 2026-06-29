@@ -336,7 +336,7 @@ function AdminPanel() {
   const [subPlans, setSubPlans] = useState<AdminSubPlan[]>([]);
 
   // Event form
-  const [evtForm, setEvtForm] = useState({ title: "", description: "", venue: "", eventDate: "", imageUrl: "", videoUrl: "", isPaid: false, ticketPrice: "" });
+  const [evtForm, setEvtForm] = useState({ title: "", description: "", venue: "", eventDate: "", eventTime: "", host: "", imageUrl: "", videoUrl: "", isPaid: false, ticketPrice: "" });
   // Contest form
   const [ctForm, setCtForm] = useState({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", optionCount: 2, options: ["", ""] });
   // Marketplace state
@@ -585,6 +585,8 @@ function AdminPanel() {
       body: JSON.stringify({
         title: evtForm.title, description: evtForm.description, venue: evtForm.venue,
         eventDate: new Date(evtForm.eventDate).toISOString(),
+        eventTime: evtForm.eventTime || null,
+        host: evtForm.host || null,
         imageUrl: evtForm.imageUrl || null,
         videoUrl: evtForm.videoUrl || null,
         isPaid: evtForm.isPaid,
@@ -592,7 +594,7 @@ function AdminPanel() {
       }),
     });
     toast.success("Event created!");
-    setEvtForm({ title: "", description: "", venue: "", eventDate: "", imageUrl: "", videoUrl: "", isPaid: false, ticketPrice: "" });
+    setEvtForm({ title: "", description: "", venue: "", eventDate: "", eventTime: "", host: "", imageUrl: "", videoUrl: "", isPaid: false, ticketPrice: "" });
     loadEvents();
   }
 
@@ -1070,7 +1072,17 @@ function AdminPanel() {
                 <Input placeholder="Title *" value={evtForm.title} onChange={(e) => setEvtForm((f) => ({ ...f, title: e.target.value }))} />
                 <Textarea placeholder="Description *" value={evtForm.description} onChange={(e) => setEvtForm((f) => ({ ...f, description: e.target.value }))} rows={2} />
                 <Input placeholder="Venue *" value={evtForm.venue} onChange={(e) => setEvtForm((f) => ({ ...f, venue: e.target.value }))} />
-                <Input type="datetime-local" value={evtForm.eventDate} onChange={(e) => setEvtForm((f) => ({ ...f, eventDate: e.target.value }))} />
+                <Input placeholder="Host (e.g. DJ Spinall, VCM Events)" value={evtForm.host} onChange={(e) => setEvtForm((f) => ({ ...f, host: e.target.value }))} />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Date *</label>
+                    <Input type="date" value={evtForm.eventDate} onChange={(e) => setEvtForm((f) => ({ ...f, eventDate: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Time (e.g. 6:00 PM)</label>
+                    <Input placeholder="e.g. 6:00 PM" value={evtForm.eventTime} onChange={(e) => setEvtForm((f) => ({ ...f, eventTime: e.target.value }))} />
+                  </div>
+                </div>
                 <MediaUpload accept="image/*" maxMB={10} label="Upload Image" value={evtForm.imageUrl} onChange={(v) => setEvtForm((f) => ({ ...f, imageUrl: v }))} />
                 <MediaUpload accept="video/*" maxMB={100} label="Upload Video" value={evtForm.videoUrl} onChange={(v) => setEvtForm((f) => ({ ...f, videoUrl: v }))} />
                 <div className="flex items-center gap-2">

@@ -8,6 +8,8 @@ export const eventsTable = pgTable("events", {
   videoUrl: text("video_url"),
   venue: text("venue").notNull(),
   eventDate: timestamp("event_date").notNull(),
+  eventTime: text("event_time"),
+  host: text("host"),
   restrictionTags: text("restriction_tags").array().default([]),
   isPaid: boolean("is_paid").default(false).notNull(),
   ticketPrice: integer("ticket_price"),

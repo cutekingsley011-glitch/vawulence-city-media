@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams } from "wouter";
-import { Calendar, MapPin, Tag, Ticket, ArrowLeft, CheckCircle, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Tag, Ticket, ArrowLeft, CheckCircle, Loader2, Clock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,8 @@ interface EventDetail {
   imageUrl: string | null;
   venue: string;
   eventDate: string;
+  eventTime: string | null;
+  host: string | null;
   restrictionTags: string[];
   isPaid: boolean;
   ticketPrice: number | null;
@@ -129,8 +131,20 @@ export default function EventDetailPage() {
         <div className="flex items-center gap-2"><MapPin className="w-4 h-4 shrink-0" /><span>{event.venue}</span></div>
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 shrink-0" />
-          <span>{new Date(event.eventDate).toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+          <span>{new Date(event.eventDate).toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</span>
         </div>
+        {event.eventTime && (
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 shrink-0" />
+            <span>{event.eventTime}</span>
+          </div>
+        )}
+        {event.host && (
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 shrink-0" />
+            <span>Hosted by <span className="font-medium text-foreground">{event.host}</span></span>
+          </div>
+        )}
         {event.restrictionTags?.length > 0 && (
           <div className="flex items-center gap-2">
             <Tag className="w-4 h-4 shrink-0" />

@@ -44,13 +44,15 @@ router.get("/events/:id", async (req, res) => {
 
 // POST /events (admin)
 router.post("/events", async (req, res) => {
-  const { title, description, imageUrl, videoUrl, venue, eventDate, restrictionTags, isPaid, ticketPrice } = req.body;
+  const { title, description, imageUrl, videoUrl, venue, eventDate, eventTime, host, restrictionTags, isPaid, ticketPrice } = req.body;
   if (!title || !description || !venue || !eventDate) {
     res.status(400).json({ error: "Missing required fields" }); return;
   }
   const [event] = await db.insert(eventsTable).values({
     title, description, imageUrl, videoUrl, venue,
     eventDate: new Date(eventDate),
+    eventTime: eventTime ?? null,
+    host: host ?? null,
     restrictionTags: restrictionTags ?? [],
     isPaid: !!isPaid,
     ticketPrice: isPaid ? ticketPrice : null,
@@ -61,7 +63,7 @@ router.post("/events", async (req, res) => {
 // PATCH /events/:id (admin)
 router.patch("/events/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { title, description, imageUrl, videoUrl, venue, eventDate, restrictionTags, isPaid, ticketPrice } = req.body;
+  const { title, description, imageUrl, videoUrl, venue, eventDate, eventTime, host, restrictionTags, isPaid, ticketPrice } = req.body;
   const updates: Record<string, unknown> = {};
   if (title !== undefined) updates.title = title;
   if (description !== undefined) updates.description = description;
@@ -69,6 +71,8 @@ router.patch("/events/:id", async (req, res) => {
   if (videoUrl !== undefined) updates.videoUrl = videoUrl;
   if (venue !== undefined) updates.venue = venue;
   if (eventDate !== undefined) updates.eventDate = new Date(eventDate);
+  if (eventTime !== undefined) updates.eventTime = eventTime;
+  if (host !== undefined) updates.host = host;
   if (restrictionTags !== undefined) updates.restrictionTags = restrictionTags;
   if (isPaid !== undefined) updates.isPaid = isPaid;
   if (ticketPrice !== undefined) updates.ticketPrice = ticketPrice;
