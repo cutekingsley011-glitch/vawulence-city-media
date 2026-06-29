@@ -36,7 +36,7 @@ app.use("/api", router);
 // Serve the built React frontend for non-API routes (production / Railway)
 if (process.env.NODE_ENV === "production") {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  const frontendDist = path.resolve(__dirname, "../../artifacts/vcm/dist/public");
+  const frontendDist = path.resolve(__dirname, "../../vcm/dist/public");
   app.use(express.static(frontendDist));
   app.get("*", (_req, res) => {
     res.sendFile(path.join(frontendDist, "index.html"));
