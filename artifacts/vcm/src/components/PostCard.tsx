@@ -36,7 +36,7 @@ export default function PostCard({ post }: Props) {
           <img
             src={post.imageUrl ?? FALLBACK}
             alt={post.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             loading="lazy"
             onError={(e) => {
               (e.target as HTMLImageElement).src = FALLBACK;

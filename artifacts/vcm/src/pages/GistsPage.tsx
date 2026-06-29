@@ -130,7 +130,7 @@ export default function GistsPage() {
               </p>
               {gist.imageUrl && (
                 <div className="mt-3 rounded-lg overflow-hidden">
-                  <img src={gist.imageUrl} alt="Gist image" className="w-full max-h-64 object-cover" />
+                  <img src={gist.imageUrl} alt="Gist image" className="w-full h-auto object-contain bg-muted" />
                 </div>
               )}
               <div className="flex items-center justify-between mt-2">

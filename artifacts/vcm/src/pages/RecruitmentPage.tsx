@@ -33,7 +33,7 @@ function JobCard({ job }: { job: JobPosting }) {
   return (
     <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
       {job.flyerImageUrl && (
-        <img src={job.flyerImageUrl} alt={`${job.companyName} flyer`} className="w-full h-48 object-cover" />
+        <img src={job.flyerImageUrl} alt={`${job.companyName} flyer`} className="w-full h-auto object-contain bg-muted" />
       )}
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1">

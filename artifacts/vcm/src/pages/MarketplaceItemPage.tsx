@@ -74,7 +74,7 @@ export default function MarketplaceItemPage() {
       {/* Photo carousel */}
       {photos.length > 0 ? (
         <div className="relative rounded-xl overflow-hidden mb-5 bg-muted">
-          <img src={photos[photoIdx]} alt={item.name} className="w-full h-72 object-cover" />
+          <img src={photos[photoIdx]} alt={item.name} className="w-full h-auto object-contain bg-muted" />
           {photos.length > 1 && (
             <>
               <button

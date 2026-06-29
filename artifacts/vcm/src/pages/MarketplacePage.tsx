@@ -135,7 +135,7 @@ export default function MarketplacePage() {
                   <img
                     src={item.imageUrls[0]}
                     alt={item.name}
-                    className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-200"
+                    className="w-full h-auto object-contain bg-muted"
                   />
                 ) : (
                   <div className="w-full h-44 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">

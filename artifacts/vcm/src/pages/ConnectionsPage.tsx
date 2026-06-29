@@ -121,7 +121,7 @@ export default function ConnectionsPage() {
                 return (
                   <div key={p.id} className="bg-card border rounded-xl overflow-hidden shadow-sm">
                     {p.photoUrl ? (
-                      <img src={p.photoUrl} alt={p.name} className="w-full h-48 object-cover" />
+                      <img src={p.photoUrl} alt={p.name} className="w-full h-auto object-contain bg-muted" />
                     ) : (
                       <div className="w-full h-48 bg-gradient-to-br from-pink-100 to-rose-200 flex items-center justify-center">
                         <User className="w-14 h-14 text-rose-300" />

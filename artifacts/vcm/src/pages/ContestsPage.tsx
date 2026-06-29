@@ -109,7 +109,7 @@ export default function ContestsPage() {
         <div className="grid gap-5 sm:grid-cols-2">
           {contests.map((c) => (
             <div key={c.id} className="bg-card border rounded-xl overflow-hidden shadow-sm">
-              {c.imageUrl && <img src={c.imageUrl} alt={c.title} className="w-full h-36 object-cover" />}
+              {c.imageUrl && <img src={c.imageUrl} alt={c.title} className="w-full h-auto object-contain bg-muted" />}
               <div className="p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <h2 className="font-semibold text-base leading-snug">{c.title}</h2>

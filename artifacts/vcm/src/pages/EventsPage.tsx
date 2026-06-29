@@ -61,7 +61,7 @@ export default function EventsPage() {
             <Link key={event.id} href={`/events/${event.id}`}>
               <div className="bg-card border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
                 {event.imageUrl ? (
-                  <img src={event.imageUrl} alt={event.title} className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-200" />
+                  <img src={event.imageUrl} alt={event.title} className="w-full h-auto object-contain bg-muted" />
                 ) : (
                   <div className="w-full h-40 bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
                     <Calendar className="w-12 h-12 text-white/60" />

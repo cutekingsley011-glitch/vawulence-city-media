@@ -115,7 +115,7 @@ export default function EventDetailPage() {
       </Link>
 
       {event.imageUrl ? (
-        <img src={event.imageUrl} alt={event.title} className="w-full h-56 object-cover rounded-xl mb-5" />
+        <img src={event.imageUrl} alt={event.title} className="w-full h-auto object-contain rounded-xl mb-5 bg-muted" />
       ) : (
         <div className="w-full h-56 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl mb-5 flex items-center justify-center">
           <Calendar className="w-16 h-16 text-white/50" />

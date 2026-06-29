@@ -293,11 +293,11 @@ export default function PostPage() {
 
       {/* Cover image — shown when present (alongside video, or as sole media) */}
       {post.imageUrl ? (
-        <div className="rounded-xl overflow-hidden mb-4 bg-muted aspect-video">
+        <div className="rounded-xl overflow-hidden mb-4 bg-muted">
           <img
             src={post.imageUrl}
             alt={post.title}
-            className="w-full h-full object-cover"
+            className="w-full h-auto object-contain"
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK; }}
             data-testid="img-post"
           />
@@ -307,7 +307,7 @@ export default function PostPage() {
           <img
             src={FALLBACK}
             alt={post.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             data-testid="img-post"
           />
         </div>
