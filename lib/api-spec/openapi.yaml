@@ -778,6 +778,7 @@ components:
         content:     { type: string }
         excerpt:     { type: ["string", "null"] }
         imageUrl:    { type: ["string", "null"] }
+        videoUrl:    { type: ["string", "null"] }
         category:    { type: string }
         isBreaking:  { type: boolean }
         createdAt:   { type: string }
@@ -792,6 +793,7 @@ components:
         content:    { type: string }
         excerpt:    { type: string }
         imageUrl:   { type: string }
+        videoUrl:   { type: string }
         category:   { type: string }
         isBreaking: { type: boolean }
 
@@ -802,6 +804,7 @@ components:
         content:    { type: string }
         excerpt:    { type: string }
         imageUrl:   { type: string }
+        videoUrl:   { type: string }
         category:   { type: string }
         isBreaking: { type: boolean }
 
