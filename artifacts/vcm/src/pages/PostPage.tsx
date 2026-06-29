@@ -288,20 +288,30 @@ export default function PostPage() {
         {post.title}
       </h1>
 
-      {/* Video or Image */}
-      {(post as { videoUrl?: string | null }).videoUrl ? (
-        <VideoEmbed url={(post as { videoUrl?: string | null }).videoUrl!} />
-      ) : (
+      {/* Video embed */}
+      {post.videoUrl && <VideoEmbed url={post.videoUrl} />}
+
+      {/* Cover image — shown when present (alongside video, or as sole media) */}
+      {post.imageUrl ? (
         <div className="rounded-xl overflow-hidden mb-4 bg-muted aspect-video">
           <img
-            src={post.imageUrl ?? FALLBACK}
+            src={post.imageUrl}
             alt={post.title}
             className="w-full h-full object-cover"
             onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK; }}
             data-testid="img-post"
           />
         </div>
-      )}
+      ) : !post.videoUrl ? (
+        <div className="rounded-xl overflow-hidden mb-4 bg-muted aspect-video">
+          <img
+            src={FALLBACK}
+            alt={post.title}
+            className="w-full h-full object-cover"
+            data-testid="img-post"
+          />
+        </div>
+      ) : null}
 
       {/* Content */}
       <div
