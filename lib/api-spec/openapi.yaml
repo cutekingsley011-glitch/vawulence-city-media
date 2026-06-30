@@ -927,10 +927,9 @@ components:
 
     GistInput:
       type: object
-      required: [content, category]
+      required: [content]
       properties:
         content:  { type: string }
-        imageUrl: { type: string }
         category: { type: string }
 
     # ── User ──────────────────────────────────────────────────────────────────

@@ -317,8 +317,7 @@ export const ListPublicGistsResponse = zod.array(ListPublicGistsResponseItem)
  */
 export const SubmitGistBody = zod.object({
   "content": zod.string(),
-  "imageUrl": zod.string().optional(),
-  "category": zod.string()
+  "category": zod.string().optional()
 })
 
 

@@ -148,8 +148,7 @@ export interface Gist {
 
 export interface GistInput {
   content: string;
-  imageUrl?: string;
-  category: string;
+  category?: string;
 }
 
 export interface User {

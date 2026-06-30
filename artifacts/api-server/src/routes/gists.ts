@@ -63,8 +63,8 @@ router.post("/gists", async (req, res) => {
     .insert(gistsTable)
     .values({
       content: body.data.content,
-      imageUrl: body.data.imageUrl ?? null,
-      category: body.data.category,
+      imageUrl: null,
+      category: body.data.category ?? "Gist",
       status: "pending",
     })
     .returning();
