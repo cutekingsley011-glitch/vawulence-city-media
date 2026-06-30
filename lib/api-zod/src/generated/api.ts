@@ -460,10 +460,10 @@ export const ListVoteCardsResponse = zod.array(ListVoteCardsResponseItem)
  */
 export const CreateVoteCardBody = zod.object({
   "title": zod.string(),
-  "imageUrl": zod.string(),
-  "imageUrl2": zod.string(),
-  "imageUrl3": zod.string(),
-  "imageUrl4": zod.string(),
+  "imageUrl": zod.string().nullish(),
+  "imageUrl2": zod.string().nullish(),
+  "imageUrl3": zod.string().nullish(),
+  "imageUrl4": zod.string().nullish(),
   "option1Label": zod.string(),
   "option2Label": zod.string(),
   "option3Label": zod.string(),

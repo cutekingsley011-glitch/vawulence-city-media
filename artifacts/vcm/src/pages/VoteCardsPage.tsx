@@ -219,6 +219,10 @@ function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
   }
 
   async function handleFile(idx: number, file: File) {
+    if (file.size > 5 * 1024 * 1024) {
+      setError(`Photo ${idx + 1} is too large — maximum size is 5 MB.`);
+      return;
+    }
     const localUrl = URL.createObjectURL(file);
     setPreviews((p) => { const n = [...p]; n[idx] = localUrl; return n; });
     setUploading((u) => { const n = [...u]; n[idx] = true; return n; });
@@ -243,7 +247,6 @@ function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
     if (!title.trim()) { setError("Title is required."); return; }
     for (let i = 0; i < 4; i++) {
       if (!opts[i].trim()) { setError(`Option ${i + 1} label is required.`); return; }
-      if (!imgUrls[i]) { setError(`Photo ${i + 1} is required — tap the photo slot to upload.`); return; }
     }
     if (uploading.some(Boolean)) { setError("Please wait for all photos to finish uploading."); return; }
 
@@ -255,10 +258,10 @@ function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
           option2Label: opts[1].trim(),
           option3Label: opts[2].trim(),
           option4Label: opts[3].trim(),
-          imageUrl: imgUrls[0],
-          imageUrl2: imgUrls[1],
-          imageUrl3: imgUrls[2],
-          imageUrl4: imgUrls[3],
+          imageUrl: imgUrls[0] || undefined,
+          imageUrl2: imgUrls[1] || undefined,
+          imageUrl3: imgUrls[2] || undefined,
+          imageUrl4: imgUrls[3] || undefined,
         },
       },
       {
@@ -296,10 +299,10 @@ function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
       </div>
 
       <div>
-        <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">4 Options + 4 Photos required</p>
-        <div className="grid grid-cols-2 gap-3">
+        <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">4 Options · Photos optional (up to 4, max 5 MB each)</p>
+        <div className="grid grid-cols-2 gap-4">
           {[0, 1, 2, 3].map((idx) => (
-            <div key={idx} className="space-y-1.5">
+            <div key={idx} className="space-y-2">
               <ImageUploadSlot
                 idx={idx}
                 preview={previews[idx]}

@@ -37,3 +37,15 @@ VITE_VAPID_PUBLIC_KEY = "BEMi5v_ReLOofFaU1WhnyBENQJXny2asLrvoBnCY4deNBiXWPoRH9SD
 CLOUDINARY_CLOUD_NAME = "drxvfvtnb"
 CLOUDINARY_API_KEY = "429568295867174"
 CLOUDINARY_API_SECRET = "POcUSbWww2S9qIyYnHfS6SayxpQ"
+
+[[ports]]
+localPort = 8080
+externalPort = 80
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
+localPort = 23544
+externalPort = 3000

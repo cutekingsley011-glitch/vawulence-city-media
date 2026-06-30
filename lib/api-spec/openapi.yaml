@@ -1072,13 +1072,13 @@ components:
 
     VoteCardInput:
       type: object
-      required: [title, option1Label, option2Label, option3Label, option4Label, imageUrl, imageUrl2, imageUrl3, imageUrl4]
+      required: [title, option1Label, option2Label, option3Label, option4Label]
       properties:
         title:        { type: string }
-        imageUrl:     { type: string }
-        imageUrl2:    { type: string }
-        imageUrl3:    { type: string }
-        imageUrl4:    { type: string }
+        imageUrl:     { type: string, nullable: true }
+        imageUrl2:    { type: string, nullable: true }
+        imageUrl3:    { type: string, nullable: true }
+        imageUrl4:    { type: string, nullable: true }
         option1Label: { type: string }
         option2Label: { type: string }
         option3Label: { type: string }

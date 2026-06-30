@@ -242,10 +242,10 @@ export interface VoteCardDetail {
 
 export interface VoteCardInput {
   title: string;
-  imageUrl: string;
-  imageUrl2: string;
-  imageUrl3: string;
-  imageUrl4: string;
+  imageUrl?: string | null;
+  imageUrl2?: string | null;
+  imageUrl3?: string | null;
+  imageUrl4?: string | null;
   option1Label: string;
   option2Label: string;
   option3Label: string;
