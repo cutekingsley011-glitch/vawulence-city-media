@@ -52,7 +52,8 @@ import type {
   VoteCardDetail,
   VoteCardInput,
   VoteCardUpdate,
-  VoteCardVoteInput
+  VoteCardVoteInput,
+  VoteCardVoterList
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -2525,6 +2526,83 @@ export const useCastVote = <TError = ErrorType<void>,
       > => {
       return useMutation(getCastVoteMutationOptions(options));
     }
+
+export const getListVoteCardVotersUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/vote-cards/${id}/voters`
+}
+
+/**
+ * @summary List all voters for a vote card (admin only)
+ */
+export const listVoteCardVoters = async (id: number, options?: RequestInit): Promise<VoteCardVoterList> => {
+
+  return customFetch<VoteCardVoterList>(getListVoteCardVotersUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVoteCardVotersQueryKey = (id: number,) => {
+    return [
+    `/api/admin/vote-cards/${id}/voters`
+    ] as const;
+    }
+
+
+export const getListVoteCardVotersQueryOptions = <TData = Awaited<ReturnType<typeof listVoteCardVoters>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVoteCardVoters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVoteCardVotersQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVoteCardVoters>>> = ({ signal }) => listVoteCardVoters(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVoteCardVoters>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVoteCardVotersQueryResult = NonNullable<Awaited<ReturnType<typeof listVoteCardVoters>>>
+export type ListVoteCardVotersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all voters for a vote card (admin only)
+ */
+
+export function useListVoteCardVoters<TData = Awaited<ReturnType<typeof listVoteCardVoters>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVoteCardVoters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVoteCardVotersQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetTrendingUrl = (params?: GetTrendingParams,) => {
   const normalizedParams = new URLSearchParams();

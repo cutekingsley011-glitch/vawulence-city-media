@@ -583,6 +583,24 @@ export const CastVoteResponse = zod.object({
 
 
 /**
+ * @summary List all voters for a vote card (admin only)
+ */
+export const ListVoteCardVotersParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ListVoteCardVotersResponse = zod.object({
+  "totalVoters": zod.number(),
+  "voters": zod.array(zod.object({
+  "userId": zod.string(),
+  "name": zod.string(),
+  "chosenOption": zod.number(),
+  "votedAt": zod.string()
+}))
+})
+
+
+/**
  * @summary Get trending posts and vote cards (last 7 days, by engagement)
  */
 export const GetTrendingQueryParams = zod.object({

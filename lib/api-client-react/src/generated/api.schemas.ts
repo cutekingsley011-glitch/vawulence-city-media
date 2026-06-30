@@ -261,6 +261,18 @@ export interface VoteCardVoteInput {
   chosenOption: number;
 }
 
+export interface VoteCardVoter {
+  userId: string;
+  name: string;
+  chosenOption: number;
+  votedAt: string;
+}
+
+export interface VoteCardVoterList {
+  totalVoters: number;
+  voters: VoteCardVoter[];
+}
+
 export type TrendingItemType = typeof TrendingItemType[keyof typeof TrendingItemType];
 
 

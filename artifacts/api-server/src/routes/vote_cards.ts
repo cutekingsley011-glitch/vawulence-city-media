@@ -312,6 +312,37 @@ router.post("/vote-cards/:id/vote", async (req, res) => {
   res.json(cardDetailDto(updated, chosenOption, cnt ?? 0));
 });
 
+// GET /admin/vote-cards/:id/voters (admin only)
+router.get("/admin/vote-cards/:id/voters", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+
+  const rows = await db
+    .select({
+      userId: voteCardVotesTable.userId,
+      chosenOption: voteCardVotesTable.chosenOption,
+      votedAt: voteCardVotesTable.createdAt,
+      name: usersTable.name,
+    })
+    .from(voteCardVotesTable)
+    .leftJoin(usersTable, eq(voteCardVotesTable.userId, usersTable.id))
+    .where(eq(voteCardVotesTable.voteCardId, id))
+    .orderBy(desc(voteCardVotesTable.createdAt));
+
+  res.json({
+    totalVoters: rows.length,
+    voters: rows.map((r) => ({
+      userId: r.userId,
+      name: r.name ?? "Unknown",
+      chosenOption: r.chosenOption,
+      votedAt: r.votedAt.toISOString(),
+    })),
+  });
+});
+
 // GET /vote-cards/:voteCardId/comments
 router.get("/vote-cards/:voteCardId/comments", async (req, res) => {
   const params = ListVoteCardCommentsParams.safeParse({

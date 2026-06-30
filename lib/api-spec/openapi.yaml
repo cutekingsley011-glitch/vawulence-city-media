@@ -665,6 +665,25 @@ paths:
         "409":
           description: Already voted
 
+  /admin/vote-cards/{id}/voters:
+    get:
+      operationId: listVoteCardVoters
+      tags: [vote-cards]
+      summary: List all voters for a vote card (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Voter list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteCardVoterList"
+
   # ── Trending ──────────────────────────────────────────────────────────────────
   /trending:
     get:
@@ -1023,6 +1042,25 @@ components:
       properties:
         userId:       { type: string }
         chosenOption: { type: integer, minimum: 1, maximum: 4 }
+
+    VoteCardVoter:
+      type: object
+      required: [userId, name, chosenOption, votedAt]
+      properties:
+        userId:       { type: string }
+        name:         { type: string }
+        chosenOption: { type: integer }
+        votedAt:      { type: string }
+
+    VoteCardVoterList:
+      type: object
+      required: [totalVoters, voters]
+      properties:
+        totalVoters: { type: integer }
+        voters:
+          type: array
+          items:
+            $ref: "#/components/schemas/VoteCardVoter"
 
     # ── Trending ──────────────────────────────────────────────────────────────
     TrendingItem:

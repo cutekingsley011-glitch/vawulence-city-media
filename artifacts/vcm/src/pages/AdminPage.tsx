@@ -19,6 +19,7 @@ import {
   useListVoteCards,
   useCreateVoteCard,
   useDeleteVoteCard,
+  useListVoteCardVoters,
   getGetAdminStatsQueryKey,
   getListPostsQueryKey,
   getListPendingGistsQueryKey,
@@ -309,6 +310,7 @@ function AdminPanel() {
   const [vcImgA, setVcImgA] = useState("");
   const [vcImgB, setVcImgB] = useState("");
   const [vcError, setVcError] = useState("");
+  const [expandedVcId, setExpandedVcId] = useState<number | null>(null);
 
   // New sections state
   const [events, setEvents] = useState<AdminEvent[]>([]);
@@ -1018,25 +1020,32 @@ function AdminPanel() {
               ) : (
                 <div className="space-y-2" data-testid="admin-vote-cards-list">
                   {voteCards.map((vc) => (
-                    <div key={vc.id} className="flex items-center gap-3 p-3 border border-border rounded-lg bg-white" data-testid={`admin-vc-${vc.id}`}>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{vc.title}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${vc.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
-                            {vc.isActive ? "active" : "closed"}
-                          </span>
-                          <span className="text-xs text-muted-foreground">{vc.totalVotes} votes</span>
-                        </div>
+                    <div key={vc.id} className="border border-border rounded-lg bg-white overflow-hidden" data-testid={`admin-vc-${vc.id}`}>
+                      <div className="flex items-center gap-3 p-3">
+                        <button
+                          className="flex-1 min-w-0 text-left"
+                          onClick={() => setExpandedVcId(expandedVcId === vc.id ? null : vc.id)}
+                        >
+                          <p className="text-sm font-medium truncate">{vc.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${vc.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                              {vc.isActive ? "active" : "closed"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">{vc.totalVotes} votes</span>
+                            <span className="text-xs text-primary font-medium">{expandedVcId === vc.id ? "▲ hide voters" : "▼ view voters"}</span>
+                          </div>
+                        </button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="w-8 h-8 text-destructive hover:text-destructive shrink-0"
+                          onClick={() => handleDeleteVoteCard(vc.id)}
+                          data-testid={`button-delete-vc-${vc.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="w-8 h-8 text-destructive hover:text-destructive"
-                        onClick={() => handleDeleteVoteCard(vc.id)}
-                        data-testid={`button-delete-vc-${vc.id}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
+                      {expandedVcId === vc.id && <VcVoterPanel vcId={vc.id} />}
                     </div>
                   ))}
                 </div>
@@ -1645,6 +1654,38 @@ function AdminPanel() {
         initialData={editPost?.data}
         editId={editPost?.id}
       />
+    </div>
+  );
+}
+
+// ─── Voter panel (admin only, shown when a vote card row is expanded) ──────────
+function VcVoterPanel({ vcId }: { vcId: number }) {
+  const { data, isLoading } = useListVoteCardVoters(vcId);
+  const optionLabel = (n: number) => ["A", "B", "C", "D"][n - 1] ?? String(n);
+
+  return (
+    <div className="border-t border-border bg-blue-50/40 px-3 py-3">
+      {isLoading ? (
+        <div className="space-y-1.5">
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-7 rounded" />)}
+        </div>
+      ) : !data || data.totalVoters === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-2">No votes yet.</p>
+      ) : (
+        <>
+          <p className="text-xs font-bold text-foreground mb-2">
+            {data.totalVoters} voter{data.totalVoters !== 1 ? "s" : ""}
+          </p>
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {data.voters.map((v, i) => (
+              <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-border/50 last:border-0">
+                <span className="font-medium text-foreground">{v.name}</span>
+                <span className="text-muted-foreground">Option {optionLabel(v.chosenOption)}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
