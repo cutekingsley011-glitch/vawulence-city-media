@@ -341,6 +341,8 @@ function AdminPanel() {
   const [evtForm, setEvtForm] = useState({ title: "", description: "", venue: "", eventDate: "", eventTime: "", host: "", imageUrl: "", videoUrl: "", isPaid: false, ticketPrice: "" });
   // Contest form
   const [ctForm, setCtForm] = useState({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", optionCount: 2, options: ["", ""] });
+  const [ctError, setCtError] = useState("");
+  const [ctSubmitting, setCtSubmitting] = useState(false);
   // Marketplace state
   const [marketItems, setMarketItems] = useState<AdminMarketItem[]>([]);
   const [marketLoading, setMarketLoading] = useState(false);
@@ -539,6 +541,9 @@ function AdminPanel() {
     setContestsLoading(true);
     fetch("/api/contests").then((r) => r.json()).then((d) => { setContests(Array.isArray(d) ? d : []); setContestsLoading(false); }).catch(() => setContestsLoading(false));
   }
+
+  // Load contests on mount so the list is ready when the tab is opened
+  useEffect(() => { loadContests(); }, []);
   function loadTransactions() {
     setTxLoading(true);
     fetch("/api/admin/transactions").then((r) => r.json()).then((d) => { setTransactions(Array.isArray(d) ? d : []); setTxLoading(false); }).catch(() => setTxLoading(false));
@@ -629,21 +634,42 @@ function AdminPanel() {
   // Create contest
   async function handleCreateContest(e: React.FormEvent) {
     e.preventDefault();
-    if (!ctForm.title || !ctForm.entryFee || !ctForm.maxEntrants || !ctForm.closesAt) return;
-    await fetch("/api/contests", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: ctForm.title, description: ctForm.description, imageUrl: ctForm.imageUrl || null,
-        entryFee: Number(ctForm.entryFee) * 100,
-        maxEntrants: Number(ctForm.maxEntrants),
-        closesAt: new Date(ctForm.closesAt).toISOString(),
-        options: ctForm.options.filter((s) => s.trim()).length >= 2 ? ctForm.options.map((s) => s.trim()).filter(Boolean) : null,
-      }),
-    });
-    toast.success("Contest created!");
-    setCtForm({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", optionCount: 2, options: ["", ""] });
-    loadContests();
+    setCtError("");
+    if (!ctForm.title.trim()) { setCtError("Title is required."); return; }
+    if (!ctForm.description.trim()) { setCtError("Description is required."); return; }
+    if (!ctForm.entryFee || Number(ctForm.entryFee) <= 0) { setCtError("Entry fee must be greater than 0."); return; }
+    if (!ctForm.maxEntrants || Number(ctForm.maxEntrants) <= 0) { setCtError("Max entrants is required."); return; }
+    if (!ctForm.closesAt) { setCtError("Closing date/time is required."); return; }
+    setCtSubmitting(true);
+    try {
+      const res = await fetch("/api/contests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: ctForm.title.trim(),
+          description: ctForm.description.trim(),
+          imageUrl: ctForm.imageUrl || null,
+          entryFee: Math.round(Number(ctForm.entryFee) * 100),
+          maxEntrants: Number(ctForm.maxEntrants),
+          closesAt: new Date(ctForm.closesAt).toISOString(),
+          options: ctForm.options.filter((s) => s.trim()).length >= 2
+            ? ctForm.options.map((s) => s.trim()).filter(Boolean)
+            : null,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({})) as { error?: string };
+        setCtError(err.error ?? "Failed to create contest. Please try again.");
+        return;
+      }
+      toast.success("Contest created and now live!");
+      setCtForm({ title: "", description: "", imageUrl: "", entryFee: "", maxEntrants: "", closesAt: "", optionCount: 2, options: ["", ""] });
+      loadContests();
+    } catch {
+      setCtError("Network error — please try again.");
+    } finally {
+      setCtSubmitting(false);
+    }
   }
 
   async function handleCloseContest(id: number) {
@@ -1213,8 +1239,8 @@ function AdminPanel() {
             <div className="border border-border rounded-xl p-4 bg-white">
               <h2 className="font-bold text-sm mb-3">Create Contest</h2>
               <form onSubmit={handleCreateContest} className="space-y-3">
-                <Input placeholder="Title *" value={ctForm.title} onChange={(e) => setCtForm((f) => ({ ...f, title: e.target.value }))} />
-                <Textarea placeholder="Description" value={ctForm.description} onChange={(e) => setCtForm((f) => ({ ...f, description: e.target.value }))} rows={2} />
+                <Input placeholder="Title *" value={ctForm.title} onChange={(e) => { setCtError(""); setCtForm((f) => ({ ...f, title: e.target.value })); }} />
+                <Textarea placeholder="Description *" value={ctForm.description} onChange={(e) => { setCtError(""); setCtForm((f) => ({ ...f, description: e.target.value })); }} rows={2} />
                 <MediaUpload accept="image/*" maxMB={10} label="Upload Image" value={ctForm.imageUrl} onChange={(v) => setCtForm((f) => ({ ...f, imageUrl: v }))} />
                 <div className="grid grid-cols-2 gap-2">
                   <Input type="number" placeholder="Entry fee (₦) *" value={ctForm.entryFee} onChange={(e) => setCtForm((f) => ({ ...f, entryFee: e.target.value }))} />
@@ -1258,7 +1284,10 @@ function AdminPanel() {
                     />
                   ))}
                 </div>
-                <Button type="submit" size="sm"><Trophy className="w-3.5 h-3.5 mr-1" />Create Contest</Button>
+                {ctError && <p className="text-sm text-destructive font-medium">{ctError}</p>}
+                <Button type="submit" size="sm" disabled={ctSubmitting}>
+                  {ctSubmitting ? <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />Creating...</> : <><Trophy className="w-3.5 h-3.5 mr-1" />Create Contest</>}
+                </Button>
               </form>
             </div>
             <div>
