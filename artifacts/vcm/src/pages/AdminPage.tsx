@@ -1087,10 +1087,9 @@ function AdminPanel() {
                     </button>
                   ))}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
                   {[0, 1, 2, 3].slice(0, vcNumOptions).map((idx) => (
-                    <div key={idx} className="space-y-1">
-                      {/* Hidden file input */}
+                    <div key={idx} className="flex items-center gap-2">
                       <input
                         ref={vcFileRefs[idx]}
                         type="file"
@@ -1098,20 +1097,18 @@ function AdminPanel() {
                         className="hidden"
                         onChange={(e) => { const f = e.target.files?.[0]; if (f) handleVcFileUpload(idx, f); }}
                       />
-                      {/* Photo slot */}
                       <button
                         type="button"
                         onClick={() => vcFileRefs[idx].current?.click()}
-                        className={`w-full h-16 rounded border-2 border-dashed flex items-center justify-center transition-colors overflow-hidden ${vcPreviews[idx] ? "border-primary/30" : "border-border hover:border-primary/50 bg-muted/10"}`}
+                        title="Add photo (optional)"
+                        className={`w-11 h-11 flex-shrink-0 rounded-lg border-2 border-dashed flex items-center justify-center transition-colors overflow-hidden ${vcPreviews[idx] ? "border-primary/30" : "border-border hover:border-primary/50 bg-muted/10"}`}
                       >
                         {vcUploading[idx] ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
                         ) : vcPreviews[idx] ? (
                           <img src={vcPreviews[idx]} className="w-full h-full object-cover" alt="" />
                         ) : (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <ImagePlus className="w-3.5 h-3.5" /> Photo {idx + 1}
-                          </span>
+                          <ImagePlus className="w-3.5 h-3.5 text-muted-foreground" />
                         )}
                       </button>
                       <Input
@@ -1119,7 +1116,7 @@ function AdminPanel() {
                         onChange={(e) => setVcOpt(idx, e.target.value)}
                         placeholder={`Option ${idx + 1}`}
                         data-testid={`input-admin-vc-opt-${idx + 1}`}
-                        className="text-sm"
+                        className="flex-1 text-sm"
                       />
                     </div>
                   ))}

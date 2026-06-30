@@ -171,7 +171,7 @@ function ImageUploadSlot({
 }) {
   const ref = useRef<HTMLInputElement>(null);
   return (
-    <div className="relative">
+    <div className="flex-shrink-0">
       <input
         ref={ref}
         type="file"
@@ -182,21 +182,17 @@ function ImageUploadSlot({
       <button
         type="button"
         onClick={() => ref.current?.click()}
-        className={`w-full h-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors ${
-          preview
-            ? "border-primary/40 p-0 overflow-hidden"
-            : "border-border hover:border-primary/60 bg-muted/20"
+        title="Add photo (optional)"
+        className={`w-11 h-11 rounded-lg border-2 border-dashed flex items-center justify-center transition-colors overflow-hidden ${
+          preview ? "border-primary/40" : "border-border hover:border-primary/60 bg-muted/20"
         }`}
       >
         {uploading ? (
-          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
         ) : preview ? (
-          <img src={preview} alt={`Option ${idx + 1}`} className="w-full h-full object-cover rounded-lg" />
+          <img src={preview} alt={`Option ${idx + 1}`} className="w-full h-full object-cover" />
         ) : (
-          <>
-            <ImagePlus className="w-5 h-5 text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Photo {idx + 1}</span>
-          </>
+          <ImagePlus className="w-3.5 h-3.5 text-muted-foreground" />
         )}
       </button>
     </div>
@@ -299,10 +295,10 @@ function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
       </div>
 
       <div>
-        <p className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">4 Options · Photos optional (up to 4, max 5 MB each)</p>
-        <div className="grid grid-cols-2 gap-4">
+        <p className="text-xs text-muted-foreground mb-3">4 options required · tap the icon to add a photo (optional, max 5 MB)</p>
+        <div className="space-y-2">
           {[0, 1, 2, 3].map((idx) => (
-            <div key={idx} className="space-y-2">
+            <div key={idx} className="flex items-center gap-2">
               <ImageUploadSlot
                 idx={idx}
                 preview={previews[idx]}
@@ -314,7 +310,7 @@ function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
                 onChange={(e) => setOpt(idx, e.target.value)}
                 placeholder={OPTION_LABELS[idx]}
                 data-testid={`input-vote-option-${idx + 1}`}
-                className="text-sm"
+                className="flex-1 text-sm"
               />
             </div>
           ))}
