@@ -1343,6 +1343,14 @@ function AdminPanel() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{item.name}</p>
                     <p className="text-xs text-muted-foreground">₦{(item.price / 100).toLocaleString("en-NG")} · {item.category}</p>
+                    {item.submittedByName && (
+                      <p className="text-xs text-muted-foreground mt-0.5">By: {item.submittedByName}</p>
+                    )}
+                    {item.sellerWhatsapp && (
+                      <p className="text-xs font-medium text-green-700 mt-0.5 flex items-center gap-1">
+                        <span>📱</span> WhatsApp: {item.sellerWhatsapp}
+                      </p>
+                    )}
                     <Badge variant={item.status === "available" ? "default" : "secondary"} className="text-xs mt-1">{item.status}</Badge>
                   </div>
                   <div className="flex gap-2 shrink-0">
