@@ -86,11 +86,11 @@ export default function GistsPage() {
         </Button>
       </div>
 
-      {/* Saturday publish notice */}
+      {/* Wednesday & Saturday publish notice */}
       <div className="bg-primary/5 border border-primary/20 rounded-xl p-3 mb-4 flex items-start gap-2">
         <Clock className="w-4 h-4 text-primary mt-0.5 shrink-0" />
         <p className="text-xs text-foreground leading-relaxed">
-          Submitted gists are published every Saturday at 6:00 PM after admin review. Keep it real, keep it anonymous.
+          Submitted gists are published every Wednesday and Saturday at 6:00 PM after admin review. Keep it real, keep it anonymous.
         </p>
       </div>
 
@@ -108,7 +108,7 @@ export default function GistsPage() {
         </div>
       ) : !gists || gists.length === 0 ? (
         <div className="text-center py-16" data-testid="gists-empty">
-          <p className="text-muted-foreground text-sm">No gists published yet. Check back on Saturday.</p>
+          <p className="text-muted-foreground text-sm">No gists published yet. Check back on Wednesday or Saturday.</p>
         </div>
       ) : (
         <div className="space-y-3" data-testid="gists-feed">
@@ -207,7 +207,7 @@ function GistSubmitModal({ open, onClose }: { open: boolean; onClose: () => void
             </div>
             <p className="font-semibold text-foreground mb-1">Gist submitted for review</p>
             <p className="text-sm text-muted-foreground">
-              Your gist will be considered for the next Saturday batch.
+              Your gist will be considered for the next Wednesday or Saturday batch.
             </p>
             <Button onClick={handleClose} className="mt-4" data-testid="button-close-submitted">
               Done
