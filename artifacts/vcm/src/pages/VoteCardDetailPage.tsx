@@ -69,7 +69,10 @@ export default function VoteCardDetailPage() {
   const castVote = useCastVote();
   const createComment = useCreateVoteCardComment();
 
-  const [voted, setVoted] = useState<number | null>(null);
+  // Persist votes in localStorage so re-votes are blocked across refreshes
+  const LS_KEY = `vcm_voted_${id}`;
+  const storedVote = Number(localStorage.getItem(LS_KEY)) || null;
+  const [voted, setVoted] = useState<number | null>(storedVote);
   const [counts, setCounts] = useState<{ [key: number]: number } | null>(null);
   const [totalOverride, setTotalOverride] = useState<number | null>(null);
   const [commentText, setCommentText] = useState("");
@@ -87,6 +90,16 @@ export default function VoteCardDetailPage() {
 
   function handleVote(choice: number) {
     if (voted !== null || !card?.isActive) return;
+    // Require login — open join modal if no user instead of silently failing
+    if (!user) {
+      window.dispatchEvent(new CustomEvent("vcm:open-join"));
+      return;
+    }
+
+    // Persist choice immediately so the user can't re-vote after a refresh
+    localStorage.setItem(LS_KEY, String(choice));
+
+    // Optimistic UI update
     const newCounts: { [key: number]: number } = {
       1: card.option1Count,
       2: card.option2Count,
@@ -99,10 +112,19 @@ export default function VoteCardDetailPage() {
     setVoted(choice);
 
     castVote.mutate(
-      { id, data: { userId: user?.id ?? "", chosenOption: choice } },
+      { id, data: { userId: user.id, chosenOption: choice } },
       {
-        onError: () => { setCounts(null); setTotalOverride(null); setVoted(null); },
-        onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetVoteCardQueryKey(id) }); },
+        onError: () => {
+          // Revert optimistic update and localStorage on genuine failure
+          localStorage.removeItem(LS_KEY);
+          setCounts(null);
+          setTotalOverride(null);
+          setVoted(null);
+        },
+        onSuccess: () => {
+          // Refresh server data in background; keep optimistic counts for this visit
+          queryClient.invalidateQueries({ queryKey: getGetVoteCardQueryKey(id) });
+        },
       }
     );
   }

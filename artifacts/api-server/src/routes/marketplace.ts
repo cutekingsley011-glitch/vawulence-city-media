@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { marketplaceItemsTable } from "@workspace/db";
-import { eq, or } from "drizzle-orm";
+import { eq, or, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.get("/marketplace", async (_req, res) => {
     .select()
     .from(marketplaceItemsTable)
     .where(eq(marketplaceItemsTable.status, "available"))
-    .orderBy(marketplaceItemsTable.createdAt);
+    .orderBy(desc(marketplaceItemsTable.createdAt));
   res.json(items.map(toPublic));
 });
 
@@ -64,7 +64,7 @@ router.post("/marketplace", async (req, res) => {
 
 // GET /admin/marketplace — all items for admin (including pending)
 router.get("/admin/marketplace", async (_req, res) => {
-  const items = await db.select().from(marketplaceItemsTable).orderBy(marketplaceItemsTable.createdAt);
+  const items = await db.select().from(marketplaceItemsTable).orderBy(desc(marketplaceItemsTable.createdAt));
   res.json(items.map((i) => ({ ...i, createdAt: i.createdAt.toISOString() })));
 });
 

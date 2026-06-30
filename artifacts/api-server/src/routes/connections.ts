@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { connectionsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 const router = Router();
 
@@ -15,7 +15,7 @@ const fmtPublic = (c: typeof connectionsTable.$inferSelect) => {
 
 // GET /connections — approved only (no private fields)
 router.get("/connections", async (_req, res) => {
-  const rows = await db.select().from(connectionsTable).where(eq(connectionsTable.status, "approved")).orderBy(connectionsTable.createdAt);
+  const rows = await db.select().from(connectionsTable).where(eq(connectionsTable.status, "approved")).orderBy(desc(connectionsTable.createdAt));
   res.json(rows.map(fmtPublic));
 });
 
