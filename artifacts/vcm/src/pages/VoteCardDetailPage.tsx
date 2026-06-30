@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import {
   useGetVoteCard,
@@ -46,7 +46,7 @@ type VoteCardDetail = {
   userVote?: number | null;
 };
 
-function getOptions(card: VoteCardDetail, counts: Record<number, number>) {
+function getOptions(card: VoteCardDetail) {
   const opts: { num: number; label: string }[] = [
     { num: 1, label: card.option1Label },
     { num: 2, label: card.option2Label },
@@ -61,21 +61,41 @@ export default function VoteCardDetailPage() {
   const id = Number(params.id);
   const queryClient = useQueryClient();
   const user = getStoredUser();
+  const userId = user?.id;
 
-  const { data: cardRaw, isLoading: cardLoading } = useGetVoteCard(id);
+  // Pass userId so the server returns the authoritative userVote from the DB
+  const queryParams = userId ? { userId } : undefined;
+  const { data: cardRaw, isLoading: cardLoading } = useGetVoteCard(id, queryParams);
   const card = cardRaw as VoteCardDetail | undefined;
   const { data: comments, isLoading: commentsLoading } = useListVoteCardComments(id);
 
   const castVote = useCastVote();
   const createComment = useCreateVoteCardComment();
 
-  // Persist votes in localStorage so re-votes are blocked across refreshes
+  // The query key must stay consistent for invalidation
+  const voteCardQueryKey = getGetVoteCardQueryKey(id, queryParams);
+
+  // localStorage as fast initial hint; server is the real authority
   const LS_KEY = `vcm_voted_${id}`;
-  const storedVote = Number(localStorage.getItem(LS_KEY)) || null;
-  const [voted, setVoted] = useState<number | null>(storedVote);
+  const [voted, setVoted] = useState<number | null>(
+    () => Number(localStorage.getItem(LS_KEY)) || null
+  );
+  // Optimistic count overrides (null = use server counts)
   const [counts, setCounts] = useState<{ [key: number]: number } | null>(null);
   const [totalOverride, setTotalOverride] = useState<number | null>(null);
   const [commentText, setCommentText] = useState("");
+
+  // Sync voted from server — this is the fix for cross-browser / cleared-storage cases.
+  // When the server confirms the user already voted (card.userVote > 0), lock the UI.
+  useEffect(() => {
+    if (card?.userVote != null && card.userVote > 0) {
+      setVoted(card.userVote);
+      localStorage.setItem(LS_KEY, String(card.userVote));
+      // Server data is authoritative; drop any stale optimistic overrides
+      setCounts(null);
+      setTotalOverride(null);
+    }
+  }, [card?.userVote, LS_KEY]);
 
   const displayCounts: { [key: number]: number } = counts ?? {
     1: card?.option1Count ?? 0,
@@ -85,21 +105,18 @@ export default function VoteCardDetailPage() {
   };
   const displayTotal = totalOverride ?? card?.totalVotes ?? 0;
 
-  const options = card ? getOptions(card, displayCounts) : [];
+  const options = card ? getOptions(card) : [];
   const showResults = voted !== null || !card?.isActive;
 
   function handleVote(choice: number) {
     if (voted !== null || !card?.isActive) return;
-    // Require login — open join modal if no user instead of silently failing
     if (!user) {
       window.dispatchEvent(new CustomEvent("vcm:open-join"));
       return;
     }
 
-    // Persist choice immediately so the user can't re-vote after a refresh
+    // Optimistically lock the UI immediately
     localStorage.setItem(LS_KEY, String(choice));
-
-    // Optimistic UI update
     const newCounts: { [key: number]: number } = {
       1: card.option1Count,
       2: card.option2Count,
@@ -114,16 +131,34 @@ export default function VoteCardDetailPage() {
     castVote.mutate(
       { id, data: { userId: user.id, chosenOption: choice } },
       {
-        onError: () => {
-          // Revert optimistic update and localStorage on genuine failure
-          localStorage.removeItem(LS_KEY);
-          setCounts(null);
-          setTotalOverride(null);
-          setVoted(null);
+        onSuccess: (data) => {
+          // Server returns the real updated counts — use them, drop optimistic state
+          const updated = data as VoteCardDetail;
+          if (updated?.option1Count !== undefined) {
+            setCounts({
+              1: updated.option1Count,
+              2: updated.option2Count,
+              3: updated.option3Count ?? 0,
+              4: updated.option4Count ?? 0,
+            });
+            setTotalOverride(updated.totalVotes);
+          }
+          queryClient.invalidateQueries({ queryKey: voteCardQueryKey });
         },
-        onSuccess: () => {
-          // Refresh server data in background; keep optimistic counts for this visit
-          queryClient.invalidateQueries({ queryKey: getGetVoteCardQueryKey(id) });
+        onError: (err) => {
+          const status = (err as { status?: number })?.status;
+          if (status === 409) {
+            // Server says "already voted" — the vote IS recorded in the DB.
+            // Do NOT revert the UI. Re-fetch so we get the real userVote + counts.
+            queryClient.invalidateQueries({ queryKey: voteCardQueryKey });
+            // Keep voted locked — the useEffect above will sync userVote from refetch.
+          } else {
+            // Genuine error (network, 500, etc.) — revert the optimistic update
+            localStorage.removeItem(LS_KEY);
+            setCounts(null);
+            setTotalOverride(null);
+            setVoted(null);
+          }
         },
       }
     );
@@ -190,7 +225,7 @@ export default function VoteCardDetailPage() {
           </div>
         )}
 
-        {/* Dynamic vote buttons */}
+        {/* Vote buttons */}
         <div className={`grid gap-2 mb-4 ${options.length === 2 ? "grid-cols-2" : options.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
           {options.map(({ num, label }) => {
             const cnt = displayCounts[num] ?? 0;
