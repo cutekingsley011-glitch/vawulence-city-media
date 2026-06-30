@@ -55,7 +55,6 @@ interface AdminReportCase { id: number; caseText: string; imageUrls: string[]; s
 interface AdminConnection { id: number; name: string; ageBracket: string; state: string; photoUrl: string | null; lookingFor: string; lookingForAge: string | null; preferredLocation: string | null; whatsappNumber: string | null; bioText: string; status: string; createdAt: string; }
 interface AdminEscrowReq { id: number; userId: string | null; description: string; amount: number; status: string; notes: string | null; createdAt: string; }
 interface AdminJob { id: number; title: string; companyName: string; description: string; flyerImageUrl: string | null; requirements: string[]; applyMethod: string; applyContact: string; status: string; createdAt: string; }
-interface AdminSpillSession { id: number; questionText: string; scheduledTime: string | null; isLive: boolean; createdAt: string; }
 interface AdminChatMessage { id: number; userId: string; messageText: string; senderName: string | null; createdAt: string; isBanned: boolean | null; mutedUntil: string | null; }
 
 const ADMIN_SESSION_KEY = "vcm_admin";
@@ -362,10 +361,6 @@ function AdminPanel() {
     setJobFormRaw({ title: "", companyName: "", description: "", flyerImageUrl: "", requirements: "", applyMethod: "whatsapp", applyContact: "" });
     localStorage.removeItem("vcm_admin_job_draft");
   }
-  // Spill the Tea state
-  const [spillSessions, setSpillSessions] = useState<AdminSpillSession[]>([]);
-  const [spillLoading, setSpillLoading] = useState(false);
-  const [spillForm, setSpillForm] = useState({ questionText: "", scheduledTime: "" });
   // Report Cases state
   const [reportCases, setReportCases] = useState<AdminReportCase[]>([]);
   const [rcLoading, setRcLoading] = useState(false);
@@ -534,10 +529,6 @@ function AdminPanel() {
     setRcLoading(true);
     fetch("/api/admin/report-cases").then((r) => r.json()).then((d) => { setReportCases(Array.isArray(d) ? d : []); setRcLoading(false); }).catch(() => setRcLoading(false));
   }
-  function loadSpill() {
-    setSpillLoading(true);
-    fetch("/api/admin/spill/sessions").then((r) => r.json()).then((d) => { setSpillSessions(Array.isArray(d) ? d : []); setSpillLoading(false); }).catch(() => setSpillLoading(false));
-  }
   function loadChat() {
     setChatLoading(true);
     fetch("/api/admin/chat/messages").then((r) => r.json()).then((d) => { setChatMessages(Array.isArray(d) ? d : []); setChatLoading(false); }).catch(() => setChatLoading(false));
@@ -641,31 +632,6 @@ function AdminPanel() {
     });
     if (r.ok) { const d = await r.json(); setNotifyResult(d); setNotifyForm({ title: "", body: "", url: "" }); }
     setNotifySending(false);
-  }
-
-  // ── Spill the Tea handlers ──
-  async function handleCreateSpillSession(e: React.FormEvent) {
-    e.preventDefault();
-    if (!spillForm.questionText) return;
-    await fetch("/api/admin/spill/sessions", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ questionText: spillForm.questionText, scheduledTime: spillForm.scheduledTime || null }),
-    });
-    setSpillForm({ questionText: "", scheduledTime: "" });
-    loadSpill();
-  }
-  async function handleGoLive(id: number) {
-    await fetch(`/api/admin/spill/sessions/${id}/go-live`, { method: "POST" });
-    loadSpill();
-  }
-  async function handleEndSpill(id: number) {
-    await fetch(`/api/admin/spill/sessions/${id}/end`, { method: "POST" });
-    loadSpill();
-  }
-  async function handleDeleteSpillSession(id: number) {
-    if (!confirm("Delete this session and all its messages?")) return;
-    await fetch(`/api/admin/spill/sessions/${id}`, { method: "DELETE" });
-    loadSpill();
   }
 
   // ── Report Case handlers ──
@@ -826,7 +792,6 @@ function AdminPanel() {
           <TabsTrigger value="conn" className="flex-1 text-xs" onClick={loadConnections}>Connect</TabsTrigger>
           <TabsTrigger value="escrow" className="flex-1 text-xs" onClick={loadEscrow}>Escrow</TabsTrigger>
           <TabsTrigger value="jobs" className="flex-1 text-xs" onClick={loadJobs}>Jobs</TabsTrigger>
-          <TabsTrigger value="spill" className="flex-1 text-xs" onClick={loadSpill}>Spill</TabsTrigger>
           <TabsTrigger value="notify" className="flex-1 text-xs">Notify</TabsTrigger>
           <TabsTrigger value="chat" className="flex-1 text-xs" onClick={loadChat}>Chat</TabsTrigger>
           <TabsTrigger value="cases" className="flex-1 text-xs" onClick={loadReportCases}>
@@ -1536,40 +1501,6 @@ function AdminPanel() {
                     <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDeleteJob(j.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* ── Spill the Tea tab ── */}
-        <TabsContent value="spill">
-          <div className="space-y-4">
-            <div className="border border-border rounded-xl p-4 bg-white">
-              <h3 className="font-bold text-sm mb-3">Schedule New Session</h3>
-              <form onSubmit={handleCreateSpillSession} className="space-y-3">
-                <Textarea placeholder="Tonight's question * (e.g. Who cheated and got away with it?)" rows={2} value={spillForm.questionText} onChange={(e) => setSpillForm({ ...spillForm, questionText: e.target.value })} />
-                <Input type="datetime-local" value={spillForm.scheduledTime} onChange={(e) => setSpillForm({ ...spillForm, scheduledTime: e.target.value })} />
-                <Button type="submit" size="sm" disabled={!spillForm.questionText}>Schedule Session</Button>
-              </form>
-            </div>
-            <div className="space-y-2">
-              {spillLoading ? <Skeleton className="h-16 rounded-xl" /> : spillSessions.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">No sessions yet.</p>
-              ) : spillSessions.map((s) => (
-                <div key={s.id} className="border border-border rounded-xl p-3 bg-white">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">{s.questionText}</p>
-                      {s.scheduledTime && <p className="text-xs text-muted-foreground mt-0.5">{new Date(s.scheduledTime).toLocaleString("en-NG")}</p>}
-                    </div>
-                    <Badge className={`shrink-0 text-xs ${s.isLive ? "bg-red-500 text-white animate-pulse" : "bg-gray-100 text-gray-700"}`}>{s.isLive ? "LIVE" : "Ended"}</Badge>
-                  </div>
-                  <div className="flex gap-2">
-                    {!s.isLive && <Button size="sm" className="h-7 text-xs gap-1" onClick={() => handleGoLive(s.id)}>🔴 Go Live</Button>}
-                    {s.isLive && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleEndSpill(s.id)}>End Session</Button>}
-                    <Button size="sm" variant="ghost" className="h-7 text-destructive hover:text-destructive" onClick={() => handleDeleteSpillSession(s.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                   </div>
                 </div>
               ))}

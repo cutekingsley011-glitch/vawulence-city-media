@@ -22,7 +22,6 @@ import MarketplaceItemPage from "@/pages/MarketplaceItemPage";
 import ConnectionsPage from "@/pages/ConnectionsPage";
 import ServicesPage from "@/pages/ServicesPage";
 import RecruitmentPage from "@/pages/RecruitmentPage";
-import SpillPage from "@/pages/SpillPage";
 import ReportCasePage from "@/pages/ReportCasePage";
 import ChatRoomPage from "@/pages/ChatRoomPage";
 import InstallPromptBanner from "@/components/InstallPromptBanner";
@@ -110,7 +109,6 @@ function AppShell() {
           <Route path="/connections" component={ConnectionsPage} />
           <Route path="/services" component={ServicesPage} />
           <Route path="/recruitment" component={RecruitmentPage} />
-          <Route path="/spill" component={SpillPage} />
           <Route path="/report-case" component={ReportCasePage} />
           <Route path="/chat" component={ChatRoomPage} />
           <Route path="/podcast" component={() => <ComingSoonPage title="VCM Podcast" description="Hot takes, gist breakdowns, and unfiltered conversations — dropping soon." />} />
