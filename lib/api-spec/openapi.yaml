@@ -665,6 +665,59 @@ paths:
         "409":
           description: Already voted
 
+  /admin/vote-cards/pending:
+    get:
+      operationId: listPendingVoteCards
+      tags: [vote-cards]
+      summary: List vote cards pending admin approval
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VoteCard"
+
+  /admin/vote-cards/{id}/approve:
+    post:
+      operationId: approveVoteCard
+      tags: [vote-cards]
+      summary: Approve a pending vote card (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteCard"
+
+  /admin/vote-cards/{id}/reject:
+    post:
+      operationId: rejectVoteCard
+      tags: [vote-cards]
+      summary: Reject a pending vote card (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteCard"
+
   /admin/vote-cards/{id}/voters:
     get:
       operationId: listVoteCardVoters
@@ -970,12 +1023,14 @@ components:
     # ── Vote Card ─────────────────────────────────────────────────────────────
     VoteCard:
       type: object
-      required: [id, title, option1Label, option2Label, option1Count, option2Count, isActive, createdAt, totalVotes]
+      required: [id, title, option1Label, option2Label, option1Count, option2Count, isActive, status, createdAt, totalVotes]
       properties:
         id:           { type: integer }
         title:        { type: string }
         imageUrl:     { type: ["string", "null"] }
         imageUrl2:    { type: ["string", "null"] }
+        imageUrl3:    { type: ["string", "null"] }
+        imageUrl4:    { type: ["string", "null"] }
         option1Label: { type: string }
         option2Label: { type: string }
         option3Label: { type: ["string", "null"] }
@@ -985,18 +1040,21 @@ components:
         option3Count: { type: ["integer", "null"] }
         option4Count: { type: ["integer", "null"] }
         isActive:     { type: boolean }
+        status:       { type: string }
         createdAt:    { type: string }
         totalVotes:   { type: integer }
         commentCount: { type: integer }
 
     VoteCardDetail:
       type: object
-      required: [id, title, option1Label, option2Label, option1Count, option2Count, isActive, createdAt, totalVotes, userVote]
+      required: [id, title, option1Label, option2Label, option1Count, option2Count, isActive, status, createdAt, totalVotes, userVote]
       properties:
         id:           { type: integer }
         title:        { type: string }
         imageUrl:     { type: ["string", "null"] }
         imageUrl2:    { type: ["string", "null"] }
+        imageUrl3:    { type: ["string", "null"] }
+        imageUrl4:    { type: ["string", "null"] }
         option1Label: { type: string }
         option2Label: { type: string }
         option3Label: { type: ["string", "null"] }
@@ -1006,6 +1064,7 @@ components:
         option3Count: { type: ["integer", "null"] }
         option4Count: { type: ["integer", "null"] }
         isActive:     { type: boolean }
+        status:       { type: string }
         createdAt:    { type: string }
         totalVotes:   { type: integer }
         commentCount: { type: integer }
@@ -1013,11 +1072,13 @@ components:
 
     VoteCardInput:
       type: object
-      required: [title, option1Label, option2Label]
+      required: [title, option1Label, option2Label, option3Label, option4Label, imageUrl, imageUrl2, imageUrl3, imageUrl4]
       properties:
         title:        { type: string }
         imageUrl:     { type: string }
         imageUrl2:    { type: string }
+        imageUrl3:    { type: string }
+        imageUrl4:    { type: string }
         option1Label: { type: string }
         option2Label: { type: string }
         option3Label: { type: string }
@@ -1029,11 +1090,14 @@ components:
         title:        { type: string }
         imageUrl:     { type: string }
         imageUrl2:    { type: string }
+        imageUrl3:    { type: string }
+        imageUrl4:    { type: string }
         option1Label: { type: string }
         option2Label: { type: string }
         option3Label: { type: string }
         option4Label: { type: string }
         isActive:     { type: boolean }
+        status:       { type: string }
 
     VoteCardVoteInput:
       type: object

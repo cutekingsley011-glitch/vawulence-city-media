@@ -2527,6 +2527,223 @@ export const useCastVote = <TError = ErrorType<void>,
       return useMutation(getCastVoteMutationOptions(options));
     }
 
+export const getListPendingVoteCardsUrl = () => {
+
+
+
+
+  return `/api/admin/vote-cards/pending`
+}
+
+/**
+ * @summary List vote cards pending admin approval
+ */
+export const listPendingVoteCards = async ( options?: RequestInit): Promise<VoteCard[]> => {
+
+  return customFetch<VoteCard[]>(getListPendingVoteCardsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPendingVoteCardsQueryKey = () => {
+    return [
+    `/api/admin/vote-cards/pending`
+    ] as const;
+    }
+
+
+export const getListPendingVoteCardsQueryOptions = <TData = Awaited<ReturnType<typeof listPendingVoteCards>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPendingVoteCards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPendingVoteCardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPendingVoteCards>>> = ({ signal }) => listPendingVoteCards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPendingVoteCards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPendingVoteCardsQueryResult = NonNullable<Awaited<ReturnType<typeof listPendingVoteCards>>>
+export type ListPendingVoteCardsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List vote cards pending admin approval
+ */
+
+export function useListPendingVoteCards<TData = Awaited<ReturnType<typeof listPendingVoteCards>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPendingVoteCards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPendingVoteCardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getApproveVoteCardUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/vote-cards/${id}/approve`
+}
+
+/**
+ * @summary Approve a pending vote card (admin)
+ */
+export const approveVoteCard = async (id: number, options?: RequestInit): Promise<VoteCard> => {
+
+  return customFetch<VoteCard>(getApproveVoteCardUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getApproveVoteCardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveVoteCard>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveVoteCard>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['approveVoteCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveVoteCard>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  approveVoteCard(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveVoteCardMutationResult = NonNullable<Awaited<ReturnType<typeof approveVoteCard>>>
+
+    export type ApproveVoteCardMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Approve a pending vote card (admin)
+ */
+export const useApproveVoteCard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveVoteCard>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveVoteCard>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getApproveVoteCardMutationOptions(options));
+    }
+
+export const getRejectVoteCardUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/vote-cards/${id}/reject`
+}
+
+/**
+ * @summary Reject a pending vote card (admin)
+ */
+export const rejectVoteCard = async (id: number, options?: RequestInit): Promise<VoteCard> => {
+
+  return customFetch<VoteCard>(getRejectVoteCardUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRejectVoteCardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectVoteCard>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectVoteCard>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['rejectVoteCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectVoteCard>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  rejectVoteCard(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectVoteCardMutationResult = NonNullable<Awaited<ReturnType<typeof rejectVoteCard>>>
+
+    export type RejectVoteCardMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reject a pending vote card (admin)
+ */
+export const useRejectVoteCard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectVoteCard>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectVoteCard>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRejectVoteCardMutationOptions(options));
+    }
+
 export const getListVoteCardVotersUrl = (id: number,) => {
 
 

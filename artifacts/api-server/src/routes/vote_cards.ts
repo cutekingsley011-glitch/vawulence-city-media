@@ -37,6 +37,8 @@ function cardToDto(card: VoteCardRow, commentCount = 0) {
     title: card.title,
     imageUrl: card.imageUrl ?? null,
     imageUrl2: card.imageUrl2 ?? null,
+    imageUrl3: card.imageUrl3 ?? null,
+    imageUrl4: card.imageUrl4 ?? null,
     option1Label: card.option1Label,
     option2Label: card.option2Label,
     option3Label: card.option3Label ?? null,
@@ -46,6 +48,7 @@ function cardToDto(card: VoteCardRow, commentCount = 0) {
     option3Count: card.option3Count ?? null,
     option4Count: card.option4Count ?? null,
     isActive: card.isActive,
+    status: card.status,
     createdAt: card.createdAt.toISOString(),
     totalVotes: total,
     commentCount,
@@ -113,7 +116,7 @@ router.get("/vote-cards", async (req, res) => {
   res.json(result);
 });
 
-// POST /vote-cards (admin)
+// POST /vote-cards — user submission, lands as pending
 router.post("/vote-cards", async (req, res) => {
   const body = CreateVoteCardBody.safeParse(req.body);
   if (!body.success) {
@@ -126,12 +129,16 @@ router.post("/vote-cards", async (req, res) => {
       title: body.data.title,
       imageUrl: body.data.imageUrl ?? null,
       imageUrl2: body.data.imageUrl2 ?? null,
+      imageUrl3: body.data.imageUrl3 ?? null,
+      imageUrl4: body.data.imageUrl4 ?? null,
       option1Label: body.data.option1Label,
       option2Label: body.data.option2Label,
       option3Label: body.data.option3Label ?? null,
       option4Label: body.data.option4Label ?? null,
       option3Count: body.data.option3Label ? 0 : null,
       option4Count: body.data.option4Label ? 0 : null,
+      isActive: false,
+      status: "pending",
     })
     .returning();
   res.status(201).json(cardToDto(card));
@@ -310,6 +317,42 @@ router.post("/vote-cards/:id/vote", async (req, res) => {
     .where(eq(commentsTable.voteCardId, voteCardId));
 
   res.json(cardDetailDto(updated, chosenOption, cnt ?? 0));
+});
+
+// GET /admin/vote-cards/pending — must be BEFORE /:id routes
+router.get("/admin/vote-cards/pending", async (req, res) => {
+  const cards = await db
+    .select()
+    .from(voteCardsTable)
+    .where(eq(voteCardsTable.status, "pending"))
+    .orderBy(desc(voteCardsTable.createdAt));
+  res.json(cards.map((c) => cardToDto(c)));
+});
+
+// POST /admin/vote-cards/:id/approve
+router.post("/admin/vote-cards/:id/approve", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [card] = await db
+    .update(voteCardsTable)
+    .set({ isActive: true, status: "approved" })
+    .where(eq(voteCardsTable.id, id))
+    .returning();
+  if (!card) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(cardToDto(card));
+});
+
+// POST /admin/vote-cards/:id/reject
+router.post("/admin/vote-cards/:id/reject", async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) { res.status(400).json({ error: "Invalid id" }); return; }
+  const [card] = await db
+    .update(voteCardsTable)
+    .set({ isActive: false, status: "rejected" })
+    .where(eq(voteCardsTable.id, id))
+    .returning();
+  if (!card) { res.status(404).json({ error: "Not found" }); return; }
+  res.json(cardToDto(card));
 });
 
 // GET /admin/vote-cards/:id/voters (admin only)

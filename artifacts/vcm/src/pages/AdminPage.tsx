@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MediaUpload, MediaUploadMulti } from "@/components/MediaUpload";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,8 +17,11 @@ import {
   useSetBreakingNewsBanner,
   useGetBreakingNews,
   useListVoteCards,
+  useListPendingVoteCards,
   useCreateVoteCard,
   useDeleteVoteCard,
+  useApproveVoteCard,
+  useRejectVoteCard,
   useListVoteCardVoters,
   getGetAdminStatsQueryKey,
   getListPostsQueryKey,
@@ -26,6 +29,7 @@ import {
   getListCategoriesQueryKey,
   getGetBreakingNewsQueryKey,
   getListVoteCardsQueryKey,
+  getListPendingVoteCardsQueryKey,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,7 +46,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, Pencil, Trash2, Check, X, Vote, CalendarDays, Trophy, Crown, MessageCircle, VolumeX, Ban } from "lucide-react";
+import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, ImagePlus, Pencil, Trash2, Check, X, Vote, CalendarDays, Trophy, Crown, MessageCircle, VolumeX, Ban } from "lucide-react";
 
 // ─── Types for new sections ───────────────────────────────────────────────────
 interface AdminEvent { id: number; title: string; venue: string; eventDate: string; isPaid: boolean; ticketPrice: number | null; status: "upcoming" | "past"; }
@@ -293,7 +297,8 @@ function AdminPanel() {
   const { data: pendingGists, isLoading: gistsLoading } = useListPendingGists();
   const { data: categories } = useListCategories();
   const { data: breaking } = useGetBreakingNews();
-  const { data: voteCards, isLoading: voteCardsLoading } = useListVoteCards();
+  const { data: voteCards, isLoading: voteCardsLoading } = useListVoteCards({ all: true });
+  const { data: pendingVoteCards, isLoading: pendingVcLoading } = useListPendingVoteCards();
 
   const deletePost = useDeletePost();
   const approveGist = useApproveGist();
@@ -303,6 +308,8 @@ function AdminPanel() {
   const setBreaking = useSetBreakingNewsBanner();
   const createVoteCard = useCreateVoteCard();
   const deleteVoteCard = useDeleteVoteCard();
+  const approveVoteCard = useApproveVoteCard();
+  const rejectVoteCard = useRejectVoteCard();
 
   const [postFormOpen, setPostFormOpen] = useState(false);
   const [editPost, setEditPost] = useState<{ id: number; data: PostFormData } | undefined>();
@@ -312,12 +319,14 @@ function AdminPanel() {
 
   // VoteCard create form state
   const [vcTitle, setVcTitle] = useState("");
-  const [vcNumOptions, setVcNumOptions] = useState(2);
+  const [vcNumOptions, setVcNumOptions] = useState(4);
   const [vcOpts, setVcOpts] = useState(["", "", "", ""]);
-  const [vcImgA, setVcImgA] = useState("");
-  const [vcImgB, setVcImgB] = useState("");
+  const [vcImgUrls, setVcImgUrls] = useState(["", "", "", ""]);
+  const [vcPreviews, setVcPreviews] = useState(["", "", "", ""]);
+  const [vcUploading, setVcUploading] = useState([false, false, false, false]);
   const [vcError, setVcError] = useState("");
   const [expandedVcId, setExpandedVcId] = useState<number | null>(null);
+  const vcFileRefs = [useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null), useRef<HTMLInputElement>(null)];
 
   // New sections state
   const [events, setEvents] = useState<AdminEvent[]>([]);
@@ -450,30 +459,58 @@ function AdminPanel() {
     );
   }
 
+  async function handleVcFileUpload(idx: number, file: File) {
+    const local = URL.createObjectURL(file);
+    setVcPreviews((p) => { const n = [...p]; n[idx] = local; return n; });
+    setVcUploading((u) => { const n = [...u]; n[idx] = true; return n; });
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/storage/uploads", { method: "POST", body: form });
+      const data = await res.json() as { objectPath?: string };
+      if (!data.objectPath) throw new Error("no url");
+      setVcImgUrls((u) => { const n = [...u]; n[idx] = data.objectPath!; return n; });
+    } catch {
+      setVcError(`Failed to upload photo ${idx + 1}.`);
+      setVcPreviews((p) => { const n = [...p]; n[idx] = ""; return n; });
+    } finally {
+      setVcUploading((u) => { const n = [...u]; n[idx] = false; return n; });
+    }
+  }
+
   function handleCreateVoteCard(e: React.FormEvent) {
     e.preventDefault();
     setVcError("");
     if (!vcTitle.trim()) { setVcError("Title is required."); return; }
-    if (!vcOpts[0].trim() || !vcOpts[1].trim()) { setVcError("Options 1 and 2 are required."); return; }
-    if (vcNumOptions >= 3 && !vcOpts[2].trim()) { setVcError("Option 3 label is required."); return; }
-    if (vcNumOptions >= 4 && !vcOpts[3].trim()) { setVcError("Option 4 label is required."); return; }
+    for (let i = 0; i < vcNumOptions; i++) {
+      if (!vcOpts[i].trim()) { setVcError(`Option ${i + 1} label is required.`); return; }
+    }
+    if (vcUploading.some(Boolean)) { setVcError("Wait for photos to finish uploading."); return; }
+
     createVoteCard.mutate(
       {
         data: {
           title: vcTitle.trim(),
           option1Label: vcOpts[0].trim(),
           option2Label: vcOpts[1].trim(),
-          option3Label: vcNumOptions >= 3 ? vcOpts[2].trim() : undefined,
-          option4Label: vcNumOptions >= 4 ? vcOpts[3].trim() : undefined,
-          imageUrl: vcImgA.trim() || undefined,
-          imageUrl2: vcImgB.trim() || undefined,
+          option3Label: vcNumOptions >= 3 ? vcOpts[2].trim() : "",
+          option4Label: vcNumOptions >= 4 ? vcOpts[3].trim() : "",
+          imageUrl: vcImgUrls[0] || "",
+          imageUrl2: vcImgUrls[1] || "",
+          imageUrl3: vcImgUrls[2] || "",
+          imageUrl4: vcImgUrls[3] || "",
         },
       },
       {
-        onSuccess: () => {
-          setVcTitle(""); setVcNumOptions(2); setVcOpts(["", "", "", ""]); setVcImgA(""); setVcImgB("");
+        onSuccess: (card) => {
+          setVcTitle(""); setVcNumOptions(4); setVcOpts(["", "", "", ""]);
+          setVcImgUrls(["", "", "", ""]); setVcPreviews(["", "", "", ""]);
           queryClient.invalidateQueries({ queryKey: getListVoteCardsQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetAdminStatsQueryKey() });
+          // Admin-created cards go live immediately
+          approveVoteCard.mutate({ id: card.id }, {
+            onSuccess: () => queryClient.invalidateQueries({ queryKey: getListVoteCardsQueryKey() }),
+          });
         },
         onError: () => setVcError("Failed to create vote card."),
       }
@@ -934,8 +971,73 @@ function AdminPanel() {
         {/* ── Vote Cards tab ── */}
         <TabsContent value="vote-cards">
           <div className="space-y-4">
+
+            {/* Pending vote cards queue */}
+            <div className="border border-amber-300 rounded-xl p-4 bg-amber-50">
+              <h2 className="font-bold text-sm mb-3 flex items-center gap-2">
+                <Vote className="w-4 h-4 text-amber-600" />
+                Pending Vote Cards
+                {pendingVoteCards?.length ? <span className="bg-amber-500 text-white text-xs rounded-full px-2 py-0.5">{pendingVoteCards.length}</span> : null}
+              </h2>
+              {pendingVcLoading ? (
+                <Skeleton className="h-14 rounded-lg" />
+              ) : !pendingVoteCards?.length ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No pending vote cards.</p>
+              ) : (
+                <div className="space-y-2">
+                  {pendingVoteCards.map((vc) => (
+                    <div key={vc.id} className="bg-white border border-amber-200 rounded-lg p-3">
+                      <p className="text-sm font-semibold mb-1">{vc.title}</p>
+                      {/* Option photos preview */}
+                      {(vc.imageUrl || vc.imageUrl2 || vc.imageUrl3 || vc.imageUrl4) && (
+                        <div className="flex gap-1.5 mb-2 flex-wrap">
+                          {[vc.imageUrl, vc.imageUrl2, vc.imageUrl3, vc.imageUrl4].filter(Boolean).map((url, i) => (
+                            <img key={i} src={url!} className="w-14 h-14 object-cover rounded" alt={`Option ${i + 1}`} />
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {[vc.option1Label, vc.option2Label, vc.option3Label, vc.option4Label].filter(Boolean).map((lbl, i) => (
+                          <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded-full">{lbl}</span>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                          onClick={() => approveVoteCard.mutate({ id: vc.id }, {
+                            onSuccess: () => {
+                              queryClient.invalidateQueries({ queryKey: getListPendingVoteCardsQueryKey() });
+                              queryClient.invalidateQueries({ queryKey: getListVoteCardsQueryKey() });
+                              toast.success("Vote card approved and live!");
+                            },
+                          })}
+                        >
+                          <Check className="w-3 h-3 mr-1" /> Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-7 text-xs"
+                          onClick={() => rejectVoteCard.mutate({ id: vc.id }, {
+                            onSuccess: () => {
+                              queryClient.invalidateQueries({ queryKey: getListPendingVoteCardsQueryKey() });
+                              toast.success("Vote card rejected.");
+                            },
+                          })}
+                        >
+                          <X className="w-3 h-3 mr-1" /> Reject
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Create vote card form */}
             <div className="border border-border rounded-xl p-4 bg-white">
-              <h2 className="font-bold text-sm mb-3">Create Vote Card</h2>
+              <h2 className="font-bold text-sm mb-3">Create Vote Card (goes live immediately)</h2>
               <form onSubmit={handleCreateVoteCard} className="space-y-3">
                 <div className="space-y-1">
                   <Label>Title / Question</Label>
@@ -959,24 +1061,45 @@ function AdminPanel() {
                     </button>
                   ))}
                 </div>
-                <div className="space-y-2">
+                <div className="grid grid-cols-2 gap-2">
                   {[0, 1, 2, 3].slice(0, vcNumOptions).map((idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-muted-foreground w-6 shrink-0">#{idx + 1}</span>
+                    <div key={idx} className="space-y-1">
+                      {/* Hidden file input */}
+                      <input
+                        ref={vcFileRefs[idx]}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleVcFileUpload(idx, f); }}
+                      />
+                      {/* Photo slot */}
+                      <button
+                        type="button"
+                        onClick={() => vcFileRefs[idx].current?.click()}
+                        className={`w-full h-16 rounded border-2 border-dashed flex items-center justify-center transition-colors overflow-hidden ${vcPreviews[idx] ? "border-primary/30" : "border-border hover:border-primary/50 bg-muted/10"}`}
+                      >
+                        {vcUploading[idx] ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                        ) : vcPreviews[idx] ? (
+                          <img src={vcPreviews[idx]} className="w-full h-full object-cover" alt="" />
+                        ) : (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <ImagePlus className="w-3.5 h-3.5" /> Photo {idx + 1}
+                          </span>
+                        )}
+                      </button>
                       <Input
                         value={vcOpts[idx]}
                         onChange={(e) => setVcOpt(idx, e.target.value)}
-                        placeholder={`Option ${idx + 1} label`}
+                        placeholder={`Option ${idx + 1}`}
                         data-testid={`input-admin-vc-opt-${idx + 1}`}
-                        className="flex-1"
+                        className="text-sm"
                       />
-                      {idx === 0 && <Input value={vcImgA} onChange={(e) => setVcImgA(e.target.value)} placeholder="Image URL" className="flex-1 text-xs" />}
-                      {idx === 1 && <Input value={vcImgB} onChange={(e) => setVcImgB(e.target.value)} placeholder="Image URL" className="flex-1 text-xs" />}
                     </div>
                   ))}
                 </div>
                 {vcError && <p className="text-sm text-destructive">{vcError}</p>}
-                <Button type="submit" size="sm" disabled={createVoteCard.isPending} data-testid="button-admin-create-vc">
+                <Button type="submit" size="sm" disabled={createVoteCard.isPending || vcUploading.some(Boolean)} data-testid="button-admin-create-vc">
                   {createVoteCard.isPending ? "Creating..." : "Create Vote Card"}
                 </Button>
               </form>
@@ -1001,8 +1124,8 @@ function AdminPanel() {
                         >
                           <p className="text-sm font-medium truncate">{vc.title}</p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${vc.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
-                              {vc.isActive ? "active" : "closed"}
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${vc.status === "approved" ? "bg-green-100 text-green-700" : vc.status === "pending" ? "bg-amber-100 text-amber-700" : "bg-gray-100 text-gray-600"}`}>
+                              {vc.status ?? (vc.isActive ? "approved" : "closed")}
                             </span>
                             <span className="text-xs text-muted-foreground">{vc.totalVotes} votes</span>
                             <span className="text-xs text-primary font-medium">{expandedVcId === vc.id ? "▲ hide voters" : "▼ view voters"}</span>

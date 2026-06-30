@@ -5,6 +5,8 @@ export const voteCardsTable = pgTable("vote_cards", {
   title: text("title").notNull(),
   imageUrl: text("image_url"),
   imageUrl2: text("image_url_2"),
+  imageUrl3: text("image_url_3"),
+  imageUrl4: text("image_url_4"),
   option1Label: text("option_1_label").notNull(),
   option2Label: text("option_2_label").notNull(),
   option3Label: text("option_3_label"),
@@ -13,7 +15,8 @@ export const voteCardsTable = pgTable("vote_cards", {
   option2Count: integer("option_2_count").notNull().default(0),
   option3Count: integer("option_3_count"),
   option4Count: integer("option_4_count"),
-  isActive: boolean("is_active").notNull().default(true),
+  isActive: boolean("is_active").notNull().default(false),
+  status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

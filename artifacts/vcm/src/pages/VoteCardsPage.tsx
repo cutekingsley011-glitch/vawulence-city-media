@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "wouter";
 import {
   useListVoteCards,
@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { getStoredUser } from "@/lib/user";
-import { Vote, Plus, MessageSquare, Minus } from "lucide-react";
+import { Vote, Plus, MessageSquare, Minus, ImagePlus, Loader2 } from "lucide-react";
 
 type VoteCard = {
   id: number;
@@ -156,12 +156,60 @@ function VoteCardItem({ card }: { card: VoteCard }) {
   );
 }
 
+const OPTION_LABELS = ["Option 1", "Option 2", "Option 3", "Option 4"];
+
+function ImageUploadSlot({
+  idx,
+  preview,
+  uploading,
+  onFile,
+}: {
+  idx: number;
+  preview: string;
+  uploading: boolean;
+  onFile: (idx: number, file: File) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+  return (
+    <div className="relative">
+      <input
+        ref={ref}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) onFile(idx, f); }}
+      />
+      <button
+        type="button"
+        onClick={() => ref.current?.click()}
+        className={`w-full h-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors ${
+          preview
+            ? "border-primary/40 p-0 overflow-hidden"
+            : "border-border hover:border-primary/60 bg-muted/20"
+        }`}
+      >
+        {uploading ? (
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+        ) : preview ? (
+          <img src={preview} alt={`Option ${idx + 1}`} className="w-full h-full object-cover rounded-lg" />
+        ) : (
+          <>
+            <ImagePlus className="w-5 h-5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground">Photo {idx + 1}</span>
+          </>
+        )}
+      </button>
+    </div>
+  );
+}
+
 function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
   const [title, setTitle] = useState("");
-  const [numOptions, setNumOptions] = useState(2);
   const [opts, setOpts] = useState(["", "", "", ""]);
-  const [img1, setImg1] = useState("");
-  const [img2, setImg2] = useState("");
+  const [imgUrls, setImgUrls] = useState(["", "", "", ""]);
+  const [previews, setPreviews] = useState(["", "", "", ""]);
+  const [uploading, setUploading] = useState([false, false, false, false]);
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const createVoteCard = useCreateVoteCard();
   const queryClient = useQueryClient();
@@ -170,13 +218,34 @@ function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
     setOpts((prev) => { const next = [...prev]; next[idx] = val; return next; });
   }
 
+  async function handleFile(idx: number, file: File) {
+    const localUrl = URL.createObjectURL(file);
+    setPreviews((p) => { const n = [...p]; n[idx] = localUrl; return n; });
+    setUploading((u) => { const n = [...u]; n[idx] = true; return n; });
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/storage/uploads", { method: "POST", body: form });
+      const data = await res.json() as { objectPath?: string };
+      if (!data.objectPath) throw new Error("no url");
+      setImgUrls((u) => { const n = [...u]; n[idx] = data.objectPath!; return n; });
+    } catch {
+      setError(`Failed to upload photo ${idx + 1}. Try again.`);
+      setPreviews((p) => { const n = [...p]; n[idx] = ""; return n; });
+    } finally {
+      setUploading((u) => { const n = [...u]; n[idx] = false; return n; });
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!title.trim()) { setError("Title is required."); return; }
-    if (!opts[0].trim() || !opts[1].trim()) { setError("Options 1 and 2 are required."); return; }
-    if (numOptions >= 3 && !opts[2].trim()) { setError("Option 3 label is required."); return; }
-    if (numOptions >= 4 && !opts[3].trim()) { setError("Option 4 label is required."); return; }
+    for (let i = 0; i < 4; i++) {
+      if (!opts[i].trim()) { setError(`Option ${i + 1} label is required.`); return; }
+      if (!imgUrls[i]) { setError(`Photo ${i + 1} is required — tap the photo slot to upload.`); return; }
+    }
+    if (uploading.some(Boolean)) { setError("Please wait for all photos to finish uploading."); return; }
 
     createVoteCard.mutate(
       {
@@ -184,24 +253,41 @@ function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
           title: title.trim(),
           option1Label: opts[0].trim(),
           option2Label: opts[1].trim(),
-          option3Label: numOptions >= 3 ? opts[2].trim() : undefined,
-          option4Label: numOptions >= 4 ? opts[3].trim() : undefined,
-          imageUrl: img1.trim() || undefined,
-          imageUrl2: img2.trim() || undefined,
+          option3Label: opts[2].trim(),
+          option4Label: opts[3].trim(),
+          imageUrl: imgUrls[0],
+          imageUrl2: imgUrls[1],
+          imageUrl3: imgUrls[2],
+          imageUrl4: imgUrls[3],
         },
       },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getListVoteCardsQueryKey() });
-          onDone();
+          setSubmitted(true);
         },
-        onError: () => setError("Failed to create vote card."),
+        onError: () => setError("Failed to submit vote card. Please try again."),
       }
     );
   }
 
+  if (submitted) {
+    return (
+      <div className="bg-white border border-border rounded-xl p-6 text-center space-y-3">
+        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+          <span className="text-green-600 text-xl font-bold">✓</span>
+        </div>
+        <p className="font-semibold text-foreground">Vote card submitted for review!</p>
+        <p className="text-sm text-muted-foreground">
+          Our team will review and publish it once approved.
+        </p>
+        <Button size="sm" onClick={onDone}>Done</Button>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-border rounded-xl p-4 space-y-3">
+    <form onSubmit={handleSubmit} className="bg-white border border-border rounded-xl p-4 space-y-4">
       <h3 className="font-bold text-sm">Create Vote Card</h3>
 
       <div className="space-y-1">
@@ -209,41 +295,33 @@ function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Who would you pick?" data-testid="input-vote-title" />
       </div>
 
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-muted-foreground">Options:</span>
-        {[2, 3, 4].map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => setNumOptions(n)}
-            className={`w-8 h-8 rounded-full text-sm font-bold border transition-colors ${numOptions === n ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary"}`}
-          >
-            {n}
-          </button>
-        ))}
-      </div>
-
-      <div className="space-y-2">
-        {[0, 1, 2, 3].slice(0, numOptions).map((idx) => (
-          <div key={idx} className="flex items-center gap-2">
-            <span className="text-xs font-bold text-muted-foreground w-6 shrink-0">#{idx + 1}</span>
-            <Input
-              value={opts[idx]}
-              onChange={(e) => setOpt(idx, e.target.value)}
-              placeholder={`Option ${idx + 1} label`}
-              data-testid={`input-vote-option-${idx + 1}`}
-              className="flex-1"
-            />
-            {idx === 0 && <Input value={img1} onChange={(e) => setImg1(e.target.value)} placeholder="Image URL" className="flex-1 text-xs" />}
-            {idx === 1 && <Input value={img2} onChange={(e) => setImg2(e.target.value)} placeholder="Image URL" className="flex-1 text-xs" />}
-          </div>
-        ))}
+      <div>
+        <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">4 Options + 4 Photos required</p>
+        <div className="grid grid-cols-2 gap-3">
+          {[0, 1, 2, 3].map((idx) => (
+            <div key={idx} className="space-y-1.5">
+              <ImageUploadSlot
+                idx={idx}
+                preview={previews[idx]}
+                uploading={uploading[idx]}
+                onFile={handleFile}
+              />
+              <Input
+                value={opts[idx]}
+                onChange={(e) => setOpt(idx, e.target.value)}
+                placeholder={OPTION_LABELS[idx]}
+                data-testid={`input-vote-option-${idx + 1}`}
+                className="text-sm"
+              />
+            </div>
+          ))}
+        </div>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={createVoteCard.isPending} data-testid="button-create-vote-card">
-          {createVoteCard.isPending ? "Creating..." : "Create"}
+        <Button type="submit" size="sm" disabled={createVoteCard.isPending || uploading.some(Boolean)} data-testid="button-create-vote-card">
+          {createVoteCard.isPending ? "Submitting..." : "Submit for Review"}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onDone}>Cancel</Button>
       </div>

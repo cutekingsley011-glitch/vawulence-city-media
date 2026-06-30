@@ -185,6 +185,10 @@ export interface VoteCard {
   imageUrl?: string | null;
   /** @nullable */
   imageUrl2?: string | null;
+  /** @nullable */
+  imageUrl3?: string | null;
+  /** @nullable */
+  imageUrl4?: string | null;
   option1Label: string;
   option2Label: string;
   /** @nullable */
@@ -198,6 +202,7 @@ export interface VoteCard {
   /** @nullable */
   option4Count?: number | null;
   isActive: boolean;
+  status: string;
   createdAt: string;
   totalVotes: number;
   commentCount?: number;
@@ -210,6 +215,10 @@ export interface VoteCardDetail {
   imageUrl?: string | null;
   /** @nullable */
   imageUrl2?: string | null;
+  /** @nullable */
+  imageUrl3?: string | null;
+  /** @nullable */
+  imageUrl4?: string | null;
   option1Label: string;
   option2Label: string;
   /** @nullable */
@@ -223,6 +232,7 @@ export interface VoteCardDetail {
   /** @nullable */
   option4Count?: number | null;
   isActive: boolean;
+  status: string;
   createdAt: string;
   totalVotes: number;
   commentCount?: number;
@@ -232,23 +242,28 @@ export interface VoteCardDetail {
 
 export interface VoteCardInput {
   title: string;
-  imageUrl?: string;
-  imageUrl2?: string;
+  imageUrl: string;
+  imageUrl2: string;
+  imageUrl3: string;
+  imageUrl4: string;
   option1Label: string;
   option2Label: string;
-  option3Label?: string;
-  option4Label?: string;
+  option3Label: string;
+  option4Label: string;
 }
 
 export interface VoteCardUpdate {
   title?: string;
   imageUrl?: string;
   imageUrl2?: string;
+  imageUrl3?: string;
+  imageUrl4?: string;
   option1Label?: string;
   option2Label?: string;
   option3Label?: string;
   option4Label?: string;
   isActive?: boolean;
+  status?: string;
 }
 
 export interface VoteCardVoteInput {

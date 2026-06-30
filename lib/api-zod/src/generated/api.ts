@@ -436,6 +436,8 @@ export const ListVoteCardsResponseItem = zod.object({
   "title": zod.string(),
   "imageUrl": zod.string().nullish(),
   "imageUrl2": zod.string().nullish(),
+  "imageUrl3": zod.string().nullish(),
+  "imageUrl4": zod.string().nullish(),
   "option1Label": zod.string(),
   "option2Label": zod.string(),
   "option3Label": zod.string().nullish(),
@@ -445,6 +447,7 @@ export const ListVoteCardsResponseItem = zod.object({
   "option3Count": zod.number().nullish(),
   "option4Count": zod.number().nullish(),
   "isActive": zod.boolean(),
+  "status": zod.string(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
   "commentCount": zod.number().optional()
@@ -457,12 +460,14 @@ export const ListVoteCardsResponse = zod.array(ListVoteCardsResponseItem)
  */
 export const CreateVoteCardBody = zod.object({
   "title": zod.string(),
-  "imageUrl": zod.string().optional(),
-  "imageUrl2": zod.string().optional(),
+  "imageUrl": zod.string(),
+  "imageUrl2": zod.string(),
+  "imageUrl3": zod.string(),
+  "imageUrl4": zod.string(),
   "option1Label": zod.string(),
   "option2Label": zod.string(),
-  "option3Label": zod.string().optional(),
-  "option4Label": zod.string().optional()
+  "option3Label": zod.string(),
+  "option4Label": zod.string()
 })
 
 
@@ -482,6 +487,8 @@ export const GetVoteCardResponse = zod.object({
   "title": zod.string(),
   "imageUrl": zod.string().nullish(),
   "imageUrl2": zod.string().nullish(),
+  "imageUrl3": zod.string().nullish(),
+  "imageUrl4": zod.string().nullish(),
   "option1Label": zod.string(),
   "option2Label": zod.string(),
   "option3Label": zod.string().nullish(),
@@ -491,6 +498,7 @@ export const GetVoteCardResponse = zod.object({
   "option3Count": zod.number().nullish(),
   "option4Count": zod.number().nullish(),
   "isActive": zod.boolean(),
+  "status": zod.string(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
   "commentCount": zod.number().optional(),
@@ -509,11 +517,14 @@ export const UpdateVoteCardBody = zod.object({
   "title": zod.string().optional(),
   "imageUrl": zod.string().optional(),
   "imageUrl2": zod.string().optional(),
+  "imageUrl3": zod.string().optional(),
+  "imageUrl4": zod.string().optional(),
   "option1Label": zod.string().optional(),
   "option2Label": zod.string().optional(),
   "option3Label": zod.string().optional(),
   "option4Label": zod.string().optional(),
-  "isActive": zod.boolean().optional()
+  "isActive": zod.boolean().optional(),
+  "status": zod.string().optional()
 })
 
 export const UpdateVoteCardResponse = zod.object({
@@ -521,6 +532,8 @@ export const UpdateVoteCardResponse = zod.object({
   "title": zod.string(),
   "imageUrl": zod.string().nullish(),
   "imageUrl2": zod.string().nullish(),
+  "imageUrl3": zod.string().nullish(),
+  "imageUrl4": zod.string().nullish(),
   "option1Label": zod.string(),
   "option2Label": zod.string(),
   "option3Label": zod.string().nullish(),
@@ -530,6 +543,7 @@ export const UpdateVoteCardResponse = zod.object({
   "option3Count": zod.number().nullish(),
   "option4Count": zod.number().nullish(),
   "isActive": zod.boolean(),
+  "status": zod.string(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
   "commentCount": zod.number().optional()
@@ -565,6 +579,8 @@ export const CastVoteResponse = zod.object({
   "title": zod.string(),
   "imageUrl": zod.string().nullish(),
   "imageUrl2": zod.string().nullish(),
+  "imageUrl3": zod.string().nullish(),
+  "imageUrl4": zod.string().nullish(),
   "option1Label": zod.string(),
   "option2Label": zod.string(),
   "option3Label": zod.string().nullish(),
@@ -574,10 +590,98 @@ export const CastVoteResponse = zod.object({
   "option3Count": zod.number().nullish(),
   "option4Count": zod.number().nullish(),
   "isActive": zod.boolean(),
+  "status": zod.string(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
   "commentCount": zod.number().optional(),
   "userVote": zod.number().nullable()
+})
+
+
+/**
+ * @summary List vote cards pending admin approval
+ */
+export const ListPendingVoteCardsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "imageUrl": zod.string().nullish(),
+  "imageUrl2": zod.string().nullish(),
+  "imageUrl3": zod.string().nullish(),
+  "imageUrl4": zod.string().nullish(),
+  "option1Label": zod.string(),
+  "option2Label": zod.string(),
+  "option3Label": zod.string().nullish(),
+  "option4Label": zod.string().nullish(),
+  "option1Count": zod.number(),
+  "option2Count": zod.number(),
+  "option3Count": zod.number().nullish(),
+  "option4Count": zod.number().nullish(),
+  "isActive": zod.boolean(),
+  "status": zod.string(),
+  "createdAt": zod.string(),
+  "totalVotes": zod.number(),
+  "commentCount": zod.number().optional()
+})
+export const ListPendingVoteCardsResponse = zod.array(ListPendingVoteCardsResponseItem)
+
+
+/**
+ * @summary Approve a pending vote card (admin)
+ */
+export const ApproveVoteCardParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ApproveVoteCardResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "imageUrl": zod.string().nullish(),
+  "imageUrl2": zod.string().nullish(),
+  "imageUrl3": zod.string().nullish(),
+  "imageUrl4": zod.string().nullish(),
+  "option1Label": zod.string(),
+  "option2Label": zod.string(),
+  "option3Label": zod.string().nullish(),
+  "option4Label": zod.string().nullish(),
+  "option1Count": zod.number(),
+  "option2Count": zod.number(),
+  "option3Count": zod.number().nullish(),
+  "option4Count": zod.number().nullish(),
+  "isActive": zod.boolean(),
+  "status": zod.string(),
+  "createdAt": zod.string(),
+  "totalVotes": zod.number(),
+  "commentCount": zod.number().optional()
+})
+
+
+/**
+ * @summary Reject a pending vote card (admin)
+ */
+export const RejectVoteCardParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RejectVoteCardResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "imageUrl": zod.string().nullish(),
+  "imageUrl2": zod.string().nullish(),
+  "imageUrl3": zod.string().nullish(),
+  "imageUrl4": zod.string().nullish(),
+  "option1Label": zod.string(),
+  "option2Label": zod.string(),
+  "option3Label": zod.string().nullish(),
+  "option4Label": zod.string().nullish(),
+  "option1Count": zod.number(),
+  "option2Count": zod.number(),
+  "option3Count": zod.number().nullish(),
+  "option4Count": zod.number().nullish(),
+  "isActive": zod.boolean(),
+  "status": zod.string(),
+  "createdAt": zod.string(),
+  "totalVotes": zod.number(),
+  "commentCount": zod.number().optional()
 })
 
 
