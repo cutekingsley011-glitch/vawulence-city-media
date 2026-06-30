@@ -9,7 +9,7 @@ import {
   breakingNewsTable,
   voteCardsTable,
 } from "@workspace/db";
-import { eq, count } from "drizzle-orm";
+import { eq, count, desc } from "drizzle-orm";
 import { SetBreakingNewsBannerBody } from "@workspace/api-zod";
 
 const router = Router();
@@ -65,6 +65,29 @@ router.put("/admin/breaking", async (req, res) => {
   }
 
   res.json({ text: row.text, enabled: row.enabled });
+});
+
+// GET /admin/users — list all registered users
+router.get("/admin/users", async (_req, res) => {
+  const users = await db.select().from(usersTable).orderBy(desc(usersTable.createdAt));
+  res.json(users.map((u) => ({
+    id: u.id, name: u.name, email: u.email,
+    isBanned: u.isBanned, commentCount: u.commentCount,
+    voteCount: u.voteCount, totalPoints: u.totalPoints,
+    createdAt: u.createdAt.toISOString(),
+  })));
+});
+
+// POST /admin/users/:id/ban
+router.post("/admin/users/:id/ban", async (req, res) => {
+  await db.update(usersTable).set({ isBanned: true }).where(eq(usersTable.id, req.params.id));
+  res.json({ success: true });
+});
+
+// POST /admin/users/:id/unban
+router.post("/admin/users/:id/unban", async (req, res) => {
+  await db.update(usersTable).set({ isBanned: false }).where(eq(usersTable.id, req.params.id));
+  res.json({ success: true });
 });
 
 export default router;

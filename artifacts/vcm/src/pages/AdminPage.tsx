@@ -60,6 +60,7 @@ interface AdminConnection { id: number; name: string; ageBracket: string; state:
 interface AdminEscrowReq { id: number; userId: string | null; description: string; amount: number; status: string; notes: string | null; createdAt: string; }
 interface AdminJob { id: number; title: string; companyName: string; description: string; flyerImageUrl: string | null; requirements: string[]; applyMethod: string; applyContact: string; status: string; createdAt: string; }
 interface AdminChatMessage { id: number; userId: string; messageText: string; senderName: string | null; createdAt: string; isBanned: boolean | null; mutedUntil: string | null; }
+interface AdminUser { id: string; name: string; email: string; isBanned: boolean; commentCount: number; voteCount: number; totalPoints: number; createdAt: string; }
 
 const ADMIN_SESSION_KEY = "vcm_admin";
 const ADMIN_PASSWORD = "vcmadmin6969";
@@ -177,7 +178,7 @@ function PostFormModal({
       content: form.content.trim(),
       excerpt: form.excerpt.trim() || undefined,
       imageUrl: form.imageUrl.trim() || undefined,
-      videoUrl: form.videoUrl.trim() || undefined,
+      videoUrl: form.videoUrl.trim() || null,
       isBreaking: form.isBreaking,
     } as any;
 
@@ -347,6 +348,13 @@ function AdminPanel() {
   const [marketItems, setMarketItems] = useState<AdminMarketItem[]>([]);
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketForm, setMarketForm] = useState({ name: "", description: "", price: "", imageUrls: [] as string[], category: "General" });
+  const [marketEditId, setMarketEditId] = useState<number | null>(null);
+  const [marketEditForm, setMarketEditForm] = useState({ name: "", description: "", price: "", category: "" });
+  const [marketEditSubmitting, setMarketEditSubmitting] = useState(false);
+  // Members state
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [adminUsersLoading, setAdminUsersLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
   // Connections state
   const [connections, setConnections] = useState<AdminConnection[]>([]);
   const [connLoading, setConnLoading] = useState(false);
@@ -746,6 +754,43 @@ function AdminPanel() {
     await fetch(`/api/admin/marketplace/${id}`, { method: "DELETE" });
     loadMarket();
   }
+  async function handleSaveMarketEdit() {
+    if (!marketEditId) return;
+    setMarketEditSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/marketplace/${marketEditId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: marketEditForm.name,
+          description: marketEditForm.description,
+          price: Math.round(Number(marketEditForm.price) * 100),
+          category: marketEditForm.category,
+        }),
+      });
+      if (!res.ok) { toast.error("Failed to update listing."); return; }
+      toast.success("Listing updated!");
+      setMarketEditId(null);
+      loadMarket();
+    } catch { toast.error("Network error."); }
+    finally { setMarketEditSubmitting(false); }
+  }
+
+  function loadAdminUsers() {
+    setAdminUsersLoading(true);
+    fetch("/api/admin/users").then((r) => r.json()).then((d) => { setAdminUsers(Array.isArray(d) ? d : []); setAdminUsersLoading(false); }).catch(() => setAdminUsersLoading(false));
+  }
+  async function handleBanMember(id: string, name: string) {
+    if (!confirm(`Ban ${name}? They won't be able to log in or comment.`)) return;
+    await fetch(`/api/admin/users/${id}/ban`, { method: "POST" });
+    toast.success(`${name} has been banned.`);
+    loadAdminUsers();
+  }
+  async function handleUnbanMember(id: string, name: string) {
+    await fetch(`/api/admin/users/${id}/unban`, { method: "POST" });
+    toast.success(`${name} has been unbanned.`);
+    loadAdminUsers();
+  }
 
   // ── Connections handlers ──
   async function handleApproveConnection(id: number) {
@@ -860,6 +905,7 @@ function AdminPanel() {
           <TabsTrigger value="cases" className="flex-1 text-xs" onClick={loadReportCases}>
             Cases {reportCases.filter((r) => r.status === "pending").length > 0 ? `(${reportCases.filter((r) => r.status === "pending").length})` : ""}
           </TabsTrigger>
+          <TabsTrigger value="members" className="flex-1 text-xs" onClick={loadAdminUsers}>Members</TabsTrigger>
         </TabsList>
 
         {/* ── Posts tab ── */}
@@ -1475,11 +1521,17 @@ function AdminPanel() {
                     )}
                     <Badge variant={item.status === "available" ? "default" : "secondary"} className="text-xs mt-1">{item.status}</Badge>
                   </div>
-                  <div className="flex gap-2 shrink-0">
+                  <div className="flex gap-1 shrink-0 flex-wrap justify-end">
                     {item.status === "available" && (
-                      <Button size="sm" variant="outline" className="text-orange-600 border-orange-200" onClick={() => handleMarkSold(item.id)}>Mark Sold</Button>
+                      <Button size="sm" variant="outline" className="text-orange-600 border-orange-200 text-xs h-7 px-2" onClick={() => handleMarkSold(item.id)}>Sold</Button>
                     )}
-                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => handleDeleteMarketItem(item.id)}>
+                    <Button size="sm" variant="ghost" className="text-primary hover:text-primary h-7 w-7 p-0" title="Edit listing" onClick={() => {
+                      setMarketEditId(item.id);
+                      setMarketEditForm({ name: item.name, description: item.description, price: String(item.price / 100), category: item.category });
+                    }}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive h-7 w-7 p-0" onClick={() => handleDeleteMarketItem(item.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -1742,7 +1794,91 @@ function AdminPanel() {
           </div>
         </TabsContent>
 
+        {/* ── Members tab ── */}
+        <TabsContent value="members">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-3">
+              <Input
+                placeholder="Search by name or email…"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+            {adminUsersLoading ? (
+              <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)}</div>
+            ) : adminUsers.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">No members yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {adminUsers
+                  .filter((u) => {
+                    if (!userSearch.trim()) return true;
+                    const q = userSearch.toLowerCase();
+                    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+                  })
+                  .map((u) => (
+                    <div key={u.id} className={`border rounded-xl p-3 bg-white flex items-center gap-3 ${u.isBanned ? "border-destructive/40 opacity-70" : "border-border"}`}>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-sm truncate">{u.name}</p>
+                          {u.isBanned && <Badge variant="destructive" className="text-xs">Banned</Badge>}
+                        </div>
+                        <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {u.commentCount} comments · {u.totalPoints} pts · joined {new Date(u.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
+                      </div>
+                      <div className="shrink-0">
+                        {u.isBanned ? (
+                          <Button size="sm" variant="outline" className="h-7 px-3 text-xs gap-1 text-green-700 border-green-300" onClick={() => handleUnbanMember(u.id, u.name)}>
+                            <Check className="w-3 h-3" />Unban
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="ghost" className="h-7 px-3 text-xs gap-1 text-destructive hover:text-destructive" onClick={() => handleBanMember(u.id, u.name)}>
+                            <Ban className="w-3 h-3" />Ban
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
       </Tabs>
+
+      {/* ── Marketplace Edit Dialog ── */}
+      <Dialog open={marketEditId !== null} onOpenChange={(o) => { if (!o) setMarketEditId(null); }}>
+        <DialogContent className="max-w-sm" aria-describedby={undefined}>
+          <DialogHeader><DialogTitle>Edit Listing</DialogTitle></DialogHeader>
+          <div className="space-y-3 mt-2">
+            <div className="space-y-1">
+              <Label>Item Name</Label>
+              <Input value={marketEditForm.name} onChange={(e) => setMarketEditForm((f) => ({ ...f, name: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Price (₦)</Label>
+              <Input type="number" value={marketEditForm.price} onChange={(e) => setMarketEditForm((f) => ({ ...f, price: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Description</Label>
+              <Textarea rows={3} value={marketEditForm.description} onChange={(e) => setMarketEditForm((f) => ({ ...f, description: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Category</Label>
+              <Input value={marketEditForm.category} onChange={(e) => setMarketEditForm((f) => ({ ...f, category: e.target.value }))} />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={() => setMarketEditId(null)}>Cancel</Button>
+              <Button size="sm" disabled={marketEditSubmitting} onClick={handleSaveMarketEdit}>
+                {marketEditSubmitting ? <><Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />Saving…</> : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <PostFormModal
         open={postFormOpen}

@@ -111,6 +111,26 @@ router.post("/admin/marketplace/:id/sold", async (req, res) => {
   res.json({ ...item, createdAt: item.createdAt.toISOString() });
 });
 
+// PUT /admin/marketplace/:id — edit item fields (price, name, description, category)
+router.put("/admin/marketplace/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const { name, description, price, category } = req.body as {
+    name?: string; description?: string; price?: number; category?: string;
+  };
+  const updates: Partial<typeof marketplaceItemsTable.$inferInsert> = {};
+  if (name !== undefined) updates.name = name;
+  if (description !== undefined) updates.description = description;
+  if (price !== undefined) updates.price = price;
+  if (category !== undefined) updates.category = category;
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
+  const [item] = await db.update(marketplaceItemsTable).set(updates).where(eq(marketplaceItemsTable.id, id)).returning();
+  if (!item) { res.status(404).json({ error: "Not found" }); return; }
+  res.json({ ...item, createdAt: item.createdAt.toISOString() });
+});
+
 // DELETE /admin/marketplace/:id
 router.delete("/admin/marketplace/:id", async (req, res) => {
   const id = Number(req.params.id);

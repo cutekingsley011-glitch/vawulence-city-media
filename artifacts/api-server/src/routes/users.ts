@@ -38,7 +38,22 @@ router.post("/users/register", async (req, res) => {
     .limit(1);
 
   if (existing.length > 0) {
+    if (existing[0].isBanned) {
+      res.status(403).json({ error: "This account has been banned." });
+      return;
+    }
     res.json(toDto(existing[0]));
+    return;
+  }
+
+  // Check if name is already taken
+  const [existingName] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.name, body.data.name.trim()))
+    .limit(1);
+  if (existingName) {
+    res.status(409).json({ error: "That username is already taken. Please choose a different one." });
     return;
   }
 

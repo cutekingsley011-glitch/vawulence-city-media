@@ -78,7 +78,7 @@ router.post("/posts/:postId/comments", async (req, res) => {
     return;
   }
 
-  // Fetch user name
+  // Fetch user name and check ban
   let userName: string | null = null;
   if (body.data.userId) {
     const [user] = await db
@@ -86,6 +86,10 @@ router.post("/posts/:postId/comments", async (req, res) => {
       .from(usersTable)
       .where(eq(usersTable.id, body.data.userId))
       .limit(1);
+    if (user?.isBanned) {
+      res.status(403).json({ error: "Your account has been banned." });
+      return;
+    }
     userName = user?.name ?? null;
   }
 
