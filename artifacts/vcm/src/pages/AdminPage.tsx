@@ -153,6 +153,14 @@ function PostFormModal({
   const updatePost = useUpdatePost();
   const queryClient = useQueryClient();
 
+  // Sync form whenever the modal opens so edit mode always shows current post data
+  useEffect(() => {
+    if (open) {
+      setForm(initialData ?? EMPTY_POST);
+      setError("");
+    }
+  }, [open]);
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
