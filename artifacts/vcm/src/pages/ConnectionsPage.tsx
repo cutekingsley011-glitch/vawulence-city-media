@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const ADMIN_WA = import.meta.env.VITE_ADMIN_WA ?? "2348000000000";
@@ -44,7 +44,11 @@ interface FormState {
   preferredLocation: string; whatsappNumber: string; bioText: string; consent: boolean;
 }
 
-const EMPTY_FORM: FormState = { name: "", ageBracket: "", gender: "", state: "", photoUrl: "", lookingFor: "", lookingForAge: "", preferredLocation: "", whatsappNumber: "", bioText: "", consent: false };
+const EMPTY_FORM: FormState = {
+  name: "", ageBracket: "", gender: "", state: "", photoUrl: "",
+  lookingFor: "", lookingForAge: "", preferredLocation: "",
+  whatsappNumber: "", bioText: "", consent: false,
+};
 
 function BioText({ text }: { text: string }) {
   const [expanded, setExpanded] = useState(false);
@@ -55,10 +59,7 @@ function BioText({ text }: { text: string }) {
         {isLong && !expanded ? text.slice(0, 160) + "…" : text}
       </p>
       {isLong && (
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className="flex items-center gap-0.5 text-xs text-primary font-medium mt-1"
-        >
+        <button onClick={() => setExpanded((v) => !v)} className="flex items-center gap-0.5 text-xs text-primary font-medium mt-1">
           {expanded ? <><ChevronUp className="w-3 h-3" /> See less</> : <><ChevronDown className="w-3 h-3" /> See more</>}
         </button>
       )}
@@ -70,9 +71,9 @@ export default function ConnectionsPage() {
   const [profiles, setProfiles] = useState<Connection[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormState | "photo", string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     fetch("/api/connections")
@@ -81,14 +82,31 @@ export default function ConnectionsPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  function validate() {
+    const e: Partial<Record<keyof FormState | "photo", string>> = {};
+    if (!form.name.trim()) e.name = "Name is required.";
+    if (!form.ageBracket) e.ageBracket = "Age bracket is required.";
+    if (!form.gender) e.gender = "Gender is required.";
+    if (!form.state) e.state = "State is required.";
+    if (!form.lookingFor) e.lookingFor = "Looking for is required.";
+    if (!form.lookingForAge) e.lookingForAge = "Preferred age range is required.";
+    if (!form.preferredLocation) e.preferredLocation = "Preferred location is required.";
+    if (!form.whatsappNumber.trim()) e.whatsappNumber = "WhatsApp number is required.";
+    if (!form.photoUrl.trim()) e.photo = "A photo is required.";
+    if (!form.bioText.trim()) e.bioText = "About you is required.";
+    if (!form.consent) e.consent = "You must confirm the consent statement.";
+    return e;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name || !form.ageBracket || !form.state || !form.lookingFor || !form.bioText) {
-      toast({ title: "Missing fields", description: "Please fill in all required fields.", variant: "destructive" }); return;
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      toast.error("Please complete all required fields.");
+      return;
     }
-    if (!form.consent) {
-      toast({ title: "Consent required", description: "You must check the consent box to submit.", variant: "destructive" }); return;
-    }
+    setErrors({});
     setSubmitting(true);
     try {
       const res = await fetch("/api/connections", {
@@ -96,22 +114,27 @@ export default function ConnectionsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: form.name.trim(), ageBracket: form.ageBracket,
-          gender: form.gender || null, state: form.state,
+          gender: form.gender, state: form.state,
           photoUrl: form.photoUrl.trim() || null, lookingFor: form.lookingFor,
           lookingForAge: form.lookingForAge || null,
           preferredLocation: form.preferredLocation || null,
-          whatsappNumber: form.whatsappNumber.trim() || null,
+          whatsappNumber: form.whatsappNumber.trim(),
           bioText: form.bioText.trim(), consentGiven: true,
         }),
       });
       if (!res.ok) throw new Error();
       setSubmitted(true);
       setForm(EMPTY_FORM);
+      setErrors({});
     } catch {
-      toast({ title: "Error", description: "Submission failed. Please try again.", variant: "destructive" });
+      toast.error("Submission failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function Err({ field }: { field: keyof typeof errors }) {
+    return errors[field] ? <p className="text-xs text-destructive mt-0.5">{errors[field]}</p> : null;
   }
 
   return (
@@ -128,7 +151,6 @@ export default function ConnectionsPage() {
           <TabsTrigger value="submit">Submit Your Profile</TabsTrigger>
         </TabsList>
 
-        {/* ── Browse tab ── */}
         <TabsContent value="browse">
           {loading ? (
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -189,7 +211,6 @@ export default function ConnectionsPage() {
           )}
         </TabsContent>
 
-        {/* ── Submit tab ── */}
         <TabsContent value="submit">
           {submitted ? (
             <div className="max-w-md mx-auto text-center py-12">
@@ -202,79 +223,94 @@ export default function ConnectionsPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
+
               <div className="space-y-1">
-                <Label>Name *</Label>
+                <Label>Name <span className="text-destructive">*</span></Label>
                 <Input placeholder="Your name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <Err field="name" />
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label>Age Bracket *</Label>
+                  <Label>Age Bracket <span className="text-destructive">*</span></Label>
                   <Select value={form.ageBracket} onValueChange={(v) => setForm({ ...form, ageBracket: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select age range" /></SelectTrigger>
+                    <SelectTrigger className={errors.ageBracket ? "border-destructive" : ""}><SelectValue placeholder="Select age range" /></SelectTrigger>
                     <SelectContent>
                       {AGE_BRACKETS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  <Err field="ageBracket" />
                 </div>
                 <div className="space-y-1">
-                  <Label>Gender</Label>
+                  <Label>Gender <span className="text-destructive">*</span></Label>
                   <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
+                    <SelectTrigger className={errors.gender ? "border-destructive" : ""}><SelectValue placeholder="Select gender" /></SelectTrigger>
                     <SelectContent>
                       {GENDERS.map((g) => <SelectItem key={g} value={g}>{g}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  <Err field="gender" />
                 </div>
               </div>
+
               <div className="space-y-1">
-                <Label>State *</Label>
+                <Label>State <span className="text-destructive">*</span></Label>
                 <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select state" /></SelectTrigger>
+                  <SelectTrigger className={errors.state ? "border-destructive" : ""}><SelectValue placeholder="Select state" /></SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {NG_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                <Err field="state" />
               </div>
+
               <div className="space-y-1">
-                <Label>Looking for *</Label>
+                <Label>Looking for <span className="text-destructive">*</span></Label>
                 <Select value={form.lookingFor} onValueChange={(v) => setForm({ ...form, lookingFor: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select preference" /></SelectTrigger>
+                  <SelectTrigger className={errors.lookingFor ? "border-destructive" : ""}><SelectValue placeholder="Select preference" /></SelectTrigger>
                   <SelectContent>
                     {LOOKING_FOR.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                <Err field="lookingFor" />
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <Label>Preferred Age Range <span className="text-muted-foreground">(optional)</span></Label>
+                  <Label>Preferred Age Range <span className="text-destructive">*</span></Label>
                   <Select value={form.lookingForAge} onValueChange={(v) => setForm({ ...form, lookingForAge: v })}>
-                    <SelectTrigger><SelectValue placeholder="Any age" /></SelectTrigger>
+                    <SelectTrigger className={errors.lookingForAge ? "border-destructive" : ""}><SelectValue placeholder="Select range" /></SelectTrigger>
                     <SelectContent>
                       {AGE_BRACKETS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  <Err field="lookingForAge" />
                 </div>
                 <div className="space-y-1">
-                  <Label>Preferred Location <span className="text-muted-foreground">(optional)</span></Label>
+                  <Label>Preferred Location <span className="text-destructive">*</span></Label>
                   <Select value={form.preferredLocation} onValueChange={(v) => setForm({ ...form, preferredLocation: v })}>
-                    <SelectTrigger><SelectValue placeholder="Any state" /></SelectTrigger>
+                    <SelectTrigger className={errors.preferredLocation ? "border-destructive" : ""}><SelectValue placeholder="Select state" /></SelectTrigger>
                     <SelectContent className="max-h-60 overflow-y-auto">
                       {NG_STATES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                  <Err field="preferredLocation" />
                 </div>
               </div>
+
               <div className="space-y-1">
-                <Label>Your WhatsApp Number <span className="text-muted-foreground">(private — only admin sees this)</span></Label>
+                <Label>Your WhatsApp Number <span className="text-destructive">*</span></Label>
                 <Input
                   placeholder="e.g. 08012345678"
                   value={form.whatsappNumber}
                   onChange={(e) => setForm({ ...form, whatsappNumber: e.target.value })}
                 />
-                <p className="text-[11px] text-muted-foreground">This number is never shown publicly. Admin uses it to connect interested parties.</p>
+                <p className="text-[11px] text-muted-foreground">Never shown publicly. Admin uses it to connect interested parties.</p>
+                <Err field="whatsappNumber" />
               </div>
+
               <div className="space-y-1">
-                <Label>Your Photo <span className="text-muted-foreground">(optional)</span></Label>
+                <Label>Your Photo <span className="text-destructive">*</span></Label>
                 <MediaUpload
                   accept="image/*"
                   maxMB={10}
@@ -282,28 +318,36 @@ export default function ConnectionsPage() {
                   value={form.photoUrl}
                   onChange={(v) => setForm({ ...form, photoUrl: v })}
                 />
+                <Err field="photo" />
               </div>
+
               <div className="space-y-1">
-                <Label>About You *</Label>
+                <Label>About You <span className="text-destructive">*</span></Label>
                 <Textarea
                   placeholder="Write a short bio — hobbies, personality, what you're looking for..."
                   rows={4}
                   value={form.bioText}
                   onChange={(e) => setForm({ ...form, bioText: e.target.value })}
                 />
+                <Err field="bioText" />
               </div>
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="mt-1 accent-primary"
-                  checked={form.consent}
-                  onChange={(e) => setForm({ ...form, consent: e.target.checked })}
-                />
-                <span className="text-sm text-muted-foreground">
-                  I confirm this is really me and I agree to have this shown publicly on Vawulence City Media. I understand that admin reviews all profiles before they go live.
-                </span>
-              </label>
-              <Button type="submit" className="w-full" disabled={submitting || !form.consent}>
+
+              <div>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mt-1 accent-primary"
+                    checked={form.consent}
+                    onChange={(e) => setForm({ ...form, consent: e.target.checked })}
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    I confirm this is really me and I agree to have this shown publicly on Vawulence City Media. I understand that admin reviews all profiles before they go live.
+                  </span>
+                </label>
+                <Err field="consent" />
+              </div>
+
+              <Button type="submit" className="w-full" disabled={submitting}>
                 {submitting ? "Submitting..." : "Submit Profile for Review"}
               </Button>
             </form>

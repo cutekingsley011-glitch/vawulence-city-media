@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { ShoppingBag, Tag, Plus, X, Send } from "lucide-react";
+import { ShoppingBag, Tag, Plus, Send } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +27,11 @@ interface MarketplaceItem {
 const CATEGORIES = ["All", "Electronics", "Cars", "General"];
 const SELL_CATEGORIES = CATEGORIES.filter((c) => c !== "All");
 
+const EMPTY_FORM = {
+  name: "", description: "", price: "", category: "General", imageUrls: [] as string[],
+  howLongUsed: "", location: "", lastPrice: "", reasonForSale: "", sellerWhatsapp: "",
+};
+
 export default function MarketplacePage() {
   const [items, setItems] = useState<MarketplaceItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,11 +39,8 @@ export default function MarketplacePage() {
   const [sellOpen, setSellOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  // Sell form state
-  const [form, setForm] = useState({
-    name: "", description: "", price: "", category: "General", imageUrls: [] as string[],
-    howLongUsed: "", location: "", lastPrice: "", reasonForSale: "", sellerWhatsapp: "",
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -51,13 +53,30 @@ export default function MarketplacePage() {
 
   const filtered = cat === "All" ? items : items.filter((i) => i.category === cat);
 
+  function validate() {
+    const e: Record<string, string> = {};
+    if (!form.name.trim()) e.name = "Product name is required.";
+    if (!form.price || Number(form.price) <= 0) e.price = "Enter a valid price.";
+    if (!form.description.trim()) e.description = "Description is required.";
+    if (!form.howLongUsed.trim()) e.howLongUsed = "How long used is required.";
+    if (!form.location.trim()) e.location = "Location is required.";
+    if (!form.lastPrice || Number(form.lastPrice) <= 0) e.lastPrice = "Original price is required.";
+    if (!form.reasonForSale.trim()) e.reasonForSale = "Reason for sale is required.";
+    if (!form.sellerWhatsapp.trim()) e.sellerWhatsapp = "WhatsApp number is required.";
+    if (form.imageUrls.length === 0) e.imageUrls = "At least one photo is required.";
+    return e;
+  }
+
   async function handleSell(e: React.FormEvent) {
     e.preventDefault();
-    const user = getStoredUser();
-    if (!form.name || !form.description || !form.price) {
-      toast.error("Please fill in all required fields.");
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      toast.error("Please complete all required fields.");
       return;
     }
+    setErrors({});
+    const user = getStoredUser();
     setSubmitting(true);
     try {
       const res = await fetch("/api/marketplace", {
@@ -71,36 +90,45 @@ export default function MarketplacePage() {
           imageUrls: form.imageUrls,
           submittedByName: user?.name ?? null,
           submittedByEmail: user?.email ?? null,
-          howLongUsed: form.howLongUsed.trim() || null,
-          location: form.location.trim() || null,
-          lastPrice: form.lastPrice ? Math.round(Number(form.lastPrice) * 100) : null,
-          reasonForSale: form.reasonForSale.trim() || null,
-          sellerWhatsapp: form.sellerWhatsapp.trim() || null,
+          howLongUsed: form.howLongUsed.trim(),
+          location: form.location.trim(),
+          lastPrice: Math.round(Number(form.lastPrice) * 100),
+          reasonForSale: form.reasonForSale.trim(),
+          sellerWhatsapp: form.sellerWhatsapp.trim(),
         }),
       });
       if (!res.ok) throw new Error();
       setSubmitted(true);
-      setForm({ name: "", description: "", price: "", category: "General", imageUrls: [], howLongUsed: "", location: "", lastPrice: "", reasonForSale: "", sellerWhatsapp: "" });
+      setForm(EMPTY_FORM);
+      setErrors({});
     } catch { toast.error("Failed to submit listing. Try again."); }
     finally { setSubmitting(false); }
   }
 
+  function F(label: string, key: keyof typeof form, input: React.ReactNode) {
+    return (
+      <div className="space-y-1.5">
+        <Label>{label} <span className="text-destructive">*</span></Label>
+        {input}
+        {errors[key] && <p className="text-xs text-destructive">{errors[key]}</p>}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <ShoppingBag className="w-6 h-6 text-primary" />
           <h1 className="text-2xl font-bold">Marketplace</h1>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => { setSubmitted(false); setSellOpen(true); }}>
+        <Button size="sm" className="gap-1.5" onClick={() => { setSubmitted(false); setErrors({}); setSellOpen(true); }}>
           <Plus className="w-4 h-4" />
           Sell Something
         </Button>
       </div>
       <p className="text-sm text-muted-foreground mb-5">Buy quality items from the community. Tap a listing to see contact details.</p>
 
-      {/* Category filter */}
       <div className="flex gap-2 flex-wrap mb-6">
         {CATEGORIES.map((c) => (
           <button
@@ -115,7 +143,6 @@ export default function MarketplacePage() {
         ))}
       </div>
 
-      {/* Grid */}
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-64 rounded-xl" />)}
@@ -124,7 +151,7 @@ export default function MarketplacePage() {
         <div className="text-center py-16 text-muted-foreground">
           <ShoppingBag className="mx-auto mb-3 w-12 h-12 opacity-40" />
           <p className="text-lg">No items available{cat !== "All" ? ` in ${cat}` : ""} right now.</p>
-          <Button className="mt-4" size="sm" onClick={() => { setSubmitted(false); setSellOpen(true); }}>Be the first to sell</Button>
+          <Button className="mt-4" size="sm" onClick={() => { setSubmitted(false); setErrors({}); setSellOpen(true); }}>Be the first to sell</Button>
         </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3">
@@ -132,11 +159,7 @@ export default function MarketplacePage() {
             <Link key={item.id} href={`/marketplace/${item.id}`}>
               <div className="bg-card border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer group">
                 {item.imageUrls && item.imageUrls.length > 0 ? (
-                  <img
-                    src={item.imageUrls[0]}
-                    alt={item.name}
-                    className="w-full h-auto object-contain bg-muted"
-                  />
+                  <img src={item.imageUrls[0]} alt={item.name} className="w-full h-auto object-contain bg-muted" />
                 ) : (
                   <div className="w-full h-44 bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
                     <ShoppingBag className="w-10 h-10 text-blue-400" />
@@ -151,12 +174,8 @@ export default function MarketplacePage() {
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{item.description}</p>
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-bold text-primary">
-                      ₦{(item.price / 100).toLocaleString("en-NG")}
-                    </span>
-                    <Button size="sm" variant="ghost" className="text-blue-700 text-xs hover:bg-blue-50">
-                      View →
-                    </Button>
+                    <span className="text-base font-bold text-primary">₦{(item.price / 100).toLocaleString("en-NG")}</span>
+                    <Button size="sm" variant="ghost" className="text-blue-700 text-xs hover:bg-blue-50">View →</Button>
                   </div>
                 </div>
               </div>
@@ -165,9 +184,8 @@ export default function MarketplacePage() {
         </div>
       )}
 
-      {/* Sell dialog */}
-      <Dialog open={sellOpen} onOpenChange={(o) => { if (!o) { setSellOpen(false); setSubmitted(false); } }}>
-        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <Dialog open={sellOpen} onOpenChange={(o) => { if (!o) { setSellOpen(false); setSubmitted(false); setErrors({}); } }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShoppingBag className="w-5 h-5 text-primary" />
@@ -191,24 +209,14 @@ export default function MarketplacePage() {
             </div>
           ) : (
             <form onSubmit={handleSell} className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Product Name *</Label>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="e.g. iPhone 14 Pro"
-                />
-              </div>
+              {F("Product Name", "name",
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. iPhone 14 Pro" />
+              )}
+
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>Price (₦) *</Label>
-                  <Input
-                    type="number"
-                    value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
-                    placeholder="e.g. 150000"
-                  />
-                </div>
+                {F("Price (₦)", "price",
+                  <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="e.g. 150000" />
+                )}
                 <div className="space-y-1.5">
                   <Label>Category</Label>
                   <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
@@ -219,77 +227,56 @@ export default function MarketplacePage() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Description *</Label>
-                <Textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Condition, specs, why you're selling…"
-                  rows={3}
-                />
-              </div>
+
+              {F("Description", "description",
+                <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Condition, specs, why you're selling…" rows={3} />
+              )}
+
               <div className="border-t border-border pt-4 space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Product Details</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>How Long Used</Label>
-                    <Input
-                      value={form.howLongUsed}
-                      onChange={(e) => setForm({ ...form, howLongUsed: e.target.value })}
-                      placeholder="e.g. 6 months, 2 years"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Location</Label>
-                    <Input
-                      value={form.location}
-                      onChange={(e) => setForm({ ...form, location: e.target.value })}
-                      placeholder="e.g. Lagos, Abuja"
-                    />
-                  </div>
+                  {F("How Long Used", "howLongUsed",
+                    <Input value={form.howLongUsed} onChange={(e) => setForm({ ...form, howLongUsed: e.target.value })} placeholder="e.g. 6 months" />
+                  )}
+                  {F("Location", "location",
+                    <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Lagos" />
+                  )}
                 </div>
+
                 <div className="space-y-1.5">
-                  <Label>Last Price (₦)</Label>
+                  <Label>Original Price (₦) <span className="text-destructive">*</span></Label>
                   <Input
                     type="number"
                     value={form.lastPrice}
                     onChange={(e) => setForm({ ...form, lastPrice: e.target.value })}
-                    placeholder="Enter your price"
+                    placeholder="What you bought it for"
                   />
-                  <p className="text-[11px] text-muted-foreground">Include a 10% commission in your price.</p>
+                  <p className="text-[11px] text-muted-foreground">Include a 10% commission in your selling price.</p>
+                  {errors.lastPrice && <p className="text-xs text-destructive">{errors.lastPrice}</p>}
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Reason for Sale</Label>
-                  <Input
-                    value={form.reasonForSale}
-                    onChange={(e) => setForm({ ...form, reasonForSale: e.target.value })}
-                    placeholder="e.g. Upgrading, no longer needed"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label>WhatsApp Number <span className="text-destructive">*</span></Label>
-                <Input
-                  type="tel"
-                  value={form.sellerWhatsapp}
-                  onChange={(e) => setForm({ ...form, sellerWhatsapp: e.target.value })}
-                  placeholder="e.g. 08012345678"
-                />
-                <p className="text-[11px] text-muted-foreground">Buyers will contact you via WhatsApp. Not shown publicly.</p>
+
+                {F("Reason for Sale", "reasonForSale",
+                  <Input value={form.reasonForSale} onChange={(e) => setForm({ ...form, reasonForSale: e.target.value })} placeholder="e.g. Upgrading, no longer needed" />
+                )}
               </div>
 
+              {F("WhatsApp Number", "sellerWhatsapp",
+                <>
+                  <Input type="tel" value={form.sellerWhatsapp} onChange={(e) => setForm({ ...form, sellerWhatsapp: e.target.value })} placeholder="e.g. 08012345678" />
+                  <p className="text-[11px] text-muted-foreground">Buyers contact you via WhatsApp. Not shown publicly.</p>
+                </>
+              )}
+
               <div className="space-y-1.5">
-                <Label>Photos <span className="text-muted-foreground font-normal">(up to 5)</span></Label>
-                <MediaUploadMulti
-                  maxMB={10}
-                  values={form.imageUrls}
-                  onChange={(urls) => setForm({ ...form, imageUrls: urls })}
-                />
+                <Label>Photos <span className="text-destructive">*</span> <span className="text-muted-foreground font-normal">(up to 5)</span></Label>
+                <MediaUploadMulti maxMB={10} values={form.imageUrls} onChange={(urls) => setForm({ ...form, imageUrls: urls })} />
+                {errors.imageUrls && <p className="text-xs text-destructive">{errors.imageUrls}</p>}
               </div>
+
               <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
                 Listings are reviewed before going public. We'll contact you on WhatsApp to confirm details.
               </p>
-              <Button type="submit" disabled={submitting || !form.name || !form.description || !form.price || !form.sellerWhatsapp.trim()} className="w-full gap-2">
+              <Button type="submit" disabled={submitting} className="w-full gap-2">
                 <Send className="w-4 h-4" />
                 {submitting ? "Submitting…" : "Submit for Review"}
               </Button>
