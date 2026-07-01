@@ -406,7 +406,8 @@ export const GetAdminStatsResponse = zod.object({
   "totalGistsPublished": zod.number(),
   "totalComments": zod.number(),
   "pendingGists": zod.number(),
-  "totalVoteCards": zod.number()
+  "totalVoteCards": zod.number(),
+  "totalLikes": zod.number()
 })
 
 

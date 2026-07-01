@@ -176,6 +176,7 @@ export interface AdminStats {
   totalComments: number;
   pendingGists: number;
   totalVoteCards: number;
+  totalLikes: number;
 }
 
 export interface VoteCard {

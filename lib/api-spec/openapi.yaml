@@ -1010,7 +1010,7 @@ components:
     # ── Admin ─────────────────────────────────────────────────────────────────
     AdminStats:
       type: object
-      required: [totalVisitors, registeredUsers, totalPosts, totalGistsPublished, totalComments, pendingGists, totalVoteCards]
+      required: [totalVisitors, registeredUsers, totalPosts, totalGistsPublished, totalComments, pendingGists, totalVoteCards, totalLikes]
       properties:
         totalVisitors:        { type: integer }
         registeredUsers:      { type: integer }
@@ -1019,6 +1019,7 @@ components:
         totalComments:        { type: integer }
         pendingGists:         { type: integer }
         totalVoteCards:       { type: integer }
+        totalLikes:           { type: integer }
 
     # ── Vote Card ─────────────────────────────────────────────────────────────
     VoteCard:

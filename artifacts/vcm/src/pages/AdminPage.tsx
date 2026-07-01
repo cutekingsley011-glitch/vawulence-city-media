@@ -46,7 +46,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, ImagePlus, Pencil, Trash2, Check, X, Vote, CalendarDays, Trophy, Crown, MessageCircle, VolumeX, Ban } from "lucide-react";
+import { BarChart3, FileText, MessageSquare, Users, Eye, Loader2, ImagePlus, Pencil, Trash2, Check, X, Vote, CalendarDays, Trophy, Crown, MessageCircle, VolumeX, Ban, Heart } from "lucide-react";
 
 // ─── Types for new sections ───────────────────────────────────────────────────
 interface AdminEvent { id: number; title: string; venue: string; eventDate: string; isPaid: boolean; ticketPrice: number | null; status: "upcoming" | "past"; }
@@ -881,6 +881,7 @@ function AdminPanel() {
         <StatCard label="Total Posts" value={stats?.totalPosts} icon={FileText} color="bg-purple-500" />
         <StatCard label="Published Gists" value={stats?.totalGistsPublished} icon={MessageSquare} color="bg-orange-500" />
         <StatCard label="Total Comments" value={stats?.totalComments} icon={BarChart3} color="bg-pink-500" />
+        <StatCard label="Total Likes" value={stats?.totalLikes} icon={Heart} color="bg-rose-500" />
         <StatCard label="Pending Gists" value={stats?.pendingGists} icon={Loader2} color="bg-yellow-500" />
         <StatCard label="Vote Cards" value={stats?.totalVoteCards} icon={Vote} color="bg-indigo-500" />
       </div>
