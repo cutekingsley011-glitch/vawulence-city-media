@@ -29,7 +29,7 @@ const SELL_CATEGORIES = CATEGORIES.filter((c) => c !== "All");
 
 const EMPTY_FORM = {
   name: "", description: "", price: "", category: "General", imageUrls: [] as string[],
-  howLongUsed: "", location: "", lastPrice: "", reasonForSale: "", sellerWhatsapp: "",
+  howLongUsed: "", location: "", reasonForSale: "", sellerWhatsapp: "",
 };
 
 export default function MarketplacePage() {
@@ -60,7 +60,6 @@ export default function MarketplacePage() {
     if (!form.description.trim()) e.description = "Description is required.";
     if (!form.howLongUsed.trim()) e.howLongUsed = "How long used is required.";
     if (!form.location.trim()) e.location = "Location is required.";
-    if (!form.lastPrice || Number(form.lastPrice) <= 0) e.lastPrice = "Original price is required.";
     if (!form.reasonForSale.trim()) e.reasonForSale = "Reason for sale is required.";
     if (!form.sellerWhatsapp.trim()) e.sellerWhatsapp = "WhatsApp number is required.";
     if (form.imageUrls.length === 0) e.imageUrls = "At least one photo is required.";
@@ -92,7 +91,7 @@ export default function MarketplacePage() {
           submittedByEmail: user?.email ?? null,
           howLongUsed: form.howLongUsed.trim(),
           location: form.location.trim(),
-          lastPrice: Math.round(Number(form.lastPrice) * 100),
+          lastPrice: null,
           reasonForSale: form.reasonForSale.trim(),
           sellerWhatsapp: form.sellerWhatsapp.trim(),
         }),
@@ -241,18 +240,6 @@ export default function MarketplacePage() {
                   {F("Location", "location",
                     <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="e.g. Lagos" />
                   )}
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Original Price (₦) <span className="text-destructive">*</span></Label>
-                  <Input
-                    type="number"
-                    value={form.lastPrice}
-                    onChange={(e) => setForm({ ...form, lastPrice: e.target.value })}
-                    placeholder="What you bought it for"
-                  />
-                  <p className="text-[11px] text-muted-foreground">Include a 10% commission in your selling price.</p>
-                  {errors.lastPrice && <p className="text-xs text-destructive">{errors.lastPrice}</p>}
                 </div>
 
                 {F("Reason for Sale", "reasonForSale",
