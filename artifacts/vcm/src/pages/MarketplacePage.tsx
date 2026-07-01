@@ -213,7 +213,7 @@ export default function MarketplacePage() {
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                {F("Price (₦)", "price",
+                {F("Last Price (₦)", "price",
                   <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="e.g. 150000" />
                 )}
                 <div className="space-y-1.5">
