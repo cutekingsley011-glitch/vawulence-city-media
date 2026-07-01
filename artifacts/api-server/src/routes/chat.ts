@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { chatMessagesTable, usersTable } from "@workspace/db";
-import { eq, desc, and, gte } from "drizzle-orm";
+import { chatMessagesTable, chatMessageReactionsTable, usersTable } from "@workspace/db";
+import { eq, desc, and, gte, sql } from "drizzle-orm";
 
 const router = Router();
 
@@ -18,24 +18,56 @@ function watParts(date = new Date()) {
 
 function isChatOpen(date = new Date()): boolean {
   const { hour } = watParts(date);
-  return hour >= 18 && hour < 20;
+  return hour >= 18 && hour < 22;
 }
 
 // Ms until next 6PM WAT from now
 function msUntilNextOpen(): number {
   const now = new Date();
   const { hour, minute } = watParts(now);
-  // Minutes remaining in current day until 18:00 WAT
-  const minutesPast6pm = (hour - 18) * 60 + minute;
   if (hour < 18) {
-    // Still before 6PM today
     const minsUntil = (18 - hour) * 60 - minute;
     return minsUntil * 60 * 1000;
   }
-  // After 6PM — next open is tomorrow at 6PM WAT
+  // After 10PM (chat closed) — next open is tomorrow at 6PM WAT
   const msUntilMidnight = (24 * 60 - (hour * 60 + minute)) * 60 * 1000;
   const msFrom6amToOpen = 18 * 60 * 60 * 1000;
   return msUntilMidnight + msFrom6amToOpen;
+}
+
+// Build reaction summary: { "👍": 3, "😂": 1, ... } per message
+async function getReactionsByMessageIds(messageIds: number[]): Promise<Record<number, Record<string, number>>> {
+  if (messageIds.length === 0) return {};
+  const rows = await db
+    .select({
+      messageId: chatMessageReactionsTable.messageId,
+      emoji: chatMessageReactionsTable.emoji,
+      count: sql<number>`cast(count(*) as int)`,
+    })
+    .from(chatMessageReactionsTable)
+    .where(sql`${chatMessageReactionsTable.messageId} = ANY(ARRAY[${sql.join(messageIds.map(id => sql`${id}`), sql`, `)}])`)
+    .groupBy(chatMessageReactionsTable.messageId, chatMessageReactionsTable.emoji);
+
+  const map: Record<number, Record<string, number>> = {};
+  for (const row of rows) {
+    if (!map[row.messageId]) map[row.messageId] = {};
+    map[row.messageId][row.emoji] = row.count;
+  }
+  return map;
+}
+
+// Get the reactions a specific user has placed
+async function getUserReactions(messageIds: number[], userId: string): Promise<Record<number, string>> {
+  if (messageIds.length === 0 || !userId) return {};
+  const rows = await db
+    .select({ messageId: chatMessageReactionsTable.messageId, emoji: chatMessageReactionsTable.emoji })
+    .from(chatMessageReactionsTable)
+    .where(
+      sql`${chatMessageReactionsTable.messageId} = ANY(ARRAY[${sql.join(messageIds.map(id => sql`${id}`), sql`, `)}]) AND ${chatMessageReactionsTable.userId} = ${userId}`
+    );
+  const map: Record<number, string> = {};
+  for (const row of rows) map[row.messageId] = row.emoji;
+  return map;
 }
 
 // ── GET /chat/status ──────────────────────────────────────────────────────────
@@ -45,19 +77,43 @@ router.get("/chat/status", (_req, res) => {
 });
 
 // ── GET /chat/messages ────────────────────────────────────────────────────────
-router.get("/chat/messages", async (_req, res) => {
+router.get("/chat/messages", async (req, res) => {
+  const { userId } = req.query as { userId?: string };
+
   const rows = await db
     .select({
       id: chatMessagesTable.id,
       userId: chatMessagesTable.userId,
       messageText: chatMessagesTable.messageText,
+      replyToId: chatMessagesTable.replyToId,
       createdAt: chatMessagesTable.createdAt,
       senderName: usersTable.name,
     })
     .from(chatMessagesTable)
     .leftJoin(usersTable, eq(chatMessagesTable.userId, usersTable.id))
     .orderBy(chatMessagesTable.createdAt);
-  res.json(rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })));
+
+  if (rows.length === 0) { res.json([]); return; }
+
+  const messageIds = rows.map((r) => r.id);
+  const [reactionMap, userReactionMap] = await Promise.all([
+    getReactionsByMessageIds(messageIds),
+    userId ? getUserReactions(messageIds, userId) : Promise.resolve({} as Record<number, string>),
+  ]);
+
+  // Build a quick lookup for reply context
+  const byId: Record<number, { senderName: string | null; messageText: string }> = {};
+  for (const r of rows) byId[r.id] = { senderName: r.senderName, messageText: r.messageText };
+
+  res.json(rows.map((r) => ({
+    ...r,
+    createdAt: r.createdAt.toISOString(),
+    replyTo: r.replyToId && byId[r.replyToId]
+      ? { id: r.replyToId, senderName: byId[r.replyToId].senderName, messageText: byId[r.replyToId].messageText }
+      : null,
+    reactions: reactionMap[r.id] ?? {},
+    myReaction: userReactionMap[r.id] ?? null,
+  })));
 });
 
 // ── POST /chat/messages ───────────────────────────────────────────────────────
@@ -66,12 +122,15 @@ router.post("/chat/messages", async (req, res) => {
     res.status(403).json({ error: "Chat is closed. Come back at 6:00 PM WAT." });
     return;
   }
-  const { userId, messageText } = req.body as { userId?: string; messageText?: string };
+  const { userId, messageText, replyToId } = req.body as {
+    userId?: string;
+    messageText?: string;
+    replyToId?: number | null;
+  };
   if (!userId || !messageText?.trim()) {
     res.status(400).json({ error: "Missing userId or messageText" });
     return;
   }
-  // Check user moderation status
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
   if (user.isBanned) { res.status(403).json({ error: "You have been banned from the chat room." }); return; }
@@ -79,11 +138,60 @@ router.post("/chat/messages", async (req, res) => {
     res.status(403).json({ error: `You are muted until ${user.mutedUntil.toISOString()}` });
     return;
   }
+
+  // Validate replyToId if provided
+  let validReplyToId: number | null = null;
+  if (replyToId) {
+    const [replied] = await db.select({ id: chatMessagesTable.id }).from(chatMessagesTable).where(eq(chatMessagesTable.id, replyToId));
+    if (replied) validReplyToId = replied.id;
+  }
+
   const [row] = await db.insert(chatMessagesTable).values({
     userId,
     messageText: messageText.trim().slice(0, 500),
+    replyToId: validReplyToId,
   }).returning();
-  res.status(201).json({ ...row, createdAt: row.createdAt.toISOString(), senderName: user.name });
+
+  res.status(201).json({
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+    senderName: user.name,
+    replyTo: null,
+    reactions: {},
+    myReaction: null,
+  });
+});
+
+// ── POST /chat/messages/:id/react ─────────────────────────────────────────────
+router.post("/chat/messages/:id/react", async (req, res) => {
+  const messageId = Number(req.params.id);
+  const { userId, emoji } = req.body as { userId?: string; emoji?: string };
+  if (!userId || !emoji) { res.status(400).json({ error: "Missing userId or emoji" }); return; }
+
+  const allowed = ["👍", "😂", "😡"];
+  if (!allowed.includes(emoji)) { res.status(400).json({ error: "Invalid emoji" }); return; }
+
+  // Check if user already reacted
+  const [existing] = await db
+    .select()
+    .from(chatMessageReactionsTable)
+    .where(and(eq(chatMessageReactionsTable.messageId, messageId), eq(chatMessageReactionsTable.userId, userId)));
+
+  if (existing) {
+    if (existing.emoji === emoji) {
+      // Toggle off — remove the reaction
+      await db.delete(chatMessageReactionsTable).where(eq(chatMessageReactionsTable.id, existing.id));
+      res.json({ ok: true, removed: true });
+    } else {
+      // Switch to new emoji
+      await db.update(chatMessageReactionsTable).set({ emoji }).where(eq(chatMessageReactionsTable.id, existing.id));
+      res.json({ ok: true, removed: false });
+    }
+    return;
+  }
+
+  await db.insert(chatMessageReactionsTable).values({ messageId, userId, emoji });
+  res.status(201).json({ ok: true, removed: false });
 });
 
 // ── Admin: GET /admin/chat/messages ──────────────────────────────────────────
@@ -111,6 +219,7 @@ router.get("/admin/chat/messages", async (_req, res) => {
 // ── Admin: DELETE /admin/chat/messages/:id ────────────────────────────────────
 router.delete("/admin/chat/messages/:id", async (req, res) => {
   const id = Number(req.params.id);
+  await db.delete(chatMessageReactionsTable).where(eq(chatMessageReactionsTable.messageId, id));
   await db.delete(chatMessagesTable).where(eq(chatMessagesTable.id, id));
   res.status(204).end();
 });
