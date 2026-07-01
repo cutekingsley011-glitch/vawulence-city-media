@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { chatMessagesTable, chatMessageReactionsTable, usersTable } from "@workspace/db";
-import { eq, desc, and, gte, sql } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
 
 const router = Router();
 
@@ -45,7 +45,7 @@ async function getReactionsByMessageIds(messageIds: number[]): Promise<Record<nu
       count: sql<number>`cast(count(*) as int)`,
     })
     .from(chatMessageReactionsTable)
-    .where(sql`${chatMessageReactionsTable.messageId} = ANY(ARRAY[${sql.join(messageIds.map(id => sql`${id}`), sql`, `)}])`)
+    .where(inArray(chatMessageReactionsTable.messageId, messageIds))
     .groupBy(chatMessageReactionsTable.messageId, chatMessageReactionsTable.emoji);
 
   const map: Record<number, Record<string, number>> = {};
@@ -62,9 +62,10 @@ async function getUserReactions(messageIds: number[], userId: string): Promise<R
   const rows = await db
     .select({ messageId: chatMessageReactionsTable.messageId, emoji: chatMessageReactionsTable.emoji })
     .from(chatMessageReactionsTable)
-    .where(
-      sql`${chatMessageReactionsTable.messageId} = ANY(ARRAY[${sql.join(messageIds.map(id => sql`${id}`), sql`, `)}]) AND ${chatMessageReactionsTable.userId} = ${userId}`
-    );
+    .where(and(
+      inArray(chatMessageReactionsTable.messageId, messageIds),
+      eq(chatMessageReactionsTable.userId, userId),
+    ));
   const map: Record<number, string> = {};
   for (const row of rows) map[row.messageId] = row.emoji;
   return map;
