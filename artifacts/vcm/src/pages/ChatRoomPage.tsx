@@ -234,14 +234,6 @@ export default function ChatRoomPage() {
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-    // Shift+Enter falls through naturally → inserts newline
-  }
-
   // ── React to message ──────────────────────────────────────────────────────
   async function reactToMessage(messageId: number, emoji: string) {
     if (!user) return;
@@ -484,8 +476,7 @@ export default function ChatRoomPage() {
                   ref={textareaRef}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={replyTo ? `Replying to ${replyTo.senderName ?? "Anonymous"}…` : "Say something… (Shift+Enter for new line)"}
+                  placeholder={replyTo ? `Replying to ${replyTo.senderName ?? "Anonymous"}…` : "Say something…"}
                   maxLength={500}
                   rows={1}
                   className="flex-1 resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring overflow-hidden leading-5"
