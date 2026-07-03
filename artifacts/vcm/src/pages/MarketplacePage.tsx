@@ -213,9 +213,14 @@ export default function MarketplacePage() {
               )}
 
               <div className="grid grid-cols-2 gap-3">
-                {F("Last Price (₦)", "price",
-                  <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="e.g. 150000" />
-                )}
+                <div className="space-y-1">
+                  {F("Last Price (₦)", "price",
+                    <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="e.g. 150000" />
+                  )}
+                  <p className="text-[11px] text-red-600 font-medium flex items-center gap-1">
+                    ⚠️ Price includes a 10% commission.
+                  </p>
+                </div>
                 <div className="space-y-1.5">
                   <Label>Category</Label>
                   <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
