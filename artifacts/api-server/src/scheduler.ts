@@ -9,11 +9,18 @@ import { eq } from "drizzle-orm";
 import webpush from "web-push";
 import { logger } from "./lib/logger";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT ?? "mailto:admin@vcm.ng",
-  process.env.VAPID_PUBLIC_KEY ?? "",
-  process.env.VAPID_PRIVATE_KEY ?? "",
-);
+// Only configure web-push when VAPID keys are present.
+// If they're missing the scheduler still runs but skips push notifications.
+const vapidConfigured =
+  !!process.env.VAPID_PUBLIC_KEY && !!process.env.VAPID_PRIVATE_KEY;
+
+if (vapidConfigured) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT ?? "mailto:admin@vcm.ng",
+    process.env.VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!,
+  );
+}
 
 function watHour(date = new Date()): number {
   const parts = new Intl.DateTimeFormat("en-NG", {
@@ -31,6 +38,11 @@ function todayWatDate(date = new Date()): string {
 let lastNotifiedDate = "";
 
 async function sendChatOpenNotification() {
+  if (!vapidConfigured) {
+    logger.warn("VAPID keys not configured — skipping push notifications");
+    return;
+  }
+
   const payload = JSON.stringify({
     title: "Chat Room is Live! 🔥",
     body: "Live chat is open now on Vawulence City Media — join the conversation!",
@@ -56,14 +68,12 @@ async function sendChatOpenNotification() {
 }
 
 export function startScheduler() {
-  // Check every minute
   setInterval(async () => {
     try {
       const now = new Date();
       const hour = watHour(now);
       const todayStr = todayWatDate(now);
 
-      // Fire at exactly 18:xx WAT, once per day
       if (hour === 18 && lastNotifiedDate !== todayStr) {
         lastNotifiedDate = todayStr;
         await sendChatOpenNotification();
@@ -73,5 +83,8 @@ export function startScheduler() {
     }
   }, 60_000);
 
-  logger.info("Scheduler started — chat-open push fires daily at 6 PM WAT");
+  logger.info(
+    { vapidConfigured },
+    "Scheduler started — chat-open push fires daily at 6 PM WAT",
+  );
 }
