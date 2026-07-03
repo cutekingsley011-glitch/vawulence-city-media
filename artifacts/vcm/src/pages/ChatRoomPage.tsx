@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MessageCircle, Send, Clock, Lock, Reply, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { getStoredUser } from "@/lib/user";
 import { useToast } from "@/hooks/use-toast";
 
@@ -47,20 +46,14 @@ function formatTime(iso: string): string {
 }
 
 // ── Swipeable message wrapper ──────────────────────────────────────────────────
-function SwipeableMessage({
-  children,
-  onSwipe,
-}: {
-  children: React.ReactNode;
-  onSwipe: () => void;
-}) {
+function SwipeableMessage({ children, onSwipe }: { children: React.ReactNode; onSwipe: () => void }) {
   const startXRef = useRef<number | null>(null);
   const [offset, setOffset] = useState(0);
-  const [swiped, setSwiped] = useState(false);
+  const swipedRef = useRef(false);
 
   function onTouchStart(e: React.TouchEvent) {
     startXRef.current = e.touches[0].clientX;
-    setSwiped(false);
+    swipedRef.current = false;
   }
 
   function onTouchMove(e: React.TouchEvent) {
@@ -70,8 +63,8 @@ function SwipeableMessage({
   }
 
   function onTouchEnd() {
-    if (offset >= 40 && !swiped) {
-      setSwiped(true);
+    if (offset >= 40 && !swipedRef.current) {
+      swipedRef.current = true;
       onSwipe();
     }
     setOffset(0);
@@ -91,19 +84,9 @@ function SwipeableMessage({
 }
 
 // ── Reaction Picker ────────────────────────────────────────────────────────────
-function ReactionPicker({
-  isMe,
-  onReact,
-  onClose,
-}: {
-  isMe: boolean;
-  onReact: (emoji: string) => void;
-  onClose: () => void;
-}) {
+function ReactionPicker({ isMe, onReact, onClose }: { isMe: boolean; onReact: (emoji: string) => void; onClose: () => void }) {
   return (
-    <div
-      className={`absolute z-20 bottom-full mb-1 flex gap-1 bg-white border border-border rounded-full shadow-lg px-2 py-1 ${isMe ? "right-0" : "left-0"}`}
-    >
+    <div className={`absolute z-20 bottom-full mb-1 flex gap-1 bg-white border border-border rounded-full shadow-lg px-2 py-1 ${isMe ? "right-0" : "left-0"}`}>
       {REACTION_EMOJIS.map((emoji) => (
         <button
           key={emoji}
@@ -120,6 +103,15 @@ function ReactionPicker({
   );
 }
 
+// ── Scroll to message + flash highlight ───────────────────────────────────────
+function scrollToMessage(id: number) {
+  const el = document.getElementById(`msg-${id}`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("chat-highlight");
+  setTimeout(() => el.classList.remove("chat-highlight"), 1200);
+}
+
 export default function ChatRoomPage() {
   const [status, setStatus] = useState<ChatStatus | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -129,11 +121,23 @@ export default function ChatRoomPage() {
   const [inputError, setInputError] = useState<string | null>(null);
   const [replyTo, setReplyTo] = useState<ReplyInfo | null>(null);
   const [pickerFor, setPickerFor] = useState<number | null>(null);
+
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isNearBottomRef = useRef(true);
+
   const { toast } = useToast();
   const user = getStoredUser();
+
+  // ── Track whether user is near the bottom ────────────────────────────────
+  function handleScroll() {
+    const el = scrollAreaRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    isNearBottomRef.current = distFromBottom < 100;
+  }
 
   // ── Fetch status ──────────────────────────────────────────────────────────
   const fetchStatus = useCallback(async () => {
@@ -173,11 +177,15 @@ export default function ChatRoomPage() {
     return () => clearInterval(id);
   }, [status?.isOpen, countdown]);
 
+  // ── Smart auto-scroll: only pull down if user is already near bottom ──────
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length === 0) return;
+    if (isNearBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages.length]);
 
-  // Close picker when clicking elsewhere
+  // Close reaction picker on outside click
   useEffect(() => {
     if (pickerFor === null) return;
     const handler = () => setPickerFor(null);
@@ -185,10 +193,17 @@ export default function ChatRoomPage() {
     return () => document.removeEventListener("click", handler);
   }, [pickerFor]);
 
+  // Auto-grow textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [text]);
+
   // ── Send message ──────────────────────────────────────────────────────────
-  async function sendMessage(e: React.FormEvent) {
-    e.preventDefault();
-    if (!text.trim() || !user) return;
+  async function sendMessage() {
+    if (!text.trim() || !user || sending) return;
     setSending(true);
     setInputError(null);
     try {
@@ -209,6 +224,8 @@ export default function ChatRoomPage() {
       if (!res.ok) throw new Error();
       setText("");
       setReplyTo(null);
+      // After own send, always scroll to bottom
+      isNearBottomRef.current = true;
       await fetchMessages();
     } catch {
       toast({ title: "Failed to send", variant: "destructive" });
@@ -217,28 +234,31 @@ export default function ChatRoomPage() {
     }
   }
 
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+    // Shift+Enter falls through naturally → inserts newline
+  }
+
   // ── React to message ──────────────────────────────────────────────────────
   async function reactToMessage(messageId: number, emoji: string) {
     if (!user) return;
-    // Optimistic update
     setMessages((prev) =>
       prev.map((m) => {
         if (m.id !== messageId) return m;
         const reactions = { ...m.reactions };
-        const prev_my = m.myReaction;
-        // Remove old reaction count
-        if (prev_my && reactions[prev_my]) {
-          reactions[prev_my] = Math.max(0, reactions[prev_my] - 1);
-          if (reactions[prev_my] === 0) delete reactions[prev_my];
+        const prevMy = m.myReaction;
+        if (prevMy && reactions[prevMy]) {
+          reactions[prevMy] = Math.max(0, reactions[prevMy] - 1);
+          if (reactions[prevMy] === 0) delete reactions[prevMy];
         }
-        const isToggle = prev_my === emoji;
-        if (!isToggle) {
-          reactions[emoji] = (reactions[emoji] ?? 0) + 1;
-        }
+        const isToggle = prevMy === emoji;
+        if (!isToggle) reactions[emoji] = (reactions[emoji] ?? 0) + 1;
         return { ...m, reactions, myReaction: isToggle ? null : emoji };
       })
     );
-
     try {
       await fetch(`/api/chat/messages/${messageId}/react`, {
         method: "POST",
@@ -246,24 +266,22 @@ export default function ChatRoomPage() {
         body: JSON.stringify({ userId: user.id, emoji }),
       });
     } catch {
-      // On failure just refetch to correct state
       await fetchMessages();
     }
   }
 
-  // ── Long press handlers ──────────────────────────────────────────────────
+  // ── Long press ────────────────────────────────────────────────────────────
   function startLongPress(messageId: number) {
     longPressRef.current = setTimeout(() => setPickerFor(messageId), 400);
   }
-
   function cancelLongPress() {
     if (longPressRef.current) clearTimeout(longPressRef.current);
   }
 
-  // ── Reply to a message ───────────────────────────────────────────────────
+  // ── Reply ────────────────────────────────────────────────────────────────
   function startReply(msg: ChatMessage) {
     setReplyTo({ id: msg.id, senderName: msg.senderName, messageText: msg.messageText });
-    inputRef.current?.focus();
+    textareaRef.current?.focus();
   }
 
   // ── Closed screen ─────────────────────────────────────────────────────────
@@ -285,13 +303,9 @@ export default function ChatRoomPage() {
         <div>
           <h1 className="text-xl font-bold mb-1">VCM Chat Room</h1>
           {messages.length > 0 ? (
-            <p className="text-muted-foreground text-sm">
-              Tonight's chat has ended. See you tomorrow at 6PM!
-            </p>
+            <p className="text-muted-foreground text-sm">Tonight's chat has ended. See you tomorrow at 6PM!</p>
           ) : (
-            <p className="text-muted-foreground text-sm">
-              Chat opens daily 6:00 PM – 10:00 PM. Come back then!
-            </p>
+            <p className="text-muted-foreground text-sm">Chat opens daily 6:00 PM – 10:00 PM. Come back then!</p>
           )}
         </div>
         {countdown > 0 && (
@@ -310,7 +324,7 @@ export default function ChatRoomPage() {
                     <span className="text-xs font-bold text-primary">{m.senderName ?? "Anonymous"}</span>
                     <span className="text-[10px] text-muted-foreground">{formatTime(m.createdAt)}</span>
                   </div>
-                  <p className="text-sm text-foreground">{m.messageText}</p>
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{m.messageText}</p>
                 </div>
               ))}
             </div>
@@ -322,147 +336,176 @@ export default function ChatRoomPage() {
 
   // ── Open chat ─────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100vh-8.5rem)] max-w-2xl mx-auto" onClick={() => setPickerFor(null)}>
-      {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-white shrink-0">
-        <div className="relative">
-          <MessageCircle className="w-5 h-5 text-primary" />
-          <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white" />
-        </div>
-        <div>
-          <h1 className="text-sm font-bold leading-none">VCM Chat Room</h1>
-          <p className="text-[10px] text-green-600 font-medium">Live · Closes 10:00 PM</p>
-        </div>
-      </div>
+    <>
+      {/* Highlight flash style */}
+      <style>{`
+        .chat-highlight {
+          animation: chatFlash 1.2s ease;
+        }
+        @keyframes chatFlash {
+          0%   { background-color: transparent; }
+          20%  { background-color: rgba(29,78,216,0.18); }
+          100% { background-color: transparent; }
+        }
+      `}</style>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2">
-        {messages.length === 0 && (
-          <div className="text-center text-muted-foreground text-sm py-10">
-            No messages yet. Be the first to say something! 🔥
+      <div className="flex flex-col h-[calc(100vh-8.5rem)] max-w-2xl mx-auto" onClick={() => setPickerFor(null)}>
+        {/* Header */}
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-white shrink-0">
+          <div className="relative">
+            <MessageCircle className="w-5 h-5 text-primary" />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white" />
           </div>
-        )}
-        {messages.map((m) => {
-          const isMe = user && m.userId === user.id;
-          const hasReactions = Object.keys(m.reactions).length > 0;
+          <div>
+            <h1 className="text-sm font-bold leading-none">VCM Chat Room</h1>
+            <p className="text-[10px] text-green-600 font-medium">Live · Closes 10:00 PM</p>
+          </div>
+        </div>
 
-          return (
-            <SwipeableMessage key={m.id} onSwipe={() => startReply(m)}>
-              <div className={`flex flex-col max-w-[80%] ${isMe ? "self-end items-end" : "self-start items-start"}`}>
-                {/* Sender name */}
-                {!isMe && (
-                  <span className="text-[10px] font-semibold text-primary mb-0.5 px-1">
-                    {m.senderName ?? "Anonymous"}
-                  </span>
-                )}
+        {/* Messages */}
+        <div
+          ref={scrollAreaRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2"
+        >
+          {messages.length === 0 && (
+            <div className="text-center text-muted-foreground text-sm py-10">
+              No messages yet. Be the first to say something! 🔥
+            </div>
+          )}
+          {messages.map((m) => {
+            const isMe = user && m.userId === user.id;
+            const hasReactions = Object.keys(m.reactions).length > 0;
 
-                {/* Bubble + long press for reaction */}
-                <div className="relative">
-                  {pickerFor === m.id && user && (
-                    <ReactionPicker
-                      isMe={!!isMe}
-                      onReact={(emoji) => reactToMessage(m.id, emoji)}
-                      onClose={() => setPickerFor(null)}
-                    />
+            return (
+              <SwipeableMessage key={m.id} onSwipe={() => startReply(m)}>
+                <div
+                  id={`msg-${m.id}`}
+                  className={`flex flex-col max-w-[80%] rounded-lg transition-colors ${isMe ? "self-end items-end" : "self-start items-start"}`}
+                >
+                  {!isMe && (
+                    <span className="text-[10px] font-semibold text-primary mb-0.5 px-1">
+                      {m.senderName ?? "Anonymous"}
+                    </span>
                   )}
 
-                  <div
-                    className={`rounded-2xl px-3.5 py-2 text-sm cursor-pointer select-none ${isMe ? "bg-primary text-white rounded-tr-sm" : "bg-muted text-foreground rounded-tl-sm"}`}
-                    onMouseDown={() => startLongPress(m.id)}
-                    onMouseUp={cancelLongPress}
-                    onMouseLeave={cancelLongPress}
-                    onTouchStart={() => startLongPress(m.id)}
-                    onTouchEnd={cancelLongPress}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {/* Reply quote */}
-                    {m.replyTo && (
-                      <div className={`mb-1.5 px-2 py-1 rounded-lg text-[11px] border-l-2 ${isMe ? "border-white/60 bg-white/15 text-white/80" : "border-primary bg-primary/10 text-muted-foreground"}`}>
-                        <span className="font-semibold block">{m.replyTo.senderName ?? "Anonymous"}</span>
-                        <span className="line-clamp-1">{m.replyTo.messageText}</span>
+                  <div className="relative">
+                    {pickerFor === m.id && user && (
+                      <ReactionPicker
+                        isMe={!!isMe}
+                        onReact={(emoji) => reactToMessage(m.id, emoji)}
+                        onClose={() => setPickerFor(null)}
+                      />
+                    )}
+
+                    <div
+                      className={`rounded-2xl px-3.5 py-2 text-sm cursor-pointer select-none ${isMe ? "bg-primary text-white rounded-tr-sm" : "bg-muted text-foreground rounded-tl-sm"}`}
+                      onMouseDown={() => startLongPress(m.id)}
+                      onMouseUp={cancelLongPress}
+                      onMouseLeave={cancelLongPress}
+                      onTouchStart={() => startLongPress(m.id)}
+                      onTouchEnd={cancelLongPress}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* Reply quote — tap to jump to original */}
+                      {m.replyTo && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); scrollToMessage(m.replyTo!.id); }}
+                          className={`w-full text-left mb-1.5 px-2 py-1 rounded-lg text-[11px] border-l-2 active:opacity-70 transition-opacity ${isMe ? "border-white/60 bg-white/15 text-white/80" : "border-primary bg-primary/10 text-muted-foreground"}`}
+                        >
+                          <span className="font-semibold block">{m.replyTo.senderName ?? "Anonymous"}</span>
+                          <span className="line-clamp-1">{m.replyTo.messageText}</span>
+                        </button>
+                      )}
+                      <span className="whitespace-pre-wrap break-words">{m.messageText}</span>
+                    </div>
+
+                    {hasReactions && (
+                      <div className={`flex gap-1 mt-1 flex-wrap ${isMe ? "justify-end" : "justify-start"}`}>
+                        {Object.entries(m.reactions).map(([emoji, count]) => (
+                          <button
+                            key={emoji}
+                            onClick={(e) => { e.stopPropagation(); if (user) reactToMessage(m.id, emoji); }}
+                            className={`flex items-center gap-0.5 text-xs rounded-full px-2 py-0.5 border transition-colors ${m.myReaction === emoji ? "bg-primary/15 border-primary/40 text-primary font-semibold" : "bg-white border-border text-foreground"}`}
+                          >
+                            <span>{emoji}</span>
+                            <span>{count}</span>
+                          </button>
+                        ))}
                       </div>
                     )}
-                    {m.messageText}
                   </div>
 
-                  {/* Reactions row */}
-                  {hasReactions && (
-                    <div className={`flex gap-1 mt-1 flex-wrap ${isMe ? "justify-end" : "justify-start"}`}>
-                      {Object.entries(m.reactions).map(([emoji, count]) => (
-                        <button
-                          key={emoji}
-                          onClick={(e) => { e.stopPropagation(); if (user) reactToMessage(m.id, emoji); }}
-                          className={`flex items-center gap-0.5 text-xs rounded-full px-2 py-0.5 border transition-colors ${m.myReaction === emoji ? "bg-primary/15 border-primary/40 text-primary font-semibold" : "bg-white border-border text-foreground"}`}
-                        >
-                          <span>{emoji}</span>
-                          <span>{count}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                  <div className={`flex items-center gap-1.5 mt-0.5 px-1 ${isMe ? "flex-row-reverse" : ""}`}>
+                    <span className="text-[9px] text-muted-foreground">{formatTime(m.createdAt)}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); startReply(m); }}
+                      className="text-muted-foreground/50 hover:text-primary transition-colors"
+                    >
+                      <Reply className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
+              </SwipeableMessage>
+            );
+          })}
+          <div ref={bottomRef} />
+        </div>
 
-                {/* Time + reply hint */}
-                <div className={`flex items-center gap-1.5 mt-0.5 px-1 ${isMe ? "flex-row-reverse" : ""}`}>
-                  <span className="text-[9px] text-muted-foreground">{formatTime(m.createdAt)}</span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); startReply(m); }}
-                    className="text-muted-foreground/50 hover:text-primary transition-colors"
-                  >
-                    <Reply className="w-3 h-3" />
-                  </button>
-                </div>
+        {/* Input */}
+        <div className="shrink-0 border-t border-border bg-white">
+          {replyTo && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 border-b border-border">
+              <Reply className="w-3.5 h-3.5 text-primary shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-semibold text-primary">{replyTo.senderName ?? "Anonymous"}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{replyTo.messageText}</p>
               </div>
-            </SwipeableMessage>
-          );
-        })}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input */}
-      <div className="shrink-0 border-t border-border bg-white">
-        {/* Reply preview bar */}
-        {replyTo && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 border-b border-border">
-            <Reply className="w-3.5 h-3.5 text-primary shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-semibold text-primary">{replyTo.senderName ?? "Anonymous"}</p>
-              <p className="text-[11px] text-muted-foreground truncate">{replyTo.messageText}</p>
+              <button onClick={() => setReplyTo(null)} className="text-muted-foreground hover:text-foreground shrink-0">
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <button onClick={() => setReplyTo(null)} className="text-muted-foreground hover:text-foreground shrink-0">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
-        <div className="px-4 py-3">
-          {inputError ? (
-            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-xl px-4 py-2.5">
-              <Lock className="w-4 h-4 shrink-0" />
-              <span>{inputError}</span>
-            </div>
-          ) : !user ? (
-            <div className="text-center text-sm text-muted-foreground py-1">
-              <a href="/" className="text-primary underline">Join VCM</a> to chat
-            </div>
-          ) : (
-            <form onSubmit={sendMessage} className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder={replyTo ? `Replying to ${replyTo.senderName ?? "Anonymous"}…` : "Say something…"}
-                maxLength={500}
-                className="flex-1"
-                autoComplete="off"
-              />
-              <Button type="submit" size="icon" disabled={!text.trim() || sending} className="shrink-0">
-                <Send className="w-4 h-4" />
-              </Button>
-            </form>
           )}
+
+          <div className="px-4 py-3">
+            {inputError ? (
+              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-xl px-4 py-2.5">
+                <Lock className="w-4 h-4 shrink-0" />
+                <span>{inputError}</span>
+              </div>
+            ) : !user ? (
+              <div className="text-center text-sm text-muted-foreground py-1">
+                <a href="/" className="text-primary underline">Join VCM</a> to chat
+              </div>
+            ) : (
+              <div className="flex items-end gap-2">
+                <textarea
+                  ref={textareaRef}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={replyTo ? `Replying to ${replyTo.senderName ?? "Anonymous"}…` : "Say something… (Shift+Enter for new line)"}
+                  maxLength={500}
+                  rows={1}
+                  className="flex-1 resize-none rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring overflow-hidden leading-5"
+                  style={{ minHeight: "40px", maxHeight: "120px" }}
+                  autoComplete="off"
+                />
+                <Button
+                  type="button"
+                  size="icon"
+                  disabled={!text.trim() || sending}
+                  onClick={sendMessage}
+                  className="shrink-0 self-end"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
