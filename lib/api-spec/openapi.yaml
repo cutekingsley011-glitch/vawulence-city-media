@@ -550,6 +550,11 @@ paths:
           schema:
             type: boolean
           description: If true, include inactive cards (admin)
+        - name: userId
+          in: query
+          schema:
+            type: string
+          description: If provided, each card includes the caller's userVote
       responses:
         "200":
           description: OK
@@ -1045,6 +1050,7 @@ components:
         createdAt:    { type: string }
         totalVotes:   { type: integer }
         commentCount: { type: integer }
+        userVote:     { type: ["integer", "null"] }
 
     VoteCardDetail:
       type: object

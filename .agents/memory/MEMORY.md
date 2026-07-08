@@ -7,3 +7,4 @@
 - [API server zod import](api-server-zod.md) — zod is not pre-installed in api-server; must add `"zod": "catalog:"` to its package.json dependencies then `pnpm install`.
 - [VoteCard OG fields](vcm-vote-card-schema.md) — og.ts must use `card.title`, `card.option1Label`, `card.option2Label`, `card.option3Label` (not question/option1/option2/option3).
 - [VCM deployment target](vcm-railway-deployment.md) — VCM is deployed on Railway, NOT Replit's built-in deployment. All production issues, env vars, and DATABASE_URL concerns are Railway-side.
+- [VCM vote card list vs detail sync](vcm-vote-card-list-sync.md) — feed and detail views must share the same per-user vote-status field; reverting to "unvoted" on a 409 causes flip-flopping votes.

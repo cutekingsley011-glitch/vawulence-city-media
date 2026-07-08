@@ -14,7 +14,18 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { getStoredUser } from "@/lib/user";
-import { Vote, ArrowLeft, Heart } from "lucide-react";
+import { Vote, ArrowLeft, Heart, MessageCircle } from "lucide-react";
+
+type CommentDto = {
+  id: number;
+  userId?: string | null;
+  userName?: string | null;
+  parentCommentId?: number | null;
+  content: string;
+  likeCount: number;
+  createdAt: string;
+  replies?: CommentDto[];
+};
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -71,6 +82,8 @@ export default function VoteCardDetailPage() {
 
   const castVote = useCastVote();
   const createComment = useCreateVoteCardComment();
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState("");
 
   // The query key must stay consistent for invalidation
   const voteCardQueryKey = getGetVoteCardQueryKey(id, queryParams);
@@ -176,6 +189,29 @@ export default function VoteCardDetailPage() {
         },
       }
     );
+  }
+
+  function handleReply(parentCommentId: number) {
+    if (!replyText.trim() || !user) return;
+    createComment.mutate(
+      { voteCardId: id, data: { content: replyText.trim(), userId: user.id, parentCommentId } },
+      {
+        onSuccess: () => {
+          setReplyText("");
+          setReplyingTo(null);
+          queryClient.invalidateQueries({ queryKey: getListVoteCardCommentsQueryKey(id) });
+        },
+      }
+    );
+  }
+
+  async function handleLikeComment(commentId: number) {
+    await fetch(`/api/comments/${commentId}/like`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ actorName: user?.name ?? null, actorUserId: user?.id ?? null }),
+    });
+    queryClient.invalidateQueries({ queryKey: getListVoteCardCommentsQueryKey(id) });
   }
 
   if (cardLoading) {
@@ -328,28 +364,82 @@ export default function VoteCardDetailPage() {
           <p className="text-sm text-muted-foreground text-center py-8">No comments yet. Start the discussion!</p>
         ) : (
           <div className="space-y-3" data-testid="vote-card-comments">
-            {comments.map((c) => (
+            {(comments as CommentDto[]).map((c) => (
               <div key={c.id} className="border border-border rounded-xl p-3 bg-white">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-semibold text-foreground">{c.userName ?? "Anonymous"}</span>
                   <span className="text-xs text-muted-foreground">{timeAgo(c.createdAt)}</span>
                 </div>
                 <p className="text-sm text-foreground leading-relaxed">{c.content}</p>
-                <button
-                  className="flex items-center gap-1 mt-2 text-xs text-muted-foreground hover:text-primary"
-                  onClick={async () => {
-                    const { getStoredUser } = await import("@/lib/user");
-                    const u = getStoredUser();
-                    await fetch(`/api/comments/${c.id}/like`, {
-                      method: "POST", headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ actorName: u?.name ?? null, actorUserId: u?.id ?? null }),
-                    });
-                    queryClient.invalidateQueries({ queryKey: ["vote-card-comments", id] });
-                  }}
-                >
-                  <Heart className="w-3 h-3" />
-                  {c.likeCount}
-                </button>
+                <div className="flex items-center gap-4 mt-2">
+                  <button
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                    onClick={() => handleLikeComment(c.id)}
+                    data-testid={`button-like-comment-${c.id}`}
+                  >
+                    <Heart className="w-3 h-3" />
+                    {c.likeCount}
+                  </button>
+                  {user && (
+                    <button
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                      onClick={() => {
+                        setReplyingTo(replyingTo === c.id ? null : c.id);
+                        setReplyText("");
+                      }}
+                      data-testid={`button-reply-comment-${c.id}`}
+                    >
+                      <MessageCircle className="w-3 h-3" />
+                      Reply
+                    </button>
+                  )}
+                </div>
+
+                {replyingTo === c.id && (
+                  <div className="mt-2 pl-3 border-l-2 border-border">
+                    <Textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder={`Reply to ${c.userName ?? "Anonymous"}...`}
+                      rows={2}
+                      className="mb-2 text-sm"
+                      data-testid={`input-reply-${c.id}`}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        disabled={!replyText.trim() || createComment.isPending}
+                        onClick={() => handleReply(c.id)}
+                        data-testid={`button-submit-reply-${c.id}`}
+                      >
+                        {createComment.isPending ? "Posting..." : "Reply"}
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setReplyingTo(null)}>Cancel</Button>
+                    </div>
+                  </div>
+                )}
+
+                {!!c.replies?.length && (
+                  <div className="mt-3 pl-3 border-l-2 border-border space-y-3">
+                    {c.replies.map((r) => (
+                      <div key={r.id}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-foreground">{r.userName ?? "Anonymous"}</span>
+                          <span className="text-xs text-muted-foreground">{timeAgo(r.createdAt)}</span>
+                        </div>
+                        <p className="text-sm text-foreground leading-relaxed">{r.content}</p>
+                        <button
+                          className="flex items-center gap-1 mt-1.5 text-xs text-muted-foreground hover:text-primary"
+                          onClick={() => handleLikeComment(r.id)}
+                          data-testid={`button-like-comment-${r.id}`}
+                        >
+                          <Heart className="w-3 h-3" />
+                          {r.likeCount}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

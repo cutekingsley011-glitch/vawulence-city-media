@@ -6,7 +6,7 @@ import {
   commentsTable,
   usersTable,
 } from "@workspace/db";
-import { eq, desc, sql, and, isNull } from "drizzle-orm";
+import { eq, desc, sql, and, isNull, inArray } from "drizzle-orm";
 import {
   ListVoteCardsQueryParams,
   CreateVoteCardBody,
@@ -26,7 +26,7 @@ const router = Router();
 type VoteCardRow = typeof voteCardsTable.$inferSelect;
 type CommentRow = typeof commentsTable.$inferSelect;
 
-function cardToDto(card: VoteCardRow, commentCount = 0) {
+function cardToDto(card: VoteCardRow, commentCount = 0, userVote: number | null = null) {
   const total =
     card.option1Count +
     card.option2Count +
@@ -52,6 +52,7 @@ function cardToDto(card: VoteCardRow, commentCount = 0) {
     createdAt: card.createdAt.toISOString(),
     totalVotes: total,
     commentCount,
+    userVote,
   };
 }
 
@@ -103,13 +104,31 @@ router.get("/vote-cards", async (req, res) => {
         .where(eq(voteCardsTable.isActive, true))
         .orderBy(desc(voteCardsTable.createdAt));
 
+  const userId = query.data.userId;
+  const userVoteByCardId = new Map<number, number>();
+  if (userId && cards.length > 0) {
+    const votes = await db
+      .select()
+      .from(voteCardVotesTable)
+      .where(
+        and(
+          inArray(
+            voteCardVotesTable.voteCardId,
+            cards.map((c) => c.id)
+          ),
+          eq(voteCardVotesTable.userId, userId)
+        )
+      );
+    for (const v of votes) userVoteByCardId.set(v.voteCardId, v.chosenOption);
+  }
+
   const result = await Promise.all(
     cards.map(async (card) => {
       const [{ cnt }] = await db
         .select({ cnt: sql<number>`count(*)::int` })
         .from(commentsTable)
         .where(eq(commentsTable.voteCardId, card.id));
-      return cardToDto(card, cnt ?? 0);
+      return cardToDto(card, cnt ?? 0, userVoteByCardId.get(card.id) ?? null);
     })
   );
 

@@ -207,6 +207,8 @@ export interface VoteCard {
   createdAt: string;
   totalVotes: number;
   commentCount?: number;
+  /** @nullable */
+  userVote?: number | null;
 }
 
 export interface VoteCardDetail {
@@ -355,6 +357,10 @@ export type ListVoteCardsParams = {
  * If true, include inactive cards (admin)
  */
 all?: boolean;
+/**
+ * If provided, each card includes the caller's userVote
+ */
+userId?: string;
 };
 
 export type GetVoteCardParams = {

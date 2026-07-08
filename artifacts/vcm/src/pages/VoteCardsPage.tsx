@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import {
   useListVoteCards,
@@ -32,6 +32,7 @@ type VoteCard = {
   commentCount?: number;
   imageUrl?: string | null;
   imageUrl2?: string | null;
+  userVote?: number | null;
 };
 
 function getOptions(card: VoteCard) {
@@ -48,7 +49,7 @@ function VoteCardItem({ card }: { card: VoteCard }) {
   const castVote = useCastVote();
   const queryClient = useQueryClient();
   const user = getStoredUser();
-  const [voted, setVoted] = useState<number | null>(null);
+  const [voted, setVoted] = useState<number | null>(card.userVote ?? null);
   const [counts, setCounts] = useState<Record<number, number>>({
     1: card.option1Count,
     2: card.option2Count,
@@ -56,6 +57,21 @@ function VoteCardItem({ card }: { card: VoteCard }) {
     4: card.option4Count ?? 0,
   });
   const [total, setTotal] = useState(card.totalVotes);
+
+  // Server is authoritative — resync whenever the underlying card data refreshes
+  // (e.g. after invalidation on refresh/refetch), so a vote never appears to "reset".
+  useEffect(() => {
+    setCounts({
+      1: card.option1Count,
+      2: card.option2Count,
+      3: card.option3Count ?? 0,
+      4: card.option4Count ?? 0,
+    });
+    setTotal(card.totalVotes);
+    if (card.userVote != null && card.userVote > 0) {
+      setVoted(card.userVote);
+    }
+  }, [card.userVote, card.option1Count, card.option2Count, card.option3Count, card.option4Count, card.totalVotes]);
 
   const options = getOptions(card);
 
@@ -70,7 +86,13 @@ function VoteCardItem({ card }: { card: VoteCard }) {
     castVote.mutate(
       { id: card.id, data: { userId: user?.id ?? "", chosenOption: choice } },
       {
-        onError: () => {
+        onError: (err) => {
+          const status = (err as { status?: number })?.status;
+          if (status === 409) {
+            // Already voted server-side — don't unlock the UI, just resync from the server.
+            queryClient.invalidateQueries({ queryKey: getListVoteCardsQueryKey() });
+            return;
+          }
           setCounts(prevCounts);
           setTotal(prevTotal);
           setVoted(null);
@@ -143,14 +165,12 @@ function VoteCardItem({ card }: { card: VoteCard }) {
           <Vote className="w-3.5 h-3.5" />
           {total.toLocaleString()} votes
         </span>
-        {(card.commentCount ?? 0) > 0 && (
-          <Link href={`/vote-cards/${card.id}`}>
-            <span className="flex items-center gap-1 hover:text-primary cursor-pointer">
-              <MessageSquare className="w-3.5 h-3.5" />
-              {card.commentCount} comments
-            </span>
-          </Link>
-        )}
+        <Link href={`/vote-cards/${card.id}`}>
+          <span className="flex items-center gap-1 hover:text-primary cursor-pointer">
+            <MessageSquare className="w-3.5 h-3.5" />
+            {(card.commentCount ?? 0) > 0 ? `${card.commentCount} comments` : "Drop a comment"}
+          </span>
+        </Link>
       </div>
     </div>
   );
@@ -331,8 +351,11 @@ function CreateVoteCardForm({ onDone }: { onDone: () => void }) {
 export default function VoteCardsPage() {
   const [showAll, setShowAll] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
-  const { data: cards, isLoading } = useListVoteCards(showAll ? { all: true } : undefined);
   const user = getStoredUser();
+  const { data: cards, isLoading } = useListVoteCards({
+    ...(showAll ? { all: true } : {}),
+    ...(user?.id ? { userId: user.id } : {}),
+  });
 
   return (
     <div className="max-w-2xl mx-auto px-3 py-4">

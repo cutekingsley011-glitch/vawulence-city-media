@@ -429,7 +429,8 @@ export const SetBreakingNewsBannerResponse = zod.object({
  * @summary List active vote cards
  */
 export const ListVoteCardsQueryParams = zod.object({
-  "all": zod.coerce.boolean().optional().describe('If true, include inactive cards (admin)')
+  "all": zod.coerce.boolean().optional().describe('If true, include inactive cards (admin)'),
+  "userId": zod.coerce.string().optional().describe('If provided, each card includes the caller\'s userVote')
 })
 
 export const ListVoteCardsResponseItem = zod.object({
@@ -451,7 +452,8 @@ export const ListVoteCardsResponseItem = zod.object({
   "status": zod.string(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
-  "commentCount": zod.number().optional()
+  "commentCount": zod.number().optional(),
+  "userVote": zod.number().nullish()
 })
 export const ListVoteCardsResponse = zod.array(ListVoteCardsResponseItem)
 
@@ -547,7 +549,8 @@ export const UpdateVoteCardResponse = zod.object({
   "status": zod.string(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
-  "commentCount": zod.number().optional()
+  "commentCount": zod.number().optional(),
+  "userVote": zod.number().nullish()
 })
 
 
@@ -621,7 +624,8 @@ export const ListPendingVoteCardsResponseItem = zod.object({
   "status": zod.string(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
-  "commentCount": zod.number().optional()
+  "commentCount": zod.number().optional(),
+  "userVote": zod.number().nullish()
 })
 export const ListPendingVoteCardsResponse = zod.array(ListPendingVoteCardsResponseItem)
 
@@ -652,7 +656,8 @@ export const ApproveVoteCardResponse = zod.object({
   "status": zod.string(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
-  "commentCount": zod.number().optional()
+  "commentCount": zod.number().optional(),
+  "userVote": zod.number().nullish()
 })
 
 
@@ -682,7 +687,8 @@ export const RejectVoteCardResponse = zod.object({
   "status": zod.string(),
   "createdAt": zod.string(),
   "totalVotes": zod.number(),
-  "commentCount": zod.number().optional()
+  "commentCount": zod.number().optional(),
+  "userVote": zod.number().nullish()
 })
 
 
