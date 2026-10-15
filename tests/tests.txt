@@ -1,0 +1,48 @@
+# Tests
+
+## Test 1 - Join VCM with a unique username and remain recognized [sanity]
+Viewport: desktop
+Covers: AppDeploy authentication, VCM username claim, unique username validation, automatic membership creation, persistent browser recognition
+Description: Verifies a first-time visitor signs in, chooses a unique username, becomes a VCM member, and remains recognized on the same browser.
+Steps:
+1. Open a major member action such as commenting on a post
+2. Sign in through the VCM member dialog
+3. Choose a username such as "VCMTestUser"
+4. Confirm the member action becomes available
+5. Refresh the page and trigger another member action
+Expected: The user becomes a VCM member with the chosen username, the username is accepted only if unique, and the same browser recognizes the member without requiring the onboarding flow again.
+
+## Test 2 - Reject a username that is already taken
+Viewport: mobile
+Covers: unique username enforcement, server-side username conflict, visible validation error
+Description: Verifies two accounts cannot claim the same VCM username.
+Steps:
+1. Actor A signs in and claims "VCMUniqueTest"
+2. Actor B signs in from a separate browser/account and attempts to claim "VCMUniqueTest"
+3. Enter a different available username
+Expected: Actor B sees a clear username-taken error and can continue only after choosing an available username.
+
+## Test 3 - Require membership for major community actions
+Viewport: mobile
+Covers: anonymous denial, protected reactions, protected comments, protected polls, protected marketplace submission, protected connections submission, protected gists, protected chat
+Description: Verifies major write and interaction actions require VCM membership while public browsing remains available.
+Steps:
+1. Open a post while signed out and try to react or comment
+2. Open Polls and try to vote
+3. Open Marketplace and tap Sell Something
+4. Open Connections and try to submit a profile
+5. Open Gists and tap Submit a Gist
+6. Open Community Chat and try to send a message
+Expected: Each action opens the VCM member onboarding instead of writing anonymously; after membership is established, the actions can proceed normally.
+
+## Test 4 - Member identity is used for protected activity
+Viewport: desktop
+Covers: authenticated API authorization, member identity persistence, comment/vote/chat attribution, public username identity
+Description: Verifies protected writes use the authenticated VCM member identity rather than a user-supplied anonymous ID or name.
+Steps:
+1. Sign in as a VCM member with a unique username
+2. Post a comment on an article
+3. Vote on a live poll
+4. Send a chat message
+5. Refresh each relevant page
+Expected: The activity is attributed to the signed-in member identity, remains available after refresh, and cannot be created by an unauthenticated request.

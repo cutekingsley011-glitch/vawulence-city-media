@@ -1,0 +1,17 @@
+import { useEffect, useState } from 'react';
+import { api } from '@appdeploy/client';
+import { CheckCircle, LogIn, User, X } from 'lucide-react';
+
+type Resolver = (ok: boolean) => void;
+type JoinEvent = CustomEvent<{ resolve: Resolver }>;
+
+const MEMBER_KEY='vcm_member_session';
+export function getMemberSession(){try{const raw=localStorage.getItem(MEMBER_KEY);const member=raw?JSON.parse(raw):null;return member?.memberToken&&member?.username?member:null}catch{return null}}
+export function getMemberToken(){return getMemberSession()?.memberToken||''}
+export async function ensureMember(): Promise<boolean> {
+    const stored=getMemberSession();
+    if(stored?.memberToken){try{const current=await api.post('/api/member/me',{memberToken:stored.memberToken});if(current.data?.ok&&current.data.member){localStorage.setItem(MEMBER_KEY,JSON.stringify(current.data.member));return true}}catch{try{localStorage.removeItem(MEMBER_KEY)}catch{}}}
+    return new Promise((resolve)=>window.dispatchEvent(new CustomEvent('vcm:open-join',{detail:{resolve}})));
+}
+
+export default function MemberGate(){const[open,setOpen]=useState(false);const[username,setUsername]=useState('');const[busy,setBusy]=useState(false);const[message,setMessage]=useState('');const[resolve,setResolve]=useState<Resolver|null>(null);useEffect(()=>{const onOpen=(event:Event)=>{const detail=(event as JoinEvent).detail;setResolve(()=>detail.resolve);setMessage('');setUsername(getMemberSession()?.username||'');setOpen(true)};window.addEventListener('vcm:open-join',onOpen);return()=>window.removeEventListener('vcm:open-join',onOpen)},[]);const finish=(ok:boolean)=>{resolve?.(ok);setResolve(null);setOpen(false);setMessage('')};async function signIn(){const value=username.trim();if(!/^[A-Za-z0-9._-]{3,24}$/.test(value)){setMessage('Username must be 3–24 characters using letters, numbers, dots, underscores or hyphens.');return}setBusy(true);setMessage('');try{const result=await api.post('/api/member/register',{username:value});if(!result.data?.ok||!result.data?.member)throw new Error(result.data?.message||'Could not join VCM.');localStorage.setItem(MEMBER_KEY,JSON.stringify(result.data.member));finish(true)}catch(e:any){setMessage(e?.response?.data?.message||e?.message||'That username is already taken. Choose another one.')}finally{setBusy(false)}}if(!open)return null;return <div className='contest-modal-backdrop' onClick={()=>!busy&&finish(false)}><div className='contest-modal' onClick={e=>e.stopPropagation()}><div className='contest-modal-head'><div><span className='eyebrow'>VCM MEMBERS</span><h2>Join / Sign in to VCM</h2></div><button className='icon-btn' onClick={()=>!busy&&finish(false)}><X size={18}/></button></div><div className='notice'><CheckCircle size={17}/> Choose one unique username. You become a VCM member immediately, and this browser will automatically remember you.</div><label className='field-label'>Username<input className='input' autoFocus value={username} onChange={e=>setUsername(e.target.value.replace(/\s/g,'').slice(0,24))} placeholder='e.g. VawulenceKing' maxLength={24} disabled={busy}/></label><small className='muted'>If the username is already registered, it signs you back into that VCM identity. No email, password or social login is required.</small>{message&&<div className='form-error'>{message}</div>}<button className='primary-btn full' disabled={busy||!username.trim()} onClick={signIn}><LogIn size={15}/>{busy?'Joining…':'Continue as VCM Member'}</button></div></div>}

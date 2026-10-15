@@ -1,0 +1,6 @@
+{
+  "name": "Vawulence City Media",
+  "description": "Full-stack Nigerian media and community platform for stories, gists, polls, events, contests, marketplace, connections, and recruitment.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
